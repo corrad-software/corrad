@@ -193,7 +193,7 @@ $xlarge: 1280px;
   }
 
   .vs__dropdown-menu li {
-    background: rgb(var(--bg-1));
+    background: rgb(var(--bg-2));
     color: rgb(var(--text-color));
   }
 
@@ -209,6 +209,8 @@ $xlarge: 1280px;
     border-radius: 0.5rem;
     margin-bottom: 0px;
     border-color: rgb(var(--fk-border-color));
+
+    background-color: rgb(var(--bg-2));
 
     .vs__selected {
       padding-left: 1rem;

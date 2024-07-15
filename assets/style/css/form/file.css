@@ -7,7 +7,7 @@
 }
 
 .formkit-input-file {
-  @apply w-full cursor-pointer border rounded-lg text-gray-600 text-sm mb-1 file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-primary/90;
+  @apply w-full cursor-pointer border rounded-lg text-gray-600 text-sm mb-1 file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-primary/90 bg-[rgb(var(--bg-2))];
   border-color: rgb(var(--fk-border-color));
 }
 

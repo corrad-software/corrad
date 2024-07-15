@@ -14,7 +14,6 @@ export default defineNuxtConfig({
     "floating-vue/nuxt",
     "@pinia/nuxt",
     "@pinia-plugin-persistedstate/nuxt",
-    "nuxt-security",
     "nuxt-typed-router",
     "nuxt-icon",
     "@davestewart/nuxt-scrollbar",

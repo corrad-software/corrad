@@ -12,12 +12,17 @@ const props = defineProps({
     type: String,
     default: "md",
   },
+  btnType: {
+    type: String,
+    default: "button",
+  },
 });
 </script>
 
 <template>
   <button
     class="button"
+    :type="btnType"
     :class="{
       'button-sm': size === 'sm',
       'button-md': size === 'md',

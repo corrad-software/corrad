@@ -17,27 +17,31 @@ model audit {
 }
 
 model user {
-  userID           Int        @id @default(autoincrement())
-  userSecretKey    String?    @db.VarChar(255)
-  userUsername     String?    @db.VarChar(255)
-  userPassword     String?    @db.VarChar(255)
-  userFullName     String?    @db.VarChar(255)
-  userEmail        String?    @db.VarChar(255)
-  userPhone        String?    @db.VarChar(255)
-  userStatus       String?    @db.VarChar(255)
-  userCreatedDate  DateTime?  @db.DateTime(0)
-  userModifiedDate DateTime?  @db.DateTime(0)
-  userrole         userrole[]
+  userID             Int                  @id @default(autoincrement())
+  userSecretKey      String?              @db.VarChar(255)
+  userUsername       String?              @db.VarChar(255)
+  userPassword       String?              @db.VarChar(255)
+  userFullName       String?              @db.VarChar(255)
+  userEmail          String?              @db.VarChar(255)
+  userPhone          String?              @db.VarChar(255)
+  userStatus         String?              @db.VarChar(255)
+  userCreatedDate    DateTime?            @db.DateTime(0)
+  userModifiedDate   DateTime?            @db.DateTime(0)
+  chat               chat[]
+  project            project[]
+  project_permission project_permission[]
+  userrole           userrole[]
 }
 
 model role {
-  roleID           Int        @id @default(autoincrement())
-  roleName         String?    @db.VarChar(255)
-  roleDescription  String?    @db.VarChar(255)
-  roleStatus       String?    @db.VarChar(255)
-  roleCreatedDate  DateTime?  @db.DateTime(0)
-  roleModifiedDate DateTime?  @db.DateTime(0)
-  userrole         userrole[]
+  roleID             Int                  @id @default(autoincrement())
+  roleName           String?              @db.VarChar(255)
+  roleDescription    String?              @db.VarChar(255)
+  roleStatus         String?              @db.VarChar(255)
+  roleCreatedDate    DateTime?            @db.DateTime(0)
+  roleModifiedDate   DateTime?            @db.DateTime(0)
+  project_permission project_permission[]
+  userrole           userrole[]
 }
 
 model lookup {
@@ -50,6 +54,7 @@ model lookup {
   lookupStatus       String?   @db.VarChar(255)
   lookupCreatedDate  DateTime? @db.DateTime(0)
   lookupModifiedDate DateTime? @db.DateTime(0)
+  project            project[]
 }
 
 model userrole {
@@ -62,4 +67,109 @@ model userrole {
 
   @@index([userRoleRoleID], map: "FK_userrole_role")
   @@index([userRoleUserID], map: "FK_userrole_user")
+}
+
+model assistant {
+  assistantID           Int       @id @default(autoincrement())
+  assistantOAIID        String?   @db.VarChar(255)
+  assistantImg          String?   @db.VarChar(255)
+  assistantName         String?   @db.VarChar(255)
+  assistantDescription  String?   @db.VarChar(255)
+  assistantCreatedDate  DateTime? @db.DateTime(0)
+  assistantModifiedDate DateTime? @db.DateTime(0)
+  thread                thread[]
+}
+
+model chat {
+  chatID           Int       @id @default(autoincrement())
+  userID           Int?
+  threadID         Int?
+  projectID        Int?
+  chatOAIMessageID String?   @unique(map: "chatOAIMessageID") @db.VarChar(255)
+  chatType         String?   @db.VarChar(255)
+  chatRole         String?   @db.VarChar(255)
+  chatMessage      String?   @db.Text
+  chatCreatedDate  DateTime? @db.DateTime(0)
+  chatModifiedDate DateTime? @db.DateTime(0)
+  user             user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_1")
+  thread           thread?   @relation(fields: [threadID], references: [threadID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_2")
+  project          project?  @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_3")
+
+  @@index([projectID], map: "projectID")
+  @@index([threadID], map: "threadID")
+  @@index([userID], map: "userID")
+}
+
+model configuration {
+  configurationID           Int       @id @default(autoincrement())
+  configurationName         String?   @db.VarChar(255)
+  configurationType         String?   @db.VarChar(255)
+  configurationValue        String?   @db.VarChar(255)
+  configurationCreatedDate  DateTime? @db.DateTime(0)
+  configurationModifiedDate DateTime? @db.DateTime(0)
+}
+
+model project {
+  projectID                                                          Int                  @id @default(autoincrement())
+  projectUniqueID                                                    String               @unique(map: "projectUniqueID") @db.VarChar(255)
+  userID                                                             Int?
+  projectName                                                        String?              @db.VarChar(255)
+  projectDescription                                                 String?              @db.VarChar(255)
+  projectDefault                                                     Boolean?             @default(dbgenerated("b'0'")) @db.Bit(1)
+  projectType                                                        Int?
+  projectCreatedDate                                                 DateTime?            @db.DateTime(0)
+  projectModifiedDate                                                DateTime?            @db.DateTime(0)
+  chat                                                               chat[]
+  user                                                               user?                @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_2")
+  lookup                                                             lookup?              @relation(fields: [projectType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_3")
+  project_permission_project_permission_projectPermissionIDToproject project_permission?  @relation("project_permission_projectPermissionIDToproject")
+  project_permission_project_permission_projectIDToproject           project_permission[] @relation("project_permission_projectIDToproject")
+  repository                                                         repository[]
+
+  @@index([userID], map: "userID")
+  @@index([projectType], map: "projectType")
+}
+
+model thread {
+  threadID           Int        @id @default(autoincrement())
+  assistantID        Int?
+  threadOAIID        String?    @db.VarChar(255)
+  threadCreatedDate  DateTime?  @db.DateTime(0)
+  threadModifiedDate DateTime?  @db.DateTime(0)
+  chat               chat[]
+  assistant          assistant? @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
+
+  @@index([assistantID], map: "assistantID")
+}
+
+model repository {
+  repositoryID           Int       @id @default(autoincrement())
+  projectID              Int?
+  repositoryName         String?   @db.VarChar(255)
+  repositoryDescription  String?   @db.VarChar(255)
+  repositoryVersion      String?   @db.VarChar(255)
+  repositoryContent      String?   @db.LongText
+  repositoryCreatedDate  DateTime? @db.DateTime(0)
+  repositoryModifiedDate DateTime? @db.DateTime(0)
+  project                project?  @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "repository_ibfk_1")
+
+  @@index([projectID], map: "projectID")
+}
+
+model project_permission {
+  projectPermissionID                                     Int       @id @default(autoincrement())
+  userID                                                  Int?
+  roleID                                                  Int?
+  projectID                                               Int?
+  projectPermissionStatus                                 String?   @db.VarChar(255)
+  projectPermissionCreatedDate                            DateTime? @db.DateTime(0)
+  projectPermissionModifiedDate                           DateTime? @db.DateTime(0)
+  project_project_permission_projectPermissionIDToproject project   @relation("project_permission_projectPermissionIDToproject", fields: [projectPermissionID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_1")
+  user                                                    user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_2")
+  role                                                    role?     @relation(fields: [roleID], references: [roleID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_3")
+  project_project_permission_projectIDToproject           project?  @relation("project_permission_projectIDToproject", fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_4")
+
+  @@index([projectID], map: "projectID")
+  @@index([roleID], map: "roleID")
+  @@index([userID], map: "userID")
 }
