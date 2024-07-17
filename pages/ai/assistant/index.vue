@@ -11,20 +11,58 @@ definePageMeta({
     },
   ],
 });
-const assistantList = ref([
+
+const { $swal } = useNuxtApp();
+
+const { data: assistantList, refresh } = await useFetch(
+  "/api/ai/assistant/list",
   {
-    name: "URS Generator",
-    type: "Document Assistant",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus.",
-  },
-  {
-    name: "DFD Generator",
-    type: "Diagram Assistant",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus.",
-  },
-]);
+    method: "GET",
+  }
+);
+
+const deleteAssistant = async (assistantID) => {
+  try {
+    $swal
+      .fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, cancel!",
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+      })
+      .then(async (result) => {
+        if (result.isConfirmed) {
+          const { data } = await useFetch("/api/ai/assistant/delete", {
+            method: "POST",
+            body: {
+              assistantID,
+            },
+          });
+
+          if (data.value.statusCode === 200) {
+            $swal.fire({
+              title: "Success",
+              text: "Assistant deleted successfully",
+              icon: "success",
+            });
+            refresh();
+          } else {
+            $swal.fire({
+              title: "Error",
+              text: data.value.message,
+              icon: "error",
+            });
+          }
+        }
+      });
+  } catch (error) {
+    console.log(error);
+  }
+};
 </script>
 
 <template>
@@ -42,22 +80,51 @@ const assistantList = ref([
 
     <div class="grid grid-cols-1 gap-6">
       <div
-        v-for="(assistant, index) in assistantList"
+        v-if="assistantList.statusCode === 200 && assistantList.data.length > 0"
+        v-for="(assistant, index) in assistantList.data"
+        :key="assistantList.data"
         class="bg-secondary transition-all flex justify-between items-center p-4 rounded gap-4"
       >
         <div class="flex items-center gap-4">
           <img
-            src="https://picsum.photos/200"
+            :src="
+              assistant.assistantImg
+                ? assistant.assistantImg
+                : `/img/default-thumbnail.jpg`
+            "
             alt="Bot"
-            class="h-12 w-12 rounded-lg"
+            class="h-12 w-12 rounded-lg object-cover"
           />
           <div>
-            <h4 class="font-bold">{{ assistant.name }}</h4>
-            <p class="text-sm text-gray-400">{{ assistant.description }}</p>
+            <h4 class="font-bold">{{ assistant.assistantName }}</h4>
+            <p class="text-sm text-gray-400">
+              {{ assistant.assistantDescription }}
+            </p>
+            <p class="flex items-center">
+              <span
+                class="mr-1"
+                :class="{
+                  'text-green-500': assistant.assistantVerified,
+                  'text-red-500': !assistant.assistantVerified,
+                }"
+              >
+                {{ assistant.assistantVerified ? "Verified" : "Not Verified" }}
+              </span>
+              <Icon
+                v-if="assistant.assistantVerified"
+                name="material-symbols:check-box-rounded"
+                class="!w-5 !h-5 cursor-pointer text-success"
+              />
+              <Icon
+                v-else
+                name="material-symbols:cancel-rounded"
+                class="!w-5 !h-5 cursor-pointer text-danger"
+              />
+            </p>
           </div>
         </div>
         <div class="flex-1 flex justify-end gap-3">
-          <NuxtLink to="/ai/assistant/edit/1">
+          <NuxtLink :to="`/ai/assistant/edit/${assistant.assistantID}`">
             <rs-button>
               <Icon
                 name="material-symbols:edit-square-outline"
@@ -66,12 +133,20 @@ const assistantList = ref([
             </rs-button>
           </NuxtLink>
 
-          <rs-button variant="danger-outline">
+          <rs-button
+            variant="danger-outline"
+            @click="deleteAssistant(assistant.assistantID)"
+          >
             <Icon
               name="material-symbols:delete-forever-outline"
               class="!w-5 !h-5 cursor-pointer"
             />
           </rs-button>
+        </div>
+      </div>
+      <div v-else>
+        <div class="bg-secondary p-4 rounded">
+          <p class="text-center text-gray-400">No assistant found</p>
         </div>
       </div>
     </div>

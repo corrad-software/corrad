@@ -75,6 +75,8 @@ model assistant {
   assistantImg          String?   @db.VarChar(255)
   assistantName         String?   @db.VarChar(255)
   assistantDescription  String?   @db.VarChar(255)
+  assistantStatus       String?   @db.VarChar(255)
+  assistantVerified     Boolean?  @db.Bit(1)
   assistantCreatedDate  DateTime? @db.DateTime(0)
   assistantModifiedDate DateTime? @db.DateTime(0)
   thread                thread[]
@@ -103,6 +105,7 @@ model chat {
 model configuration {
   configurationID           Int       @id @default(autoincrement())
   configurationName         String?   @db.VarChar(255)
+  configurationCode         String?   @db.VarChar(255)
   configurationType         String?   @db.VarChar(255)
   configurationValue        String?   @db.VarChar(255)
   configurationCreatedDate  DateTime? @db.DateTime(0)
@@ -149,11 +152,13 @@ model repository {
   repositoryDescription  String?   @db.VarChar(255)
   repositoryVersion      String?   @db.VarChar(255)
   repositoryContent      String?   @db.LongText
+  repositoryStatus       String?   @db.VarChar(255)
   repositoryCreatedDate  DateTime? @db.DateTime(0)
   repositoryModifiedDate DateTime? @db.DateTime(0)
   project                project?  @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "repository_ibfk_1")
 
   @@index([projectID], map: "projectID")
+  @@index([repositoryStatus], map: "repositoryStatus")
 }
 
 model project_permission {

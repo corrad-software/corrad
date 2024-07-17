@@ -39,7 +39,7 @@ onUnmounted(() => {
       <aiSideMenu :isOpen="isSidebarOpen" />
 
       <!-- Main content -->
-      <main class="flex-1 p-8">
+      <main class="flex-1 p-8 overflow-y-auto">
         <slot />
       </main>
     </div>
