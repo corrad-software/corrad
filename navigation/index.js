@@ -86,6 +86,7 @@ export default [
         title: "Assistant AI",
         path: "/ai",
         icon: "streamline:artificial-intelligence-spark",
+        external: true,
       },
     ],
   },

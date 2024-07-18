@@ -46,7 +46,7 @@ const handleEnter = (event) => {
 </script>
 
 <template>
-  <div class="flex flex-col h-[92vh] lg:h-[95vh] max-w-5xl mx-auto">
+  <div class="flex flex-col h-[92vh] lg:h-[95vh] max-w-7xl mx-auto">
     <div class="absolute top-4 right-4 flex items-center justify-end">
       <rs-button variant="secondary" class="!text-primary mr-4">
         <Icon

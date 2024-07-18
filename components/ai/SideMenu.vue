@@ -155,6 +155,18 @@ watch(currentProject, (value) => {
             Assistant
           </rs-button>
         </nuxt-link>
+        <nuxt-link to="/ai/markdown" class="col-span-2">
+          <rs-button
+            variant="secondary"
+            class="w-full !justify-start !text-primary"
+          >
+            <Icon
+              name="material-symbols:markdown-rounded"
+              class="!w-6 !h-6 mr-2"
+            />
+            Markdown Editor
+          </rs-button>
+        </nuxt-link>
         <nuxt-link to="/ai/settings" class="col-span-2">
           <rs-button class="w-full !justify-start">
             <Icon

@@ -15,12 +15,18 @@ export default defineEventHandler(async (event) => {
       assistantImg,
       assistantName,
       assistantDescription,
+      assistantType,
       assistantOAIID,
       assistantStatus,
       assistantVerified,
     } = await readBody(event);
 
-    if (!assistantName || !assistantOAIID || !assistantStatus) {
+    if (
+      !assistantName ||
+      !assistantOAIID ||
+      !assistantStatus ||
+      !assistantType
+    ) {
       return {
         statusCode: 400,
         message: "Bad Request",
@@ -36,6 +42,11 @@ export default defineEventHandler(async (event) => {
         assistantStatus: assistantStatus,
         assistantVerified: assistantVerified ? true : false,
         assistantCreatedDate: DateTime.now(),
+        lookup: {
+          connect: {
+            lookupID: parseInt(assistantType),
+          },
+        },
       },
     });
 

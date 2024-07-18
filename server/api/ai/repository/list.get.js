@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
       select: {
         repositoryID: true,
         repositoryName: true,
+        repositoryContent: true,
         repositoryVersion: true,
         repositoryDescription: true,
       },

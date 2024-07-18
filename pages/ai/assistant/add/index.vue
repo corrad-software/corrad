@@ -22,10 +22,24 @@ const form = reactive({
   name: "",
   description: "",
   openaiAssistantID: "",
+  type: "",
   status: "ACTIVE",
   verified: false,
 });
 
+const assistantOptions = ref([]);
+
+const { data: getLookupType } = await useFetch("/api/ai/lookup/get", {
+  method: "GET",
+  params: {
+    code: 8,
+    type: "SELECT",
+  },
+});
+
+if (getLookupType.value.statusCode === 200) {
+  assistantOptions.value = getLookupType.value.data;
+}
 const verifyAssistant = async () => {
   try {
     const { data } = await useFetch("/api/ai/assistant/verify", {
@@ -63,6 +77,7 @@ const submitForm = async () => {
         assistantImg: undefined,
         assistantName: form.name,
         assistantDescription: form.description,
+        assistantType: form.type,
         assistantOAIID: form.openaiAssistantID,
         assistantStatus: form.status,
         assistantVerified: form.verified,
@@ -102,7 +117,7 @@ watch(
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto mt-12">
+  <div class="max-w-7xl mx-auto mt-12">
     <LayoutsBreadcrumbV2 />
 
     <FormKit type="form" :actions="false" @submit="submitForm">
@@ -119,6 +134,13 @@ watch(
         label="Description"
         placeholder=""
         auto-height
+      />
+      <FormKit
+        v-model="form.type"
+        type="select"
+        label="Type"
+        :options="assistantOptions"
+        validation="required"
       />
       <FormKit
         v-model="form.openaiAssistantID"
