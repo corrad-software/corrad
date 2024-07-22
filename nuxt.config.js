@@ -6,6 +6,12 @@ export default defineNuxtConfig({
       secretRefresh: process.env.NUXT_REFRESH_TOKEN_SECRET,
     },
   },
+  plugins: ["~/plugins/socket.client"],
+  nitro: {
+    entry:
+      process.env.NODE_ENV == "production" ? undefined : "../preset/entry.dev",
+    preset: "./preset",
+  },
   modules: [
     "@nuxtjs/tailwindcss",
     "@formkit/nuxt",

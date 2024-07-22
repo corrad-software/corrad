@@ -19,7 +19,7 @@ model audit {
 model user {
   userID             Int                  @id @default(autoincrement())
   userSecretKey      String?              @db.VarChar(255)
-  userUsername       String?              @db.VarChar(255)
+  userUsername       String?              @unique(map: "userUsername") @db.VarChar(255)
   userPassword       String?              @db.VarChar(255)
   userFullName       String?              @db.VarChar(255)
   userEmail          String?              @db.VarChar(255)
@@ -30,6 +30,7 @@ model user {
   chat               chat[]
   project            project[]
   project_permission project_permission[]
+  thread             thread[]
   userrole           userrole[]
 }
 
@@ -95,7 +96,7 @@ model chat {
   chatOAIMessageID String?   @unique(map: "chatOAIMessageID") @db.VarChar(255)
   chatType         String?   @db.VarChar(255)
   chatRole         String?   @db.VarChar(255)
-  chatMessage      String?   @db.Text
+  chatMessage      String?   @db.LongText
   chatCreatedDate  DateTime? @db.DateTime(0)
   chatModifiedDate DateTime? @db.DateTime(0)
   user             user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_1")
@@ -140,14 +141,18 @@ model project {
 
 model thread {
   threadID           Int        @id @default(autoincrement())
+  userID             Int?
   assistantID        Int?
-  threadOAIID        String?    @db.VarChar(255)
+  threadTitle        String?    @db.VarChar(255)
+  threadOAIID        String?    @unique(map: "threadOAIID") @db.VarChar(255)
   threadCreatedDate  DateTime?  @db.DateTime(0)
   threadModifiedDate DateTime?  @db.DateTime(0)
   chat               chat[]
   assistant          assistant? @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
+  user               user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_2")
 
   @@index([assistantID], map: "assistantID")
+  @@index([userID], map: "userID")
 }
 
 model repository {

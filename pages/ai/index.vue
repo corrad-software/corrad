@@ -7,6 +7,20 @@ definePageMeta({
   requiresAuth: true,
 });
 
+const { $swal } = useNuxtApp();
+
+const errormsg = useRoute().query.errormsg;
+
+onMounted(() => {
+  if (errormsg) {
+    $swal.fire({
+      icon: "error",
+      title: "Error",
+      text: errormsg,
+    });
+  }
+});
+
 const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
   method: "GET",
 });
@@ -22,7 +36,10 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
       </h4>
     </section>
 
-    <div v-if="assistants.data.length > 0" v-for="type in assistants.data">
+    <div
+      v-if="assistants.data.length > 0"
+      v-for="(type, index) in assistants.data"
+    >
       <h2 class="text-xl font-bold mt-12 mb-4">
         {{ type.assistantType }}
       </h2>
@@ -30,9 +47,21 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
         v-if="type.assistantList.length > 0"
         class="grid grid-cols-1 lg:grid-cols-2 gap-4"
       >
-        <NuxtLink v-for="assistant in type.assistantList" to="/ai/chat/1">
-          <div
-            class="bg-secondary hover:bg-[#DBDBDC] flex items-center p-4 rounded gap-4"
+        <FormKit
+          v-for="(assistant, index2) in type.assistantList"
+          type="form"
+          method="POST"
+          action="/api/ai/chat/create-room"
+          :actions="false"
+        >
+          <FormKit
+            type="hidden"
+            name="assistantID"
+            :value="assistant.assistantID"
+          />
+          <button
+            type="submit"
+            class="bg-secondary hover:bg-[#DBDBDC] flex items-center p-4 rounded gap-4 cursor-pointer w-full"
           >
             <img
               :src="
@@ -44,13 +73,13 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
               class="h-12 w-12 rounded-lg object-cover"
             />
             <div>
-              <h4 class="font-bold">{{ assistant.assistantName }}</h4>
-              <p class="text-sm text-gray-400">
+              <h4 class="text-left font-bold">{{ assistant.assistantName }}</h4>
+              <p class="text-left text-sm text-gray-400">
                 {{ assistant.assistantDescription }}
               </p>
             </div>
-          </div>
-        </NuxtLink>
+          </button>
+        </FormKit>
       </div>
       <div v-else>
         <p class="text-center text-gray-400">No assistant found</p>

@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
 
     const assistantList = await prisma.assistant.findMany({
       select: {
+        assistantID: true,
         assistantName: true,
         assistantDescription: true,
         assistantImg: true,

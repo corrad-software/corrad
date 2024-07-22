@@ -62,6 +62,13 @@ const addNewProject = async () => {
   }
 };
 
+const { data: threadList } = await useFetch("/api/ai/chat/list", {
+  method: "GET",
+  params: {
+    projectID: currentProject.value,
+  },
+});
+
 watch(currentProject, (value) => {
   // Refresh Page
   window.location.reload();
@@ -104,22 +111,18 @@ watch(currentProject, (value) => {
     >
       <ul class="flex flex-col gap-3">
         <li
-          class="bg-secondary hover:scale-105 transition-all cursor-pointer p-3 rounded-lg"
+          v-if="threadList.statusCode == 200 && threadList.data.length > 0"
+          v-for="(thread, index) in threadList.data"
+          class="bg-secondary cursor-pointer rounded-lg p-3"
         >
-          <p class="w-full line-clamp-1 leading-loose">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a
-            diam lectus.
-          </p>
-          <span class="font-semibold text-xs"> - URS Bot </span>
-        </li>
-        <li
-          class="bg-secondary hover:scale-105 transition-all cursor-pointer p-3 rounded-lg"
-        >
-          <p class="w-full line-clamp-1 leading-loose">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a
-            diam lectus.
-          </p>
-          <span class="font-semibold text-xs"> - DFD Generator </span>
+          <NuxtLink :to="'/ai/chat/' + thread.threadID">
+            <p class="w-full line-clamp-1 leading-loose">
+              {{ thread.threadTitle }}
+            </p>
+            <span class="font-semibold text-xs">
+              - {{ thread.assistantName }}
+            </span>
+          </NuxtLink>
         </li>
       </ul>
     </section>

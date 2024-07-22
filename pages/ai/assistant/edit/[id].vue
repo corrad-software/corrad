@@ -54,6 +54,7 @@ const { data } = await useFetch("/api/ai/assistant/get", {
 if (data.value.statusCode == 200) {
   form.id = data.value.data.assistantID;
   form.name = data.value.data.assistantName;
+  form.type = data.value.data.assistantType;
   form.description = data.value.data.assistantDescription;
   form.openaiAssistantID = data.value.data.assistantOAIID;
   form.status = data.value.data.assistantStatus;

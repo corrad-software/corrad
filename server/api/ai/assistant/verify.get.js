@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { DateTime } from "luxon";
 
 export default defineEventHandler(async (event) => {
@@ -21,53 +20,16 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Check if openAI API key is not null
-    const openaiAPIKey = await getConfiguration("OPENAI_API_KEY");
-    console.log("API Key", openaiAPIKey);
-    if (!openaiAPIKey) {
+    // Init utils openai
+    const { statusCode, message, data } = await initOpenAI();
+    if (statusCode !== 200) {
       return {
-        statusCode: 400,
-        message: "Please set OpenAI API Key in settings.",
+        statusCode: statusCode,
+        message: message,
       };
     }
 
-    // Check if openAI Project ID is not null
-    const openaiProjectID = await getConfiguration("OPENAI_PROJECT_ID");
-    console.log("Project ID", openaiProjectID);
-    if (!openaiProjectID) {
-      return {
-        statusCode: 400,
-        message: "Please set OpenAI Project ID in settings.",
-      };
-    }
-
-    // Get ASSISTANT_MODEL
-    const openaiAssistantModel = await getConfiguration("ASSISTANT_MODEL");
-    console.log("Assistant Model", openaiAssistantModel);
-    if (!openaiAssistantModel) {
-      return {
-        statusCode: 400,
-        message: "Please set OpenAI Assistant Model in settings.",
-      };
-    }
-
-    // Check if openAI API Key valid or not
-    const openai = new OpenAI({
-      apiKey: openaiAPIKey.configurationValue,
-      project: openaiProjectID.configurationValue,
-    });
-
-    try {
-      await openai.models.list();
-      console.log("API KEY VALID");
-    } catch (error) {
-      console.error("Error: ", error);
-      return {
-        statusCode: 400,
-        message:
-          "OpenAI API Key or Project ID is invalid. Please check your settings.",
-      };
-    }
+    const openai = data.openai;
 
     const verifyAssistant = await openai.beta.assistants.list();
 
@@ -83,7 +45,7 @@ export default defineEventHandler(async (event) => {
     const assistant = verifyAssistant.data.find(
       (assistant) => assistant.id === openaiAssistantID
     );
-    console.log("Exist Assistant", assistant);
+    console.log("Exist Assistant", assistant.id);
 
     if (!assistant) {
       return {
