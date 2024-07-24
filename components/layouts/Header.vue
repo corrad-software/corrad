@@ -76,8 +76,8 @@ onMounted(() => {
         <nuxt-link to="/">
           <div class="flex flex-auto gap-3 justify-center items-center">
             <img
-              class="h-24 block"
-              src="@/assets/img/logo/logo-full-transparent.webp"
+              class="h-10 block"
+              src="@/assets/img/logo/logo-word-black.svg"
               alt=""
             />
           </div>
