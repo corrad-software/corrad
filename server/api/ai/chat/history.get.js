@@ -51,6 +51,19 @@ export default defineEventHandler(async (event) => {
         chatMessage: true,
         chatRole: true,
         chatType: true,
+        chatFile: {
+          select: {
+            file: {
+              select: {
+                fileName: true,
+                fileOAIID: true,
+                fileType: true,
+                fileOriginalName: true,
+                fileURL: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         chatCreatedDate: "asc",
@@ -68,6 +81,18 @@ export default defineEventHandler(async (event) => {
       return {
         content: item.chatMessage,
         sender: item.chatRole,
+        type: item.chatType,
+        files: item.chatFile
+          ? item.chatFile.map((file) => {
+              return {
+                fileId: file.file.fileName,
+                name: file.file.fileName,
+                type: file.file.fileType,
+                originalName: file.file.fileOriginalName,
+                url: file.file.fileURL,
+              };
+            })
+          : [],
       };
     });
 

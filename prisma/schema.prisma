@@ -89,19 +89,20 @@ model assistant {
 }
 
 model chat {
-  chatID           Int       @id @default(autoincrement())
+  chatID           Int        @id @default(autoincrement())
   userID           Int?
   threadID         Int?
   projectID        Int?
-  chatOAIMessageID String?   @unique(map: "chatOAIMessageID") @db.VarChar(255)
-  chatType         String?   @db.VarChar(255)
-  chatRole         String?   @db.VarChar(255)
-  chatMessage      String?   @db.LongText
-  chatCreatedDate  DateTime? @db.DateTime(0)
-  chatModifiedDate DateTime? @db.DateTime(0)
-  user             user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_1")
-  thread           thread?   @relation(fields: [threadID], references: [threadID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_2")
-  project          project?  @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_3")
+  chatOAIMessageID String?    @unique(map: "chatOAIMessageID") @db.VarChar(255)
+  chatType         String?    @db.VarChar(255)
+  chatRole         String?    @db.VarChar(255)
+  chatMessage      String?    @db.LongText
+  chatCreatedDate  DateTime?  @db.DateTime(0)
+  chatModifiedDate DateTime?  @db.DateTime(0)
+  user             user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_1")
+  thread           thread?    @relation(fields: [threadID], references: [threadID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_2")
+  project          project?   @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_3")
+  chatFile         chatFile[]
 
   @@index([projectID], map: "projectID")
   @@index([threadID], map: "threadID")
@@ -111,7 +112,7 @@ model chat {
 model configuration {
   configurationID           Int       @id @default(autoincrement())
   configurationName         String?   @db.VarChar(255)
-  configurationCode         String?   @db.VarChar(255)
+  configurationCode         String?   @unique(map: "configurationCode") @db.VarChar(255)
   configurationType         String?   @db.VarChar(255)
   configurationValue        String?   @db.VarChar(255)
   configurationCreatedDate  DateTime? @db.DateTime(0)
@@ -187,4 +188,28 @@ model project_permission {
   @@index([projectID], map: "projectID")
   @@index([roleID], map: "roleID")
   @@index([userID], map: "userID")
+}
+
+model chatFile {
+  chatFileID Int   @id @default(autoincrement())
+  fileID     Int?
+  chatID     Int?
+  file       file? @relation(fields: [fileID], references: [fileID], onDelete: NoAction, onUpdate: NoAction, map: "chatFile_ibfk_1")
+  chat       chat? @relation(fields: [chatID], references: [chatID], onDelete: NoAction, onUpdate: NoAction, map: "chatFile_ibfk_2")
+
+  @@index([chatID], map: "chatID")
+  @@index([fileID], map: "fileID")
+}
+
+model file {
+  fileID           Int        @id @default(autoincrement())
+  fileOAIID        String?    @unique(map: "fileOAIID") @db.VarChar(255)
+  fileName         String?    @db.VarChar(255)
+  fileOriginalName String?    @db.VarChar(255)
+  fileType         String?    @db.VarChar(255)
+  fileURL          String?    @db.VarChar(255)
+  fileBytes        Int?
+  fileCreatedDate  DateTime?  @db.DateTime(0)
+  fileModifiedDate DateTime?  @db.DateTime(0)
+  chatFile         chatFile[]
 }

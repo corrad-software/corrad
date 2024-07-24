@@ -5,6 +5,46 @@ definePageMeta({
   middleware: ["auth"],
   requiresAuth: true,
 });
+
+const { $swal } = useNuxtApp();
+
+const form = reactive({
+  openaiApiKey: "",
+  openaiProjectId: "",
+});
+
+const { data: configuration } = await useFetch("/api/ai/settings/config/get", {
+  method: "GET",
+});
+
+if (configuration.value.statusCode == 200) {
+  form.openaiApiKey = configuration.value.data.APIKey;
+  form.openaiProjectId = configuration.value.data.projectID;
+}
+
+const submit = async () => {
+  const { data } = await useFetch("/api/ai/settings/config/edit", {
+    method: "POST",
+    body: {
+      APIKey: form.openaiApiKey,
+      projectID: form.openaiProjectId,
+    },
+  });
+
+  if (data.value.statusCode == 200) {
+    $swal.fire({
+      title: "Success",
+      text: "Configuration updated successfully",
+      icon: "success",
+    });
+  } else {
+    $swal.fire({
+      title: "Error",
+      text: "Failed to update configuration",
+      icon: "error",
+    });
+  }
+};
 </script>
 
 <template>
@@ -24,10 +64,19 @@ definePageMeta({
       </NuxtLink>
     </div>
 
-    <FormKit type="form" :actions="false">
+    <FormKit type="form" :actions="false" @submit="submit">
       <FormKit
+        v-model="form.openaiApiKey"
         type="text"
-        label="OpenAI API Key"
+        label="Openai API Key"
+        placeholder=""
+        validation="required"
+      />
+
+      <FormKit
+        v-model="form.openaiProjectId"
+        type="text"
+        label="Openai Project ID"
         placeholder=""
         validation="required"
       />

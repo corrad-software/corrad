@@ -47,6 +47,25 @@ onUnmounted(() => {
 </template>
 
 <style>
+/*@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap");
+html,
+body {
+  font-family: "Space Grotesk", sans-serif !important;
+}
+
+#__nuxt {
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+ body {
+  font-family: "PP Neue Montreal", sans-serif !important;
+} */
+
 .ai-layout {
   --color-primary: 13, 27, 42;
   --color-secondary: 244, 244, 245;

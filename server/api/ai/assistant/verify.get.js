@@ -67,17 +67,3 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
-
-const getConfiguration = async (configurationCode) => {
-  return await prisma.configuration.findFirst({
-    where: {
-      configurationCode: configurationCode,
-      configurationValue: {
-        not: null,
-      },
-    },
-    select: {
-      configurationValue: true,
-    },
-  });
-};

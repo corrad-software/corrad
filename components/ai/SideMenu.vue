@@ -106,8 +106,8 @@ watch(currentProject, (value) => {
       </rs-button>
     </div>
 
-    <section
-      class="flex flex-col justify-between max-h-[86dvh] md:max-h-[93dvh]"
+    <NuxtScrollbar
+      class="flex flex-col justify-between max-h-[86dvh] md:max-h-[93dvh] overflow-y-auto mb-4"
     >
       <ul class="flex flex-col gap-3">
         <li
@@ -125,7 +125,7 @@ watch(currentProject, (value) => {
           </NuxtLink>
         </li>
       </ul>
-    </section>
+    </NuxtScrollbar>
     <section class="flex-auto flex flex-col justify-end">
       <div class="grid grid-cols-2 gap-3">
         <nuxt-link to="/ai">

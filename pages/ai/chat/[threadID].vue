@@ -1,6 +1,7 @@
 <script setup>
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import CryptoJS from "crypto-js";
 
 definePageMeta({
   title: "AI",
@@ -15,6 +16,8 @@ const projectID = useCookie("currentProject");
 const threadID = useRoute().params.threadID;
 const assistantID = ref("");
 const user = useCookie("user");
+
+const CHUNK_SIZE = 1024 * 1024;
 
 if (!threadID) {
   $swal.fire({
@@ -55,6 +58,8 @@ const newMessage = ref("");
 const copiedIndex = ref(null);
 const isTyping = ref(false);
 const currentStreamedMessage = ref("");
+
+const fileAttachments = ref([]);
 
 const { data: history } = await useFetch("/api/ai/chat/history", {
   method: "GET",
@@ -135,9 +140,59 @@ onUnmounted(() => {
   $io.off("messageError");
   $io.off("error");
 });
-const sendMessage = () => {
-  if (newMessage.value.trim()) {
-    const message = { sender: "user", content: newMessage.value };
+const sendMessage = async () => {
+  if (newMessage.value.trim() || fileAttachments.value.length > 0) {
+    let message = {
+      sender: "user",
+      content: newMessage.value,
+      type: "text",
+      files: [],
+    };
+
+    if (fileAttachments.value.length > 0) {
+      for (const file of fileAttachments.value) {
+        const timestamp = Date.now();
+        const fileId = CryptoJS.SHA256(timestamp + file.name + Date.now())
+          .toString()
+          .substr(0, 16);
+        const fileExtension = file.name.split(".").pop();
+        const newFileName = `${timestamp}-${fileId}.${fileExtension}`;
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(file.size, start + CHUNK_SIZE);
+          const chunk = file.slice(start, end);
+          const chunkBase64 = await fileToBase64(chunk);
+
+          await new Promise((resolve) => {
+            $io.emit(
+              "fileChunk",
+              {
+                fileId,
+                fileName: newFileName,
+                chunkIndex: i,
+                totalChunks,
+                chunk: chunkBase64,
+              },
+              resolve
+            );
+          });
+        }
+
+        message.files.push({
+          fileId,
+          name: newFileName,
+          originalName: file.name,
+          type: file.type,
+          url: `/uploads/${newFileName}`,
+          openAIFileId: null,
+        });
+      }
+
+      message.type = "file";
+    }
+
     $io.emit("sendMessage", {
       threadID,
       assistantID: assistantID.value,
@@ -145,9 +200,20 @@ const sendMessage = () => {
       user: user.value,
       message,
     });
+
     messages.value.push(message);
     newMessage.value = "";
+    fileAttachments.value = [];
   }
+};
+
+const downloadFile = (fileUrl, fileName) => {
+  const link = document.createElement("a");
+  link.href = fileUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 const copyToClipboard = (text, index) => {
@@ -170,6 +236,32 @@ const handleEnter = (event) => {
 const renderMarkdown = (content) => {
   const rawHtml = marked(content);
   return DOMPurify.sanitize(rawHtml);
+};
+
+/* FILE FUNCTIONS */
+
+const chooseFile = () => {
+  document.getElementById("attachments").click();
+};
+
+const handleFileChange = (event) => {
+  const files = event.target.files;
+  if (files.length > 0) {
+    fileAttachments.value = [...fileAttachments.value, ...Array.from(files)];
+  }
+};
+
+const removeFile = (index) => {
+  fileAttachments.value.splice(index, 1);
+};
+
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = (error) => reject(error);
+  });
 };
 </script>
 
@@ -237,7 +329,29 @@ const renderMarkdown = (content) => {
             >
               <div v-html="renderMarkdown(message.content)"></div>
             </span>
-            <span v-else>{{ message.content }}</span>
+            <span v-else>
+              <div
+                v-if="message.files && message.files.length > 0"
+                class="rounded-md p-2 text-xs mb-2"
+              >
+                <div
+                  v-for="(file, fileIndex) in message.files"
+                  :key="fileIndex"
+                  class="flex items-center justify-end"
+                >
+                  <Icon name="ph:file-light" class="mr-1 !w-4 !h-4"></Icon>
+                  <span
+                    class="text-sm cursor-pointer underline"
+                    @click="downloadFile(file.url, file.originalName)"
+                  >
+                    {{ file.originalName }}
+                  </span>
+                </div>
+              </div>
+              <p v-if="message.content">
+                {{ message.content }}
+              </p>
+            </span>
           </div>
           <div
             v-if="message.sender === 'assistant'"
@@ -274,6 +388,22 @@ const renderMarkdown = (content) => {
       </div>
     </div>
 
+    <div v-if="fileAttachments.length > 0" class="text-[#a6a39a] mb-2">
+      <rs-badge
+        v-for="(file, index) in fileAttachments"
+        :key="index"
+        class="mr-2 mb-2"
+      >
+        <Icon name="ph:file-light" class="mr-1 !w-4 !h-4"></Icon>
+        {{ file.name }}
+        <Icon
+          @click="removeFile(index)"
+          name="ph:x-light"
+          class="ml-1 !w-4 !h-4 hover:bg-[#858f7d] rounded-full cursor-pointer"
+        ></Icon>
+      </rs-badge>
+    </div>
+
     <!-- Fixed input area at the bottom -->
     <FormKit type="form" :actions="false" @submit="sendMessage">
       <div class="relative bg-secondary rounded-lg">
@@ -289,9 +419,24 @@ const renderMarkdown = (content) => {
           }"
           @keydown.enter.prevent="handleEnter"
           auto-height
+          :max-auto-height="250"
         />
         <div class="absolute bottom-2 right-2 flex items-center space-x-2">
-          <Icon name="mdi:plus-circle-outline" class="!w-6 !h-6 text-primary" />
+          <Icon
+            @click="chooseFile"
+            name="mdi:plus-circle-outline"
+            class="!w-6 !h-6 text-primary cursor-pointer"
+          />
+          <FormKit
+            @change="handleFileChange"
+            id="attachments"
+            type="file"
+            :classes="{
+              outer: 'hidden',
+            }"
+            accept=".pdf,.doc,.docx,.xml,.md"
+            multiple
+          ></FormKit>
           <rs-button btn-type="submit" class="!rounded-full">
             <Icon name="mdi:send" class="!w-3 !h-3" />
           </rs-button>
