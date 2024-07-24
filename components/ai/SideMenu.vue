@@ -81,12 +81,12 @@ watch(currentProject, (value) => {
     class="fixed inset-y-0 left-0 z-10 w-64 bg-[rgb(var(--bg-2))] p-4 border-r border-[rgb(var(--border-color))] flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0"
     :class="{ '-translate-x-full': !isOpen }"
   >
-    <nuxt-link to="/ai">
-      <h4
-        class="text-gray-400 text-sm font-bold uppercase tracking-wider mt-2 mb-6 text-center"
-      >
-        CORRAD AI
-      </h4>
+    <nuxt-link to="/ai" class="flex justify-center items-center mb-4">
+      <img
+        class="h-10 block"
+        src="@/assets/img/logo/logo-word-black-ai.svg"
+        alt=""
+      />
     </nuxt-link>
     <div class="flex gap-2">
       <FormKit

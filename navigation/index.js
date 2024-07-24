@@ -83,7 +83,7 @@ export default [
     description: "Software Development",
     child: [
       {
-        title: "Assistant AI",
+        title: "Corrad AI",
         path: "/ai",
         icon: "streamline:artificial-intelligence-spark",
         external: true,

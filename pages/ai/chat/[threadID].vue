@@ -288,7 +288,7 @@ const fileToBase64 = (file) => {
 
     <!-- Scrollable conversation area -->
     <div class="flex-1 p-4 mt-12 space-y-6">
-      <NuxtScrollbar style="max-height: 80dvh" class="message-container">
+      <NuxtScrollbar style="max-height: 80dvh" class="message-container pr-5">
         <div
           v-for="(message, index) in messages"
           :key="index"
