@@ -35,18 +35,10 @@ onMounted(() => {
       <nuxt-link to="/">
         <div class="flex flex-auto gap-3 justify-center items-center h-[48px]">
           <img
-            class="h-24 block dark:hidden"
-            src="@/assets/img/logo/logo-full-transparent.webp"
+            class="h-10 block"
+            src="@/assets/img/logo/logo-word-black.svg"
             alt=""
           />
-          <img
-            class="h-24 hidden dark:block"
-            src="@/assets/img/logo/logo-full-transparent-white.webp"
-            alt=""
-          />
-          <!-- <span class="text-xl font-semibold text-primary dark:text-white"
-          >Mawar</span
-        > -->
         </div>
       </nuxt-link>
     </div>

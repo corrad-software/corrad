@@ -98,12 +98,13 @@ export default [
         title: "Documentation",
         icon: "solar:book-bookmark-minimalistic-bold",
         path: "https://mawar-cms-docs.vercel.app",
-        child: [],
+        external: true,
       },
       {
         title: "UI Components",
         icon: "material-symbols:settings-input-component-outline-rounded",
-        path: "https://roseui-nuxt.vercel.app",
+        path: "https://corradui.datasc.dev",
+        external: true,
       },
     ],
     meta: {

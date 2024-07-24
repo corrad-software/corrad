@@ -1,20 +1,19 @@
 html[data-theme="default"] {
-  --color-primary: 243, 88, 106;
-  --color-secondary: 240, 122, 37;
+  --color-primary: 13, 27, 42;
+  --color-secondary: 97, 176, 183;
   --color-accent: 243, 244, 246;
   --color-success: 79, 192, 103;
   --color-info: 65, 133, 242;
   --color-warning: 246, 141, 32;
   --color-danger: 229, 83, 69;
-  /* --text-color: 33, 31, 41; */
-  --text-color: 35, 31, 32;
-  --border-color: 233, 233, 236;
+  --text-color: 9, 9, 11;
+  --border-color: 228, 228, 231;
   --bg-1: 243, 244, 246;
   --bg-2: 255, 255, 255;
   --scroll-color: 170, 170, 170;
   --scroll-hover-color: 155, 155, 155;
-  --fk-border-color: 226, 232, 240;
-  --fk-placeholder-color: 148, 163, 184;
+  --fk-border-color: 228, 228, 231;
+  --fk-placeholder-color: 146, 146, 153;
   --box-shadow: rgba(36, 35, 71, 0.05) 0px 1px 1px,
     rgba(36, 35, 71, 0.05) 0px 0px 1px 1px;
   --cp-bg: 255, 255, 255;
@@ -33,8 +32,8 @@ html[data-theme="default"] {
 }
 
 html[data-theme="dark"] {
-  --color-primary: 243, 88, 106;
-  --color-secondary: 240, 122, 37;
+  --color-primary: 97, 176, 183;
+  --color-secondary: 13, 27, 42;
   --color-accent: 15, 23, 42;
   --color-success: 79, 192, 103;
   --color-info: 65, 133, 242;

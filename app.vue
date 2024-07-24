@@ -1,6 +1,6 @@
 <script setup>
 useHead({
-  title: "Mawar | Innovative solutions for captivating content",
+  title: "corrad | Innovative solutions for captivating content",
   description: "Home page",
   htmlAttrs: {
     lang: "en",

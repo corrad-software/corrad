@@ -16,11 +16,11 @@ const togglePasswordVisibility2 = ref(false);
     <div class="w-full md:w-3/4 lg:w-1/2 xl:w-2/6 relative">
       <rs-card class="h-screen md:h-auto px-10 md:px-16 py-12 md:py-20 mb-0">
         <div
-          class="absolute -bottom-6 -left-0 img-container flex justify-start items-center mb-5"
+          class="absolute -bottom-3 left-3 img-container flex justify-start items-center mb-5"
         >
           <img
-            src="@/assets/img/logo/logo-full-transparent.png"
-            class="max-w-[110px]"
+            src="@/assets/img/logo/logo-word-black.svg"
+            class="max-w-[90px]"
           />
         </div>
         <h3 class="mb-4">Sign Up</h3>

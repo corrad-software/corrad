@@ -3,7 +3,7 @@
 module.exports = {
   apps: [
     {
-      name: "Mawar",
+      name: "corrad",
       port: "3000",
       exec_mode: "cluster",
       instances: "max",
