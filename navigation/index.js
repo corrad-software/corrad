@@ -13,6 +13,18 @@ export default [
     ],
   },
   {
+    header: "Passport",
+    description: "BP1 and BP2",
+    child: [
+      {
+        title: "Dashboard",
+        path: "/app",
+        icon: "mdi:passport",
+        child: [],
+      },
+    ],
+  },
+  {
     header: "Administration",
     description: "Manage your application",
     child: [
