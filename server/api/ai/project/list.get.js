@@ -12,7 +12,20 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    let projectList = await prisma.project.findMany({
+    // Get user's roles
+    const userRoles = await prisma.userrole.findMany({
+      where: {
+        userRoleUserID: userID,
+      },
+      select: {
+        userRoleRoleID: true,
+      },
+    });
+
+    const roleIDs = userRoles.map((role) => role.userRoleRoleID);
+
+    // First, get only the projects owned by the user
+    const userOwnedProjects = await prisma.project.findMany({
       where: {
         userID: userID,
       },
@@ -23,8 +36,8 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // Create new project if no project exists
-    if (projectList.length === 0) {
+    // Create new project if the user doesn't own any projects
+    if (userOwnedProjects.length === 0) {
       const newProject = await prisma.project.create({
         data: {
           projectUniqueID: uuidv4(),
@@ -41,60 +54,75 @@ export default defineEventHandler(async (event) => {
         },
       });
 
-      projectList.push(newProject);
+      userOwnedProjects.push(newProject);
     }
 
+    // Then, get all projects including shared ones
+    const allProjects = await prisma.project.findMany({
+      where: {
+        OR: [
+          { userID: userID },
+          {
+            project_permission_project_permission_projectIDToproject: {
+              some: {
+                OR: [{ userID: userID }, { roleID: { in: roleIDs } }],
+                projectPermissionStatus: "ACTIVE",
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        projectUniqueID: true,
+        projectName: true,
+        projectDefault: true,
+        userID: true,
+        projectPublic: true,
+        project_permission_project_permission_projectIDToproject: {
+          select: {
+            userID: true,
+            roleID: true,
+          },
+        },
+      },
+      distinct: ["projectUniqueID"],
+    });
+
     // Remap to options
-    const project = projectList.map((project) => {
+    const projectOptions = allProjects.map((project) => {
+      const isOwner = project.userID === userID;
+      const isShared =
+        !isOwner &&
+        (project.projectPublic ||
+          project.project_permission_project_permission_projectIDToproject
+            .length > 0);
+
       return {
         value: project.projectUniqueID,
-        label: project.projectName,
+        label: `${project.projectName}${isShared ? " (Shared)" : ""}`,
+        isOwner,
+        isShared,
       };
     });
+
+    const defaultProject = userOwnedProjects.find(
+      (project) => project.projectDefault
+    );
 
     return {
       statusCode: 200,
       message: "Success get project list",
       data: {
-        projectOptions: project,
-        defaultProject: projectList.find((project) => project.projectDefault)
-          .projectUniqueID,
+        projectOptions,
+        defaultProject: defaultProject ? defaultProject.projectUniqueID : null,
       },
     };
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     return {
-      statusCode: 401,
+      statusCode: 500,
       message: "Something went wrong",
     };
   }
 });
-
-async function hasPermission(userID, projectID) {
-  const userPermissions = await prisma.project_permission.findMany({
-    where: {
-      userID: userID,
-      projectPermissionID: projectID,
-    },
-  });
-
-  if (userPermissions.length > 0) return true;
-
-  const userRoles = await prisma.userrole.findMany({
-    where: {
-      userRoleUserID: userID,
-    },
-  });
-
-  const roleIDs = userRoles.map((role) => role.userRoleRoleID);
-
-  const rolePermissions = await prisma.project_permission.findMany({
-    where: {
-      roleID: { in: roleIDs },
-      projectID: projectID,
-    },
-  });
-
-  return rolePermissions.length > 0;
-}

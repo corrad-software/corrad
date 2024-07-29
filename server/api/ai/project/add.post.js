@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
         projectDescription: projectDescription,
         projectDefault: false,
         projectType: 6, // 6 is for PRIVATE from Lookup Table
+        projectPublic: false,
         userID: userID,
         projectCreatedDate: DateTime.now().toISO(),
       },
