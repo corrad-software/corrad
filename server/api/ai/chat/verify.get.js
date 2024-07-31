@@ -8,20 +8,26 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    const { threadID } = getQuery(event);
+    const { threadID, projectID } = getQuery(event);
 
-    if (!threadID) {
+    if (!threadID || !projectID) {
       return {
         statusCode: 400,
-        message: "Thread ID is required. Redirect to dashboard.",
+        message:
+          "Thread ID and Project ID are required. Redirect to dashboard.",
       };
     }
-
     const thread = await prisma.thread.findUnique({
       where: {
         threadOAIID: threadID,
+        NOT: {
+          lookup: {
+            lookupID: 4,
+          },
+        },
       },
       select: {
+        threadID: true,
         assistant: {
           select: {
             assistantOAIID: true,
@@ -36,6 +42,21 @@ export default defineEventHandler(async (event) => {
       return {
         statusCode: 404,
         message: "Thread Not Found. Redirect to dashboard.",
+      };
+    }
+
+    // Check if the user has permission to access this thread in the specified project
+    const hasPermission = await checkThreadPermission(
+      userID,
+      thread.threadID,
+      projectID
+    );
+
+    if (!hasPermission) {
+      return {
+        statusCode: 403,
+        message:
+          "You don't have permission to access this thread in the specified project. Redirect to dashboard.",
       };
     }
 
@@ -56,3 +77,72 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
+
+async function checkThreadPermission(userID, threadID, projectID) {
+  // Check if the thread belongs to the specified project
+  const threadInProject = await prisma.chat.findFirst({
+    where: {
+      threadID: threadID,
+      project: {
+        projectUniqueID: projectID,
+      },
+    },
+  });
+
+  if (!threadInProject) {
+    return false;
+  }
+
+  const pj = await prisma.project.findUnique({
+    where: {
+      projectUniqueID: projectID,
+    },
+  });
+
+  // Check if the user is the owner of the project
+  const project = await prisma.project.findUnique({
+    where: {
+      projectUniqueID: projectID,
+      userID: userID,
+    },
+  });
+
+  if (project) {
+    return true;
+  }
+
+  // Check if the user has direct permission to the project
+  const directPermission = await prisma.project_permission.findFirst({
+    where: {
+      projectID: pj.projectID,
+      userID: userID,
+      projectPermissionStatus: "ACTIVE",
+    },
+  });
+
+  if (directPermission) {
+    return true;
+  }
+
+  // Check if the user has permission through role
+  const userRoles = await prisma.userrole.findMany({
+    where: {
+      userRoleUserID: userID,
+    },
+    select: {
+      userRoleRoleID: true,
+    },
+  });
+
+  const roleIDs = userRoles.map((role) => role.userRoleRoleID);
+
+  const rolePermission = await prisma.project_permission.findFirst({
+    where: {
+      projectID: pj.projectID,
+      roleID: { in: roleIDs },
+      projectPermissionStatus: "ACTIVE",
+    },
+  });
+
+  return !!rolePermission;
+}

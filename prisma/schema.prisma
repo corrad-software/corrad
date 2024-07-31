@@ -58,6 +58,7 @@ model lookup {
   assistant                               assistant[]
   project                                 project[]
   project_project_projectViewTypeTolookup project[]   @relation("project_projectViewTypeTolookup")
+  thread                                  thread[]
 }
 
 model userrole {
@@ -151,14 +152,17 @@ model thread {
   assistantID        Int?
   threadTitle        String?    @db.VarChar(255)
   threadOAIID        String?    @unique(map: "threadOAIID") @db.VarChar(255)
+  threadStatus       Int?
   threadCreatedDate  DateTime?  @db.DateTime(0)
   threadModifiedDate DateTime?  @db.DateTime(0)
   chat               chat[]
   assistant          assistant? @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
   user               user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_2")
+  lookup             lookup?    @relation(fields: [threadStatus], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_3")
 
   @@index([assistantID], map: "assistantID")
   @@index([userID], map: "userID")
+  @@index([threadStatus], map: "threadStatus")
 }
 
 model repository {

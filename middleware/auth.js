@@ -1,5 +1,8 @@
+import { useUserStore } from "~/stores/user";
+
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const { $swal } = useNuxtApp();
+  const userStore = useUserStore();
 
   if (process.client) {
     // Validate every request to every page
@@ -20,6 +23,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
           return window.location.replace("/logout");
         });
     }
+
+    // Set cookies from the response
+    userStore.setUsername(validateUser.value.data.username);
+    userStore.setRoles(validateUser.value.data.roles);
+    userStore.setIsAuthenticated(true);
 
     return true;
   }

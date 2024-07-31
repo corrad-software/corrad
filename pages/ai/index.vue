@@ -61,7 +61,7 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
           />
           <button
             type="submit"
-            class="bg-secondary hover:bg-[#DBDBDC] flex items-center p-4 rounded gap-4 cursor-pointer w-full"
+            class="bg-secondary hover:bg-[rgba(var(--color-hover))] flex items-center p-4 rounded gap-4 cursor-pointer w-full"
           >
             <img
               :src="

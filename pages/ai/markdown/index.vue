@@ -1,4 +1,5 @@
 <script setup>
+import { useWindowSize } from "vue-window-size";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { useDebounceFn } from "@vueuse/core";
@@ -16,6 +17,10 @@ definePageMeta({
     },
   ],
 });
+
+const { width } = useWindowSize();
+const windowWidth = ref(width);
+const { $shiki } = useNuxtApp();
 
 const toolbar = [
   ["bold", "italic", "underline", "strike"],
@@ -65,24 +70,84 @@ const toggleFullscreen = () => {
 mermaid.initialize({ startOnLoad: true });
 
 const compiledMarkdown = computed(() => {
-  const rawHtml = marked(markdownContent.value);
-  const sanitizedHtml = DOMPurify.sanitize(rawHtml);
+  const renderer = new marked.Renderer();
 
-  // Process mermaid diagrams
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = sanitizedHtml;
+  renderer.code = (code, language) => {
+    const codeContent = typeof code === "object" ? code.text : String(code);
+    const uniqueId = "code-" + Math.random().toString(36).substr(2, 9);
 
-  const mermaidDiagrams = tempDiv.getElementsByClassName("language-mermaid");
-  for (let i = 0; i < mermaidDiagrams.length; i++) {
-    const diagramText = mermaidDiagrams[i].textContent;
-    const diagramId = `mermaid-diagram-${i}`;
-    mermaidDiagrams[
-      i
-    ].innerHTML = `<div class="mermaid" id="${diagramId}">${diagramText}</div>`;
-  }
+    if (code.lang === "mermaid") {
+      return `<div class="mermaid" id="${uniqueId}">${codeContent}</div>`;
+    }
 
-  return tempDiv.innerHTML;
+    try {
+      const highlightedCode = $shiki.codeToHtml(codeContent, {
+        lang: code.lang,
+        theme: "material-theme-darker",
+      });
+
+      return `
+      <div class="code-block-wrapper">
+        <button class="copy-button" data-code-id="${uniqueId}">
+          Copy
+        </button>
+        <div id="${uniqueId}">${highlightedCode}</div>
+      </div>
+    `;
+    } catch (error) {
+      console.error("Shiki highlighting error:", error);
+      const escapedCode = escapeHtml(codeContent);
+      return `
+      <div class="code-block-wrapper">
+        <button class="copy-button" data-code-id="${uniqueId}">
+          Copy
+        </button>
+        <pre><code id="${uniqueId}" class="language-${code.lang}">${escapedCode}</code></pre>
+      </div>
+    `;
+    }
+  };
+
+  const rawHtml = marked(markdownContent.value, { renderer });
+  return DOMPurify.sanitize(rawHtml, { ADD_ATTR: ["data-code-id"] });
 });
+
+const escapeHtml = (unsafe) => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+const copyCode = (codeElement) => {
+  let code;
+  if (codeElement.querySelector("code")) {
+    code = codeElement.querySelector("code").textContent;
+  } else {
+    code = codeElement.textContent;
+  }
+  navigator.clipboard
+    .writeText(code)
+    .then(() => {
+      // Maybe show a "Copied!" message
+    })
+    .catch((err) => {
+      console.error("Failed to copy text: ", err);
+    });
+};
+
+const handleCopyClick = (event) => {
+  const button = event.target.closest(".copy-button");
+  if (button) {
+    const codeId = button.getAttribute("data-code-id");
+    const codeElement = document.getElementById(codeId);
+    if (codeElement) {
+      copyCode(codeElement);
+    }
+  }
+};
 
 const autosave = useDebounceFn(() => {
   localStorage.setItem("markdownContent", markdownContent.value);
@@ -146,7 +211,6 @@ const overwriteMarkdown = (content) => {
   showModalRepo.value = false;
 };
 
-// Call renderMermaidDiagrams when the preview is updated
 watch(compiledMarkdown, () => {
   if (previewActive.value) {
     nextTick(() => {
@@ -185,18 +249,35 @@ onMounted(() => {
           />
         </div>
         <div class="flex gap-5 items-center">
-          <Icon
-            name="material-symbols:markdown-outline"
-            class="!w-6 !h-6 cursor-pointer hover:text-[#1d3e5d]"
-            @click="exportMarkdown"
-          />
-          <Icon
-            name="bi:filetype-docx"
-            class="!w-5 !h-5 cursor-pointer hover:text-[#1d3e5d]"
-            @click="exportMarkdownToWord"
-          />
+          <rs-button @click="openModal"> Import from Repository </rs-button>
 
-          <rs-button @click="openModal"> Import Repository </rs-button>
+          <VDropdown placement="bottom-end" distance="13" name="language">
+            <rs-button
+              variant="secondary"
+              class="!text-[rgb(var(--text-color))]"
+            >
+              <Icon
+                name="ph:dots-three-outline-vertical-fill"
+                class="!w-5 !h-5"
+              />
+            </rs-button>
+            <template #popper>
+              <ul class="header-dropdown w-full">
+                <li
+                  @click="exportMarkdown"
+                  class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
+                >
+                  Export as Markdown
+                </li>
+                <li
+                  @click="exportMarkdownToWord"
+                  class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
+                >
+                  Export as Word
+                </li>
+              </ul>
+            </template>
+          </VDropdown>
         </div>
       </div>
     </div>
@@ -218,6 +299,7 @@ onMounted(() => {
           :key="isFullscreen"
           class="markdown-preview"
           v-html="compiledMarkdown"
+          @click="handleCopyClick"
         ></div>
         <div v-else class="text-gray-400 italic">Preview disabled</div>
       </div>
@@ -235,6 +317,7 @@ onMounted(() => {
           :key="isFullscreen"
           class="markdown-preview"
           v-html="compiledMarkdown"
+          @click="handleCopyClick"
         ></div>
       </div>
     </div>
@@ -287,7 +370,6 @@ onMounted(() => {
   max-width: 100%;
   overflow-x: auto;
 }
-
 .markdown-preview :deep(h1),
 .markdown-preview :deep(h2),
 .markdown-preview :deep(h3),
@@ -316,7 +398,7 @@ onMounted(() => {
   font-size: 1.25em;
 }
 
-.markdown-preview :deep(p) {
+.markdown-preview :deep(p:not(:last-child)) {
   margin-bottom: 16px;
 }
 
@@ -349,12 +431,13 @@ onMounted(() => {
 }
 
 .markdown-preview :deep(pre) {
-  background-color: #f6f8fa;
+  background-color: #212121;
   border-radius: 3px;
   font-size: 85%;
   line-height: 1.45;
   overflow: auto;
   padding: 16px;
+  margin-bottom: 16px;
 }
 
 .markdown-preview :deep(pre code) {
@@ -403,5 +486,44 @@ onMounted(() => {
 
 .markdown-preview :deep(a:hover) {
   text-decoration: underline;
+}
+
+.markdown-preview :deep(hr) {
+  border: 0;
+  border-top: 1px solid #dfe2e5;
+  margin: 24px 0;
+}
+
+.markdown-preview :deep(.code-block-wrapper) {
+  position: relative;
+}
+
+.markdown-preview :deep(.copy-button) {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.markdown-preview :deep(.copy-button:hover) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.markdown-preview :deep(pre) {
+  margin: 0;
+  padding: 0;
+}
+
+.markdown-preview :deep(pre code) {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
 }
 </style>

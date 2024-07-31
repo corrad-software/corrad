@@ -16,6 +16,9 @@ if (process.client) {
   userStore.setUsername("");
   userStore.setRoles([]);
   userStore.setIsAuthenticated(false);
+  
+  const currentProject = useCookie("currentProject");
+  currentProject.value = null;
 
   navigateTo("/login");
 }

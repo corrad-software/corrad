@@ -20,6 +20,11 @@ export default defineEventHandler(async (event) => {
     const thread = await prisma.thread.findUnique({
       where: {
         threadOAIID: threadID,
+        NOT: {
+          lookup: {
+            lookupID: 4,
+          },
+        },
       },
     });
     if (!thread) {

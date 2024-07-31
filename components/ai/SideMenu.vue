@@ -1,4 +1,8 @@
 <script setup>
+import { useUserStore } from "~/stores/user";
+import logoLightSrc from "~/assets/img/logo/logo-word-black-ai.svg";
+import logoDarkSrc from "~/assets/img/logo/logo-word-white-ai.svg";
+
 defineProps({
   isOpen: {
     type: Boolean,
@@ -7,9 +11,8 @@ defineProps({
 });
 
 const { $swal } = useNuxtApp();
-
+const userStore = useUserStore();
 const showModalAddProject = ref(false);
-
 const currentProject = useCookie("currentProject", null);
 const form = reactive({
   name: "",
@@ -17,6 +20,7 @@ const form = reactive({
 });
 
 const projectList = ref([]);
+const logoSrc = ref(logoLightSrc);
 
 const { data: getProjects, refresh: refreshProjectList } = await useFetch(
   "/api/ai/project/list",
@@ -62,16 +66,99 @@ const addNewProject = async () => {
   }
 };
 
-const { data: threadList } = await useFetch("/api/ai/chat/list", {
-  method: "GET",
-  params: {
-    projectID: currentProject.value,
-  },
-});
+const { data: threadList, refresh: refreshChatList } = await useFetch(
+  "/api/ai/chat/list",
+  {
+    method: "GET",
+    params: {
+      projectID: currentProject.value,
+    },
+  }
+);
 
 watch(currentProject, (value) => {
   // Refresh Page
-  window.location.reload();
+  window.location.replace("/ai");
+});
+
+const deleteThread = async (threadID) => {
+  $swal
+    .fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    })
+    .then(async (result) => {
+      if (result.isConfirmed) {
+        const { data: deleteThread } = await useFetch("/api/ai/chat/delete", {
+          method: "POST",
+          body: {
+            threadID: threadID,
+          },
+        });
+
+        if (deleteThread.value.statusCode == 200) {
+          $swal.fire({
+            title: "Success",
+            text: "Thread deleted successfully",
+            icon: "success",
+          });
+
+          refreshChatList();
+        } else {
+          $swal.fire({
+            title: "Error",
+            text: deleteThread.message,
+            icon: "error",
+          });
+        }
+      }
+    });
+};
+
+const hasPermission = () => {
+  // Check if user has permission roles for Developer or Admin
+  let roles = userStore.roles;
+
+  if (roles.includes("Developer") || roles.includes("Admin")) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+const toggleTheme = () => {
+  let theme = document.querySelector(".ai-theme");
+  theme.classList.toggle("ai-theme-dark");
+
+  const isDark = theme.classList.contains("ai-theme-dark");
+  localStorage.setItem("corradai-theme", isDark ? "dark" : "light");
+
+  logoSrc.value = isDark ? logoDarkSrc : logoLightSrc;
+};
+
+// Function to set initial theme
+const setInitialTheme = () => {
+  const savedTheme = localStorage.getItem("corradai-theme") || "light";
+  const theme = document.querySelector(".ai-theme");
+
+  if (savedTheme === "dark") {
+    theme.classList.add("ai-theme-dark");
+    logoSrc.value = logoDarkSrc;
+  } else {
+    theme.classList.remove("ai-theme-dark");
+    logoSrc.value = logoLightSrc;
+  }
+};
+
+// Call setInitialTheme on component mount
+onMounted(() => {
+  setInitialTheme();
 });
 </script>
 
@@ -82,11 +169,7 @@ watch(currentProject, (value) => {
     :class="{ '-translate-x-full': !isOpen }"
   >
     <nuxt-link to="/ai" class="flex justify-center items-center mb-4">
-      <img
-        class="h-10 block"
-        src="@/assets/img/logo/logo-word-black-ai.svg"
-        alt=""
-      />
+      <img id="logo" class="h-10 block" :src="logoSrc" alt="Logo" />
     </nuxt-link>
     <div class="flex gap-2">
       <FormKit
@@ -113,16 +196,26 @@ watch(currentProject, (value) => {
         <li
           v-if="threadList.statusCode == 200 && threadList.data.length > 0"
           v-for="(thread, index) in threadList.data"
-          class="bg-secondary cursor-pointer rounded-lg p-3"
+          class="bg-secondary rounded-lg"
         >
-          <NuxtLink :to="'/ai/chat/' + thread.threadID">
-            <p class="w-full line-clamp-1 leading-loose">
-              {{ thread.threadTitle }}
-            </p>
-            <span class="font-semibold text-xs">
-              - {{ thread.assistantName }}
-            </span>
-          </NuxtLink>
+          <div class="flex items-center">
+            <div
+              class="flex-1 pr-2 overflow-hidden cursor-pointer p-3"
+              @click="navigateTo('/ai/chat/' + thread.threadID)"
+            >
+              <p class="w-full line-clamp-1 leading-loose">
+                {{ thread.threadTitle }}
+              </p>
+              <span class="font-semibold text-xs">
+                - {{ thread.assistantName }}
+              </span>
+            </div>
+            <Icon
+              @click="deleteThread(thread.threadID)"
+              name="ph:x-circle-duotone"
+              class="!w-5 !h-5 hover:text-red-500 mr-3 cursor-pointer"
+            />
+          </div>
         </li>
       </ul>
     </NuxtScrollbar>
@@ -149,19 +242,10 @@ watch(currentProject, (value) => {
             Repository
           </rs-button>
         </nuxt-link>
-        <nuxt-link to="/ai/assistant" class="col-span-2">
-          <rs-button
-            variant="secondary"
-            class="w-full !justify-start !text-primary"
-          >
-            <Icon name="mdi:robot-excited-outline" class="!w-6 !h-6 mr-2" />
-            Assistant
-          </rs-button>
-        </nuxt-link>
         <nuxt-link to="/ai/markdown" class="col-span-2">
           <rs-button
             variant="secondary"
-            class="w-full !justify-start !text-primary"
+            class="w-full !justify-start !text-[rgb(var(--text-color))]"
           >
             <Icon
               name="material-symbols:markdown-rounded"
@@ -170,15 +254,38 @@ watch(currentProject, (value) => {
             Markdown Editor
           </rs-button>
         </nuxt-link>
-        <nuxt-link to="/ai/settings" class="col-span-2">
-          <rs-button class="w-full !justify-start">
+        <nuxt-link v-if="hasPermission()" to="/ai/assistant" class="col-span-2">
+          <rs-button
+            variant="secondary"
+            class="w-full !justify-start !text-[rgb(var(--text-color))]"
+          >
+            <Icon name="mdi:robot-excited-outline" class="!w-6 !h-6 mr-2" />
+            Assistant
+          </rs-button>
+        </nuxt-link>
+        <nuxt-link
+          :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
+        >
+          <rs-button class="w-full !justify-start pr-3">
             <Icon
               name="material-symbols:settings-outline-rounded"
               class="!w-6 !h-6 mr-2"
             />
-            Settings
+            {{ hasPermission() ? "Settings" : "Project Settings" }}
           </rs-button>
         </nuxt-link>
+        <div class="grid grid-cols-2">
+          <rs-button
+            @click="toggleTheme"
+            variant="secondary"
+            class="!text-[rgb(var(--text-color))]"
+          >
+            <Icon name="ph:sun-duotone" class="!w-6 !h-6" />
+          </rs-button>
+          <rs-button variant="secondary" class="!text-[rgb(var(--text-color))]">
+            <Icon name="ph:question-mark" class="!w-6 !h-6" />
+          </rs-button>
+        </div>
       </div>
     </section>
 

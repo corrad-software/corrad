@@ -11,7 +11,7 @@ definePageMeta({
   requiresAuth: true,
 });
 
-const { $swal, $io } = useNuxtApp();
+const { $swal, $io, $shiki } = useNuxtApp();
 const projectID = useCookie("currentProject");
 const threadID = useRoute().params.threadID;
 const assistantID = ref("");
@@ -35,6 +35,7 @@ const { data: verify } = await useFetch("/api/ai/chat/verify", {
   method: "GET",
   params: {
     threadID: threadID,
+    projectID: projectID.value,
   },
 });
 
@@ -233,9 +234,107 @@ const handleEnter = (event) => {
   }
 };
 
+const copyCode = (codeElement) => {
+  let code;
+  if (codeElement.querySelector("code")) {
+    code = codeElement.querySelector("code").textContent;
+  } else {
+    code = codeElement.textContent;
+  }
+  navigator.clipboard
+    .writeText(code)
+    .then(() => {
+      $swal.fire({
+        icon: "success",
+        title: "Copied!",
+        text: "Code has been copied to clipboard",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+    })
+    .catch((err) => {
+      console.error("Failed to copy text: ", err);
+      $swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to copy code",
+      });
+    });
+};
+
+const escapeHtml = (unsafe) => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 const renderMarkdown = (content) => {
-  const rawHtml = marked(content);
-  return DOMPurify.sanitize(rawHtml);
+  const renderer = new marked.Renderer();
+
+  renderer.code = (code, language) => {
+    const codeContent = typeof code === "object" ? code.text : String(code);
+    const uniqueId = "code-" + Math.random().toString(36).substr(2, 9);
+    try {
+      const highlightedCode = $shiki.codeToHtml(codeContent, {
+        lang: code.lang,
+        theme: "material-theme-darker",
+      });
+
+      return `
+      <div class="code-block-wrapper">
+        <button class="copy-button" data-code-id="${uniqueId}">
+          Copy
+        </button>
+        <div id="${uniqueId}">${highlightedCode}</div>
+      </div>
+    `;
+    } catch (error) {
+      const highlightedCode = escapeHtml(codeContent);
+      return `
+      <div class="code-block-wrapper">
+        <button class="copy-button" data-code-id="${uniqueId}">
+          Copy
+        </button>
+        <pre><code id="${uniqueId}" class="language-${code.lang}">${highlightedCode}</code></pre>
+      </div>
+    `;
+    }
+  };
+
+  const rawHtml = marked(content, { renderer });
+  return DOMPurify.sanitize(rawHtml, { ADD_ATTR: ["data-code-id"] });
+};
+
+const handleCopyClick = (event) => {
+  const button = event.target.closest(".copy-button");
+  if (button) {
+    const codeId = button.getAttribute("data-code-id");
+    const codeElement = document.getElementById(codeId);
+    if (codeElement) {
+      copyCode(codeElement);
+    }
+  }
+};
+
+const markdownToEditor = (content) => {
+  $swal
+    .fire({
+      title: "Send to Editor",
+      text: "Do you want to send this content to the editor? This will replace the current content in the editor.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No",
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        localStorage.setItem("markdownContent", content);
+        navigateTo("/ai/markdown");
+      }
+    });
 };
 
 /* FILE FUNCTIONS */
@@ -271,19 +370,22 @@ const fileToBase64 = (file) => {
     class="flex flex-col h-[92vh] lg:h-[94vh] max-w-7xl mx-auto"
   >
     <div class="absolute top-4 right-4 flex items-center justify-end">
-      <rs-button variant="secondary" class="!text-primary mr-4">
+      <rs-button
+        variant="secondary"
+        class="!text-[rgb(var(--text-color))] mr-4 cursor-default"
+      >
         <Icon
           name="mdi:robot-excited-outline"
           class="!w-6 !h-6 cursor-pointer text-primary mr-2"
         />
         {{ verify.data.assistantName }}
       </rs-button>
-      <rs-button>
+      <!-- <rs-button>
         <Icon
           name="material-symbols:ios-share-rounded"
           class="!w-5 !h-5 cursor-pointer"
         />
-      </rs-button>
+      </rs-button> -->
     </div>
 
     <!-- Scrollable conversation area -->
@@ -320,14 +422,16 @@ const fileToBase64 = (file) => {
               <div
                 class="markdown-preview"
                 v-html="renderMarkdown(message.content)"
+                @click="handleCopyClick"
               ></div>
               <span class="animate-pulse text-gray-400">▋</span>
             </span>
-            <span
-              class="markdown-preview"
-              v-else-if="message.sender === 'assistant'"
-            >
-              <div v-html="renderMarkdown(message.content)"></div>
+            <span v-else-if="message.sender === 'assistant'">
+              <div
+                class="markdown-preview"
+                v-html="renderMarkdown(message.content)"
+                @click="handleCopyClick"
+              ></div>
             </span>
             <span v-else>
               <div
@@ -355,7 +459,7 @@ const fileToBase64 = (file) => {
           </div>
           <div
             v-if="message.sender === 'assistant'"
-            class="flex justify-start mt-2 relative"
+            class="flex justify-start mt-2 relative gap-4"
           >
             <button
               @click="copyToClipboard(message.content, index)"
@@ -370,6 +474,16 @@ const fileToBase64 = (file) => {
             >
               Copied!
             </div>
+            <button
+              @click="markdownToEditor(message.content)"
+              class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
+            >
+              <Icon
+                name="material-symbols:markdown-paste-rounded"
+                class="w-4 h-4 mr-1"
+              />
+              Send to editor
+            </button>
           </div>
         </div>
       </NuxtScrollbar>
@@ -531,7 +645,7 @@ const fileToBase64 = (file) => {
 }
 
 .markdown-preview :deep(pre) {
-  background-color: rgb(var(--color-primary));
+  background-color: #212121;
   border-radius: 3px;
   font-size: 85%;
   line-height: 1.45;
@@ -592,5 +706,38 @@ const fileToBase64 = (file) => {
   border: 0;
   border-top: 1px solid #dfe2e5;
   margin: 24px 0;
+}
+
+.markdown-preview :deep(.code-block-wrapper) {
+  position: relative;
+}
+
+.markdown-preview :deep(.copy-button) {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.markdown-preview :deep(.copy-button:hover) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.markdown-preview :deep(pre) {
+  margin: 0;
+  padding: 0;
+}
+
+.markdown-preview :deep(pre code) {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
 }
 </style>

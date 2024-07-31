@@ -9,7 +9,6 @@ export default defineEventHandler(async (event) => {
     }
 
     const { projectID } = getQuery(event);
-
     if (!projectID) {
       return {
         statusCode: 400,
@@ -35,8 +34,16 @@ export default defineEventHandler(async (event) => {
       where: {
         projectID: project.projectID,
         chatRole: "assistant",
+        NOT: {
+          thread: {
+            lookup: {
+              lookupID: 4,
+            },
+          },
+        },
       },
       select: {
+        projectID: true,
         chatMessage: true,
         thread: {
           select: {

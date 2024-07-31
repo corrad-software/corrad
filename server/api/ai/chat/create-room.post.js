@@ -50,6 +50,11 @@ export default defineEventHandler(async (event) => {
         assistantID: assistant.assistantID,
         threadCreatedDate: DateTime.now().toISO(),
         threadOAIID: openAIThread.id,
+        lookup: {
+          connect: {
+            lookupID: 2, // 2 = Active
+          },
+        },
       },
     });
 
