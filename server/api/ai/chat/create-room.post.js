@@ -46,10 +46,18 @@ export default defineEventHandler(async (event) => {
 
     const addThread = await prisma.thread.create({
       data: {
-        userID: userID,
-        assistantID: assistant.assistantID,
-        threadCreatedDate: DateTime.now().toISO(),
         threadOAIID: openAIThread.id,
+        threadCreatedDate: DateTime.now().toISO(),
+        assistant: {
+          connect: {
+            assistantID: assistant.assistantID,
+          },
+        },
+        user: {
+          connect: {
+            userID: userID,
+          },
+        },
         lookup: {
           connect: {
             lookupID: 2, // 2 = Active

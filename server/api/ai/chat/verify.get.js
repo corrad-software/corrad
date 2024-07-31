@@ -45,19 +45,28 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Check if the user has permission to access this thread in the specified project
-    const hasPermission = await checkThreadPermission(
-      userID,
-      thread.threadID,
-      projectID
-    );
+    // Check if there is chating in the thread if just skip check permission
+    const chat = await prisma.chat.findFirst({
+      where: {
+        threadID: thread.threadID,
+      },
+    });
 
-    if (!hasPermission) {
-      return {
-        statusCode: 403,
-        message:
-          "You don't have permission to access this thread in the specified project. Redirect to dashboard.",
-      };
+    if (chat) {
+      // Check if the user has permission to access this thread in the specified project
+      const hasPermission = await checkThreadPermission(
+        userID,
+        thread.threadID,
+        projectID
+      );
+
+      if (!hasPermission) {
+        return {
+          statusCode: 403,
+          message:
+            "You don't have permission to access this thread in the specified project. Redirect to dashboard.",
+        };
+      }
     }
 
     return {
