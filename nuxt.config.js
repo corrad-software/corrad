@@ -12,6 +12,11 @@ export default defineNuxtConfig({
       process.env.NODE_ENV == "production" ? undefined : "../preset/entry.dev",
     preset: "./preset",
   },
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 1600,
+    },
+  },
   modules: [
     "@nuxtjs/tailwindcss",
     "@formkit/nuxt",
