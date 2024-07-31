@@ -96,6 +96,10 @@ onMounted(() => {
     currentStreamedMessage.value = "";
   });
 
+  $io.on("messageClear", () => {
+    emitter.emit("refreshChatList");
+  });
+
   $io.on("messageError", (errorMessage) => {
     isTyping.value = false;
     $swal.fire({
@@ -138,6 +142,7 @@ onUnmounted(() => {
   $io.off("messageStart");
   $io.off("messageChunk");
   $io.off("messageEnd");
+  $io.off("messageClear");
   $io.off("messageError");
   $io.off("error");
 });

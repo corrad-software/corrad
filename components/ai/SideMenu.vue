@@ -159,6 +159,11 @@ const setInitialTheme = () => {
 // Call setInitialTheme on component mount
 onMounted(() => {
   setInitialTheme();
+  emitter.on("refreshChatList", refreshChatList);
+});
+
+onUnmounted(() => {
+  emitter.off("refreshChatList", refreshChatList);
 });
 </script>
 
@@ -196,6 +201,7 @@ onMounted(() => {
         <li
           v-if="threadList.statusCode == 200 && threadList.data.length > 0"
           v-for="(thread, index) in threadList.data"
+          :key="index"
           class="bg-secondary rounded-lg"
         >
           <div class="flex items-center">

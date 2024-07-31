@@ -278,7 +278,6 @@ export const socketHandler = async (io: Server) => {
           io.to(threadID).emit("messageEnd");
 
           // Insert into db
-
           const createMessageResponse = await prisma?.chat.create({
             data: {
               chatMessage: lastMessage.content[0].text.value,
@@ -300,6 +299,8 @@ export const socketHandler = async (io: Server) => {
           });
 
           console.log("Message created:", createMessageResponse);
+
+          io.to(threadID).emit("messageClear");
         } catch (error) {
           console.error("Error processing message:", error);
           io.to(threadID).emit(
