@@ -46,17 +46,19 @@ model role {
 }
 
 model lookup {
-  lookupID           Int         @id @default(autoincrement())
-  lookupOrder        Int?
-  lookupTitle        String?     @db.VarChar(255)
-  lookupRefCode      String?     @db.VarChar(255)
-  lookupValue        String?     @db.VarChar(255)
-  lookupType         String?     @db.VarChar(255)
-  lookupStatus       String?     @db.VarChar(255)
-  lookupCreatedDate  DateTime?   @db.DateTime(0)
-  lookupModifiedDate DateTime?   @db.DateTime(0)
-  assistant          assistant[]
-  project            project[]
+  lookupID                                Int         @id @default(autoincrement())
+  lookupOrder                             Int?
+  lookupTitle                             String?     @db.VarChar(255)
+  lookupRefCode                           String?     @db.VarChar(255)
+  lookupValue                             String?     @db.VarChar(255)
+  lookupType                              String?     @db.VarChar(255)
+  lookupStatus                            String?     @db.VarChar(255)
+  lookupCreatedDate                       DateTime?   @db.DateTime(0)
+  lookupModifiedDate                      DateTime?   @db.DateTime(0)
+  assistant                               assistant[]
+  project                                 project[]
+  project_project_projectViewTypeTolookup project[]   @relation("project_projectViewTypeTolookup")
+  thread                                  thread[]
 }
 
 model userrole {
@@ -152,17 +154,21 @@ model project {
   projectDescription                                                 String?              @db.VarChar(255)
   projectDefault                                                     Boolean?             @default(dbgenerated("b'0'")) @db.Bit(1)
   projectType                                                        Int?
+  projectPublic                                                      Boolean?             @db.Bit(1)
+  projectViewType                                                    Int?
   projectCreatedDate                                                 DateTime?            @db.DateTime(0)
   projectModifiedDate                                                DateTime?            @db.DateTime(0)
   chat                                                               chat[]
   user                                                               user?                @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_2")
   lookup                                                             lookup?              @relation(fields: [projectType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_3")
+  lookup_project_projectViewTypeTolookup                             lookup?              @relation("project_projectViewTypeTolookup", fields: [projectViewType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_4")
   project_permission_project_permission_projectPermissionIDToproject project_permission?  @relation("project_permission_projectPermissionIDToproject")
   project_permission_project_permission_projectIDToproject           project_permission[] @relation("project_permission_projectIDToproject")
   repository                                                         repository[]
 
   @@index([projectType], map: "projectType")
   @@index([userID], map: "userID")
+  @@index([projectViewType], map: "projectViewType")
 }
 
 model project_permission {
@@ -205,12 +211,15 @@ model thread {
   assistantID        Int?
   threadTitle        String?    @db.VarChar(255)
   threadOAIID        String?    @unique(map: "threadOAIID") @db.VarChar(255)
+  threadStatus       Int?
   threadCreatedDate  DateTime?  @db.DateTime(0)
   threadModifiedDate DateTime?  @db.DateTime(0)
   chat               chat[]
   assistant          assistant? @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
   user               user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_2")
+  lookup             lookup?    @relation(fields: [threadStatus], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_3")
 
   @@index([assistantID], map: "assistantID")
   @@index([userID], map: "userID")
+  @@index([threadStatus], map: "threadStatus")
 }
