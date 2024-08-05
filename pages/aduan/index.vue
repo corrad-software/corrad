@@ -40,9 +40,17 @@ const navigateToUpdate = (id) => {
       <template #header>
         <div class="flex justify-between items-center">
           <h2 class="text-xl font-semibold">Senarai Aduan</h2>
-          <rs-button @click="navigateTo('/aduan/hantar')">
-            Hantar Aduan Baru
-          </rs-button>
+          <div class="flex gap-2">
+            <rs-button @click="navigateTo('/aduan/hantar')">
+              Hantar Aduan Baru
+            </rs-button>
+            <rs-button
+              @click="navigateTo('/aduan/jana-nombor')"
+              variant="secondary"
+            >
+              Jana Nombor Siri
+            </rs-button>
+          </div>
         </div>
       </template>
       <template #body>
