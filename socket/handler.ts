@@ -2,10 +2,40 @@ import { Server } from "socket.io";
 import { DateTime } from "luxon";
 import fs from "fs";
 import path from "path";
-import CryptoJS from "crypto-js";
+
+const MAX_CHUNK_LENGTH = 100000;
+const activeStreams = new Map();
+
+function splitMessageIntoChunks(message) {
+  const chunks = [];
+  let currentChunk = "";
+
+  message.split("\n").forEach((line) => {
+    if (currentChunk.length + line.length + 1 > MAX_CHUNK_LENGTH) {
+      chunks.push(currentChunk);
+      currentChunk = "";
+    }
+    currentChunk += (currentChunk ? "\n" : "") + line;
+  });
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
 
 export const socketHandler = async (io: Server) => {
   const fileChunks = new Map();
+
+  // Init utils openai
+  const { statusCode, data } = await initOpenAI();
+  if (statusCode !== 200) {
+    console.log("Error initializing OpenAI:");
+    throw new Error("Failed to initialize OpenAI");
+  }
+
+  const openai = data?.openai;
 
   io.on("connection", async (socket) => {
     console.log("New client connected");
@@ -60,22 +90,11 @@ export const socketHandler = async (io: Server) => {
         try {
           io.to(threadID).emit("messageStart");
 
-          // Init utils openai
-          const { statusCode, data } = await initOpenAI();
-          if (statusCode !== 200) {
-            console.log("Error initializing OpenAI:");
-          }
-
-          const openai = data?.openai;
-
           let fileAttachments = [];
           if (message.files && message.files.length > 0) {
             fileAttachments = await Promise.all(
               message.files.map(async (file) => {
-                // Check file extension from the file name
                 const fileExtension = file.name.split(".").pop();
-
-                // Determine whether the file is an image or not
                 const isImage = ["jpg", "jpeg", "png", "gif"].includes(
                   fileExtension
                 );
@@ -90,7 +109,6 @@ export const socketHandler = async (io: Server) => {
                 console.log("File uploaded:", uploadFile);
 
                 if (uploadFile?.id) {
-                  // Create a chat entry for the file
                   const createFileChat = await prisma?.chat.create({
                     select: {
                       chatID: true,
@@ -153,36 +171,6 @@ export const socketHandler = async (io: Server) => {
             fileAttachments = fileAttachments.filter(Boolean);
           }
 
-          if (message.content) {
-            // Create a message in db
-            const createMessage = await prisma?.chat.create({
-              data: {
-                chatMessage: message.content,
-                chatRole: message.sender,
-                chatType: "text",
-                thread: {
-                  connect: {
-                    threadOAIID: threadID,
-                  },
-                },
-                user: {
-                  connect: {
-                    userUsername: user.username,
-                  },
-                },
-                project: {
-                  connect: {
-                    projectUniqueID: projectID,
-                  },
-                },
-                chatCreatedDate: DateTime.now().toISO(),
-              },
-            });
-
-            console.log("Message created:", createMessage);
-          }
-
-          // Select all file for this thread
           const getFiles = await prisma?.chat.findMany({
             where: {
               thread: {
@@ -206,47 +194,85 @@ export const socketHandler = async (io: Server) => {
           let arrayAttachments = [];
 
           if (getFiles && getFiles.length > 0) {
-            arrayAttachments = getFiles.map((file) => {
-              if (!file.chatFile[0].file.fileOAIID) return null;
+            arrayAttachments = getFiles
+              .map((file) => {
+                if (!file.chatFile[0].file.fileOAIID) return null;
 
-              return {
-                file_id: file.chatFile[0].file.fileOAIID,
-                tools: [
-                  {
-                    type: "file_search",
-                  },
-                ],
-              };
-            });
+                return {
+                  file_id: file.chatFile[0].file.fileOAIID,
+                  tools: [
+                    {
+                      type: "file_search",
+                    },
+                  ],
+                };
+              })
+              .filter(Boolean);
           }
 
           console.log("Attachments:", arrayAttachments);
 
-          // Process the message
-          const createMsg = await openai?.beta.threads.messages.create(
-            threadID,
-            {
-              role: message.sender,
-              content: message.content,
-              attachments: arrayAttachments,
-            }
-          );
+          if (message.content) {
+            const messageChunks = splitMessageIntoChunks(message.content);
 
-          console.log("Message created:", createMsg);
+            for (let i = 0; i < messageChunks.length; i++) {
+              const chunk = messageChunks[i];
+
+              // Create a message in db for each chunk
+              await prisma?.chat.create({
+                data: {
+                  chatMessage: chunk,
+                  chatRole: message.sender,
+                  chatType: "text",
+                  thread: {
+                    connect: {
+                      threadOAIID: threadID,
+                    },
+                  },
+                  user: {
+                    connect: {
+                      userUsername: user.username,
+                    },
+                  },
+                  project: {
+                    connect: {
+                      projectUniqueID: projectID,
+                    },
+                  },
+                  chatCreatedDate: DateTime.now().toISO(),
+                },
+              });
+
+              // Process each chunk
+              await openai?.beta.threads.messages.create(threadID, {
+                role: message.sender,
+                content: chunk,
+                attachments: arrayAttachments,
+              });
+            }
+          }
 
           const stream = await openai?.beta.threads.runs.create(threadID, {
             assistant_id: assistantID,
             stream: true,
           });
+          // console.log("Stream created:", stream);
+          // return;
 
           let fullResponse = "";
 
           for await (const ev of stream) {
             console.log("Event:", ev);
 
-            if (ev.event === "thread.message.created") {
-              // A new message has been created, but content might not be available yet
-              continue;
+            if (
+              ev.event === "thread.run.in_progress" ||
+              ev.event === "thread.run.created"
+            ) {
+              // Add the run to activeStreams
+              activeStreams.set(threadID, {
+                runId: ev.data.id,
+                isActive: true,
+              });
             }
 
             if (ev.event === "thread.message.delta" && ev.data.delta?.content) {
@@ -259,12 +285,13 @@ export const socketHandler = async (io: Server) => {
             }
 
             if (ev.event === "thread.run.completed") {
-              // The run has completed, we can stop streaming
               break;
             }
           }
 
-          // Fetch the final message to ensure we have the complete response
+          // Remove the stream from activeStreams
+          activeStreams.delete(threadID);
+
           const messages = await openai.beta.threads.messages.list(threadID);
           const lastMessage = messages.data[0];
           if (lastMessage.role === "assistant") {
@@ -277,13 +304,12 @@ export const socketHandler = async (io: Server) => {
 
           io.to(threadID).emit("messageEnd");
 
-          // Insert into db
           const createMessageResponse = await prisma?.chat.create({
             data: {
               chatMessage: lastMessage.content[0].text.value,
               chatRole: "assistant",
               chatType: "text",
-              chatOAIMessageID: createMsg?.id,
+              chatOAIMessageID: lastMessage.id,
               thread: {
                 connect: {
                   threadOAIID: threadID,
@@ -310,6 +336,35 @@ export const socketHandler = async (io: Server) => {
         }
       }
     );
+
+    // Updated event listener for stopping the stream
+    socket.on("stopStream", async (threadID) => {
+      const activeStream = activeStreams.get(threadID);
+
+      console.log("Stopping stream for thread:", activeStream);
+
+      if (activeStream) {
+        activeStream.isActive = false;
+
+        // Cancel the run if it's still in progress
+        if (activeStream.runId) {
+          console.log("masuk");
+
+          try {
+            await openai?.beta.threads.runs.cancel(
+              threadID,
+              activeStream.runId
+            );
+            console.log(`Run cancelled for thread: ${threadID}`);
+          } catch (error) {
+            console.error("Error cancelling run:", error);
+          }
+        }
+
+        io.to(threadID).emit("streamStopped");
+        activeStreams.delete(threadID);
+      }
+    });
 
     socket.on("disconnect", () => {
       console.log("Client disconnected");

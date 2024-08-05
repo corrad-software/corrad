@@ -60,6 +60,8 @@ const copiedIndex = ref(null);
 const isTyping = ref(false);
 const currentStreamedMessage = ref("");
 
+const isStreaming = ref(false);
+
 const fileAttachments = ref([]);
 
 const { data: history } = await useFetch("/api/ai/chat/history", {
@@ -109,6 +111,10 @@ onMounted(() => {
     });
   });
 
+  $io.on("streamStopped", () => {
+    isStreaming.value = false;
+  });
+
   $io.on("error", (errorMessage) => {
     $swal.fire({
       icon: "error",
@@ -129,6 +135,10 @@ const scrollToBottom = () => {
   });
 };
 
+const stopStreaming = () => {
+  $io.emit("stopStream", threadID);
+};
+
 watch(
   () => messages.value,
   () => {
@@ -147,6 +157,16 @@ onUnmounted(() => {
   $io.off("error");
 });
 const sendMessage = async () => {
+  // Check if message has more than 10000 characters and prevent sending if true and tell the user
+  if (newMessage.value.length > 10000) {
+    $swal.fire({
+      icon: "error",
+      title: "Message too long",
+      text: "Message cannot be more than 10000 characters",
+    });
+    return;
+  }
+
   if (newMessage.value.trim() || fileAttachments.value.length > 0) {
     let message = {
       sender: "user",
@@ -199,6 +219,7 @@ const sendMessage = async () => {
       message.type = "file";
     }
 
+    isStreaming.value = true;
     $io.emit("sendMessage", {
       threadID,
       assistantID: assistantID.value,
@@ -236,6 +257,11 @@ const handleEnter = (event) => {
   if (!event.shiftKey) {
     event.preventDefault();
     sendMessage();
+  }
+
+  // If pressing Shift + Enter, add a new line
+  if (event.shiftKey && event.key === "Enter") {
+    newMessage.value += "\n";
   }
 };
 
@@ -372,7 +398,7 @@ const fileToBase64 = (file) => {
 <template>
   <div
     v-if="verify?.statusCode === 200"
-    class="flex flex-col h-[92vh] lg:h-[94vh] max-w-7xl mx-auto"
+    class="flex flex-col h-[88dvh] md:h-[94dvh] max-w-7xl mx-auto"
   >
     <div class="absolute top-4 right-4 flex items-center justify-end">
       <rs-button
@@ -414,7 +440,7 @@ const fileToBase64 = (file) => {
               'max-w-full md:max-w-[70%] rounded-2xl p-4',
               message.sender === 'user'
                 ? 'bg-primary text-white ml-auto'
-                : 'bg-secondary text-primary',
+                : 'bg-secondary !text-[rgb(var(--text-color))]',
             ]"
           >
             <span
@@ -525,7 +551,7 @@ const fileToBase64 = (file) => {
 
     <!-- Fixed input area at the bottom -->
     <FormKit type="form" :actions="false" @submit="sendMessage">
-      <div class="relative bg-secondary rounded-lg">
+      <div class="relative bg-secondary rounded-lg pr-">
         <FormKit
           v-model="newMessage"
           type="textarea"
@@ -534,7 +560,7 @@ const fileToBase64 = (file) => {
             outer: 'mb-0',
             inner: 'border-none',
             input:
-              'w-full bg-transparent pl-4 pr-4 py-3 focus:outline-none resize-none',
+              'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none pr-14 md:pr-20',
           }"
           @keydown.enter.prevent="handleEnter"
           auto-height
@@ -556,7 +582,15 @@ const fileToBase64 = (file) => {
             accept=".pdf,.doc,.docx,.xml,.md"
             multiple
           ></FormKit>
-          <rs-button btn-type="submit" class="!rounded-full">
+          <rs-button
+            v-if="isStreaming"
+            @click="stopStreaming"
+            variant="danger"
+            class="!rounded-full"
+          >
+            <Icon name="ph:stop-fill" class="!w-3 !h-3" />
+          </rs-button>
+          <rs-button v-else btn-type="submit" class="!rounded-full">
             <Icon name="mdi:send" class="!w-3 !h-3" />
           </rs-button>
         </div>
@@ -584,7 +618,6 @@ const fileToBase64 = (file) => {
 /*  New styles for markdown content   */
 .markdown-preview {
   line-height: 1.6;
-  color: #333;
   max-width: 100%;
   overflow-x: auto;
 }

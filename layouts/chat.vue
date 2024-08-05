@@ -39,7 +39,7 @@ onUnmounted(() => {
       <aiSideMenu :isOpen="isSidebarOpen" />
 
       <!-- Main content -->
-      <main class="flex-1 p-8 overflow-y-auto">
+      <main class="flex-1 px-8 py-6 overflow-y-scroll">
         <slot />
       </main>
     </div>
@@ -83,17 +83,17 @@ onUnmounted(() => {
 
 .ai-theme-dark {
   --color-primary: 97, 176, 183;
-  --color-secondary: 51, 51, 51;
+  --color-secondary: 13, 27, 42;
   --color-accent: 15, 23, 42;
   --color-success: 79, 192, 103;
   --color-info: 65, 133, 242;
   --color-warning: 246, 141, 32;
   --color-danger: 229, 83, 69;
-  --color-hover: 30, 30, 30;
-  --text-color: 199, 205, 207;
+  --color-hover: 16, 16, 17;
+  --text-color: 209, 213, 219;
   --border-color: 30, 41, 59;
-  --bg-1: 18, 20, 22;
-  --bg-2: 33, 33, 33;
+  --bg-1: 15, 23, 42;
+  --bg-2: 30, 41, 59;
   --scroll-color: 170, 170, 170;
   --scroll-hover-color: 155, 155, 155;
   --fk-border-color: 71, 85, 105;
