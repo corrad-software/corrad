@@ -260,6 +260,7 @@ export const socketHandler = async (io: Server) => {
           // return;
 
           let fullResponse = "";
+          let completed = false;
 
           for await (const ev of stream) {
             console.log("Event:", ev);
@@ -285,12 +286,23 @@ export const socketHandler = async (io: Server) => {
             }
 
             if (ev.event === "thread.run.completed") {
+              completed = true;
               break;
+            }
+
+            if (ev.event === "thread.run.failed") {
+              // Delete latest message
+              throw new Error("Run failed");
             }
           }
 
           // Remove the stream from activeStreams
           activeStreams.delete(threadID);
+
+          if (!completed) {
+            io.to(threadID).emit("messageError", "Run failed");
+            return;
+          }
 
           const messages = await openai.beta.threads.messages.list(threadID);
           const lastMessage = messages.data[0];
@@ -328,10 +340,12 @@ export const socketHandler = async (io: Server) => {
 
           io.to(threadID).emit("messageClear");
         } catch (error) {
+          activeStreams.delete(threadID);
+
           console.error("Error processing message:", error);
           io.to(threadID).emit(
             "messageError",
-            "An error occurred while processing your message."
+            "Something went wrong. Please try again."
           );
         }
       }
