@@ -95,6 +95,7 @@ onMounted(() => {
 
   $io.on("messageEnd", () => {
     isTyping.value = false;
+    isStreaming.value = false;
     currentStreamedMessage.value = "";
   });
 
@@ -158,11 +159,11 @@ onUnmounted(() => {
 });
 const sendMessage = async () => {
   // Check if message has more than 10000 characters and prevent sending if true and tell the user
-  if (newMessage.value.length > 10000) {
+  if (newMessage.value.length > 20000) {
     $swal.fire({
       icon: "error",
       title: "Message too long",
-      text: "Message cannot be more than 10000 characters",
+      text: "Message cannot be more than 20000 characters",
     });
     return;
   }
