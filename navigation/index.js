@@ -18,9 +18,21 @@ export default [
     child: [
       {
         title: "Aduan",
-        path: "/aduan",
         icon: "ph:chat-teardrop-dots-duotone",
-        child: [],
+        child: [
+          {
+            title: "Senarai Aduan",
+            path: "/aduan",
+          },
+          {
+            title: "Hantar Aduan",
+            path: "/aduan/hantar",
+          },
+          {
+            title: "Jana Laporan",
+            path: "/aduan/laporan",
+          },
+        ],
       },
     ],
   },

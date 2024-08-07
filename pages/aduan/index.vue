@@ -1,79 +1,43 @@
 <script setup>
+import { ref } from "vue";
+
 definePageMeta({
   title: "Senarai Aduan",
   layout: "default",
 });
 
-// Dummy data for complaints listing
-const complaints = ref([
-  {
-    id: "ADU100001",
-    details: "Masalah dengan sistem pendingin hawa",
-    date: "2024-08-05",
-    status: "Baru",
-  },
-  {
-    id: "ADU100002",
-    details: "Kerosakan lampu di lobi",
-    date: "2024-08-04",
-    status: "Dalam Proses",
-  },
-  {
-    id: "ADU100003",
-    details: "Kebocoran paip di tandas",
-    date: "2024-08-03",
-    status: "Selesai",
-  },
+const aduanList = ref([
+  { id: 1, noSiri: "ADU001", tajuk: "Aduan 1", status: "Baru" },
+  { id: 2, noSiri: "ADU002", tajuk: "Aduan 2", status: "Dalam Proses" },
+  // Add more dummy data as needed
 ]);
-
-const tableFields = ["ID Aduan", "Butiran", "Tarikh", "Status", "Tindakan"];
-
-const navigateToUpdate = (id) => {
-  navigateTo(`/aduan/kemaskini/${id}`);
-};
 </script>
 
 <template>
   <div>
-    <LayoutsBreadcrumb />
+    <LayoutsBreadcrumbV2 />
     <rs-card>
       <template #header>
         <div class="flex justify-between items-center">
           <h2 class="text-xl font-semibold">Senarai Aduan</h2>
-          <div class="flex gap-2">
-            <rs-button @click="navigateTo('/aduan/hantar')">
-              Hantar Aduan Baru
-            </rs-button>
-            <rs-button
-              @click="navigateTo('/aduan/jana-nombor')"
-              variant="secondary"
-            >
-              Jana Nombor Siri
-            </rs-button>
-          </div>
+          <rs-button @click="$router.push('/aduan/hantar')"
+            >Hantar Aduan Baru</rs-button
+          >
         </div>
       </template>
       <template #body>
-        <rs-table :data="complaints" :field="tableFields" advanced>
-          <template #Status="{ text }">
-            <rs-badge
-              :variant="
-                text === 'Baru'
-                  ? 'info'
-                  : text === 'Dalam Proses'
-                  ? 'warning'
-                  : 'success'
-              "
-            >
-              {{ text }}
-            </rs-badge>
-          </template>
+        <rs-table
+          :data="aduanList"
+          :field="['No Siri', 'Tajuk', 'Status', 'Tindakan']"
+          advanced
+        >
           <template #Tindakan="{ value }">
             <rs-button
+              @click="$router.push(`/aduan/${value.id}`)"
               variant="primary-outline"
-              @click="navigateToUpdate(value.id)"
+              size="sm"
             >
-              Kemas Kini
+              Lihat
             </rs-button>
           </template>
         </rs-table>

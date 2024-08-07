@@ -61,6 +61,7 @@
     "pinia": "^2.1.6",
     "prettier": "^2.8.1",
     "prisma": "^5.1.1",
+    "qrcode": "^1.5.4",
     "sass": "^1.62.0",
     "swiper": "^8.4.4",
     "thememirror": "^2.0.1",

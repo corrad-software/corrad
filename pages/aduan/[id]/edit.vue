@@ -1,45 +1,45 @@
 <script setup>
-import { ref } from "vue";
+import { ref } from 'vue';
 
 definePageMeta({
-  title: "Hantar Aduan",
+  title: "Kemas Kini Maklumat Aduan",
   layout: "default",
 });
 
+const route = useRoute();
+const aduanId = route.params.id;
+
 const form = ref({
-  namaPengadu: "",
-  telefonPengadu: "",
-  emelPengadu: "",
-  tajukAduan: "",
-  kategoriAduan: "",
-  jenisAduan: "",
-  tarikhKejadian: "",
-  masaKejadian: "",
-  lokasiKejadian: "",
-  dokumenSokongan: null,
-  catatan: "",
+  namaPengadu: 'John Doe',
+  telefonPengadu: '+60123456789',
+  emelPengadu: 'john@example.com',
+  tajukAduan: 'Aduan Contoh',
+  kategoriAduan: 'Kategori 1',
+  jenisAduan: 'Jenis 1',
+  tarikhKejadian: '2023-08-01',
+  masaKejadian: '14:30',
+  lokasiKejadian: 'Jalan Contoh, Bandar Contoh',
+  catatan: 'Catatan asal',
 });
 
-const kategoriOptions = ref(["Kategori 1", "Kategori 2", "Kategori 3"]);
-const jenisOptions = ref(["Jenis 1", "Jenis 2", "Jenis 3"]);
+const kategoriOptions = ref(['Kategori 1', 'Kategori 2', 'Kategori 3']);
+const jenisOptions = ref(['Jenis 1', 'Jenis 2', 'Jenis 3']);
 
-const submitForm = () => {
-  console.log(form.value);
-  // Handle form submission
-  navigateTo("/aduan");
+const updateAduan = () => {
+  console.log('Aduan updated:', form.value);
+  navigateTo(`/aduan/${aduanId}`);
 };
 </script>
 
 <template>
   <div>
     <LayoutsBreadcrumbV2 />
-
     <rs-card>
       <template #header>
-        <h2 class="text-xl font-semibold">UC-ENF-01.0.1: Hantar Aduan</h2>
+        <h2 class="text-xl font-semibold">UC-ENF-01.0.2: Kemas Kini Maklumat Aduan</h2>
       </template>
       <template #body>
-        <FormKit type="form" @submit="submitForm" :value="form">
+        <FormKit type="form" @submit="updateAduan" :value="form">
           <FormKit
             name="namaPengadu"
             type="text"
@@ -47,13 +47,11 @@ const submitForm = () => {
             validation="required|length:3,100"
             :validation-messages="{
               required: 'ENF-E001: Nama Pengadu tidak boleh kosong.',
-              length: 'Nama Pengadu mestilah antara 3 hingga 100 aksara.',
+              length: 'Nama Pengadu mestilah antara 3 hingga 100 aksara.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Nama Pengadu<span class="text-danger">*</span>
               </label>
             </template>
@@ -63,16 +61,14 @@ const submitForm = () => {
             name="telefonPengadu"
             type="tel"
             label="Telefon Pengadu"
-            validation="required|matches:/^\+60\d{9,10}$/"
+            validation="required"
             :validation-messages="{
               required: 'ENF-E002: Nombor telefon tidak boleh kosong.',
-              matches: 'ENF-E002: Format nombor telefon tidak sah.',
+              matches: 'ENF-E002: Format nombor telefon tidak sah.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Telefon Pengadu<span class="text-danger">*</span>
               </label>
             </template>
@@ -85,13 +81,11 @@ const submitForm = () => {
             validation="required|email"
             :validation-messages="{
               required: 'ENF-E003: E-mel tidak boleh kosong.',
-              email: 'ENF-E003: Format e-mel tidak sah.',
+              email: 'ENF-E003: Format e-mel tidak sah.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 E-mel Pengadu<span class="text-danger">*</span>
               </label>
             </template>
@@ -104,13 +98,11 @@ const submitForm = () => {
             validation="required|length:3,150"
             :validation-messages="{
               required: 'ENF-E004: Tajuk Aduan tidak boleh kosong.',
-              length: 'Tajuk Aduan mestilah antara 3 hingga 150 aksara.',
+              length: 'Tajuk Aduan mestilah antara 3 hingga 150 aksara.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Tajuk Aduan<span class="text-danger">*</span>
               </label>
             </template>
@@ -123,13 +115,11 @@ const submitForm = () => {
             :options="kategoriOptions"
             validation="required"
             :validation-messages="{
-              required: 'ENF-E005: Sila pilih kategori aduan.',
+              required: 'ENF-E005: Sila pilih kategori aduan.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Kategori Aduan<span class="text-danger">*</span>
               </label>
             </template>
@@ -142,13 +132,11 @@ const submitForm = () => {
             :options="jenisOptions"
             validation="required"
             :validation-messages="{
-              required: 'ENF-E006: Sila pilih jenis aduan.',
+              required: 'ENF-E006: Sila pilih jenis aduan.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Jenis Aduan<span class="text-danger">*</span>
               </label>
             </template>
@@ -160,13 +148,11 @@ const submitForm = () => {
             label="Tarikh Kejadian"
             validation="required"
             :validation-messages="{
-              required: 'ENF-E007: Sila masukkan tarikh kejadian.',
+              required: 'ENF-E007: Sila masukkan tarikh kejadian.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Tarikh Kejadian<span class="text-danger">*</span>
               </label>
             </template>
@@ -178,13 +164,11 @@ const submitForm = () => {
             label="Masa Kejadian"
             validation="required"
             :validation-messages="{
-              required: 'ENF-E008: Sila masukkan masa kejadian.',
+              required: 'ENF-E008: Sila masukkan masa kejadian.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Masa Kejadian<span class="text-danger">*</span>
               </label>
             </template>
@@ -197,35 +181,23 @@ const submitForm = () => {
             validation="required|length:3,200"
             :validation-messages="{
               required: 'ENF-E009: Lokasi kejadian tidak boleh kosong.',
-              length: 'Lokasi kejadian mestilah antara 3 hingga 200 aksara.',
+              length: 'Lokasi kejadian mestilah antara 3 hingga 200 aksara.'
             }"
           >
             <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
+              <label class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500">
                 Lokasi/Alamat Kejadian<span class="text-danger">*</span>
               </label>
             </template>
           </FormKit>
 
           <FormKit
-            name="dokumenSokongan"
-            type="file"
-            label="Dokumen Sokongan"
-            accept=".pdf,.jpg,.jpeg,.png"
-            :validation-messages="{
-              accept: 'ENF-E010: Format fail tidak disokong.',
-            }"
-          />
-
-          <FormKit
             name="catatan"
             type="textarea"
             label="Catatan"
-            validation="max:500"
+            validation="length:3,500"
             :validation-messages="{
-              max: 'ENF-E011: Catatan melebihi had aksara.',
+              length: 'ENF-E011: Catatan melebihi had aksara.'
             }"
           />
         </FormKit>
