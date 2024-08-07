@@ -11,6 +11,10 @@ const aduanList = ref([
   { id: 2, noSiri: "ADU002", tajuk: "Aduan 2", status: "Dalam Proses" },
   // Add more dummy data as needed
 ]);
+
+const navigateToAction = (id, action) => {
+  navigateTo(`/aduan/${id}/${action}`);
+};
 </script>
 
 <template>
@@ -32,13 +36,47 @@ const aduanList = ref([
           advanced
         >
           <template #Tindakan="{ value }">
-            <rs-button
-              @click="$router.push(`/aduan/${value.id}`)"
-              variant="primary-outline"
-              size="sm"
-            >
-              Lihat
-            </rs-button>
+            <div class="flex space-x-2">
+              <rs-button
+                @click="$router.push(`/aduan/${value.id}`)"
+                variant="primary-outline"
+                size="sm"
+              >
+                <Icon name="mdi:eye" />
+              </rs-button>
+              <rs-button
+                @click="navigateToAction(value.id, 'status')"
+                variant="info-outline"
+                size="sm"
+                title="Kemas Kini Status"
+              >
+                <Icon name="mdi:pencil" />
+              </rs-button>
+              <rs-button
+                @click="navigateToAction(value.id, 'syor-tindakan')"
+                variant="success-outline"
+                size="sm"
+                title="Kemas Kini Syor Tindakan"
+              >
+                <Icon name="mdi:lightbulb-on" />
+              </rs-button>
+              <rs-button
+                @click="navigateToAction(value.id, 'status-tindakan')"
+                variant="warning-outline"
+                size="sm"
+                title="Kemas Kini Status Tindakan"
+              >
+                <Icon name="mdi:clipboard-check" />
+              </rs-button>
+              <rs-button
+                @click="navigateToAction(value.id, 'tutup-fail')"
+                variant="danger-outline"
+                size="sm"
+                title="Kemas Kini Arahan Tutup Fail"
+              >
+                <Icon name="mdi:folder-lock" />
+              </rs-button>
+            </div>
           </template>
         </rs-table>
       </template>

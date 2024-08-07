@@ -25,10 +25,6 @@ export default [
             path: "/aduan",
           },
           {
-            title: "Hantar Aduan",
-            path: "/aduan/hantar",
-          },
-          {
             title: "Jana Laporan",
             path: "/aduan/laporan",
           },

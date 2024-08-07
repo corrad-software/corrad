@@ -44,16 +44,7 @@ const updateStatusTutupFail = () => {
             type="text"
             label="No Siri Aduan"
             disabled
-          >
-            <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm"
-              >
-                No Siri Aduan
-              </label>
-            </template>
-          </FormKit>
-
+          />
           <FormKit
             name="statusTutupFail"
             type="select"
@@ -63,16 +54,7 @@ const updateStatusTutupFail = () => {
             :validation-messages="{
               required: 'ENF-E030: Sila pilih status tutup fail.',
             }"
-          >
-            <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
-                Status Tutup Fail<span class="text-danger">*</span>
-              </label>
-            </template>
-          </FormKit>
-
+          />
           <FormKit
             name="catatan"
             type="textarea"

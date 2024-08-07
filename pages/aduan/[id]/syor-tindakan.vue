@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref } from 'vue';
 
 definePageMeta({
   title: "Kemas Kini Status Syor Tindakan",
@@ -11,19 +11,19 @@ const aduanId = route.params.id;
 
 const form = ref({
   noSiriAduan: `ADU-${aduanId}`,
-  statusSyorTindakan: "",
-  catatan: "",
+  statusSyorTindakan: '',
+  catatan: '',
 });
 
 const statusSyorTindakanOptions = ref([
-  "Belum Disyor",
-  "Disyor untuk Tindakan",
-  "Disyor untuk Tutup",
-  "Dalam Siasatan Lanjut",
+  'Belum Disyor',
+  'Disyor untuk Tindakan',
+  'Disyor untuk Tutup',
+  'Dalam Siasatan Lanjut'
 ]);
 
 const updateStatusSyorTindakan = () => {
-  console.log("Status Syor Tindakan updated:", form.value);
+  console.log('Status Syor Tindakan updated:', form.value);
   // Implement status update logic here
   navigateTo(`/aduan/${aduanId}`);
 };
@@ -34,9 +34,7 @@ const updateStatusSyorTindakan = () => {
     <LayoutsBreadcrumbV2 />
     <rs-card>
       <template #header>
-        <h2 class="text-xl font-semibold">
-          UC-ENF-01.0.7: Kemas Kini Status Syor Tindakan
-        </h2>
+        <h2 class="text-xl font-semibold">UC-ENF-01.0.7: Kemas Kini Status Syor Tindakan</h2>
       </template>
       <template #body>
         <FormKit type="form" @submit="updateStatusSyorTindakan" :value="form">
@@ -45,16 +43,7 @@ const updateStatusSyorTindakan = () => {
             type="text"
             label="No Siri Aduan"
             disabled
-          >
-            <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm"
-              >
-                No Siri Aduan
-              </label>
-            </template>
-          </FormKit>
-
+          />
           <FormKit
             name="statusSyorTindakan"
             type="select"
@@ -62,25 +51,16 @@ const updateStatusSyorTindakan = () => {
             :options="statusSyorTindakanOptions"
             validation="required"
             :validation-messages="{
-              required: 'ENF-E023: Sila pilih status syor tindakan baru.',
+              required: 'ENF-E023: Sila pilih status syor tindakan baru.'
             }"
-          >
-            <template #label>
-              <label
-                class="formkit-label text-gray-700 dark:text-gray-200 block mb-2 font-semibold text-sm formkit-invalid:text-red-500"
-              >
-                Status Syor Tindakan Baru<span class="text-danger">*</span>
-              </label>
-            </template>
-          </FormKit>
-
+          />
           <FormKit
             name="catatan"
             type="textarea"
             label="Catatan Kemas Kini"
             validation="max:300"
             :validation-messages="{
-              max: 'ENF-E024: Catatan kemas kini melebihi had aksara.',
+              max: 'ENF-E024: Catatan kemas kini melebihi had aksara.'
             }"
           />
         </FormKit>
