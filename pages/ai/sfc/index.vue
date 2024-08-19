@@ -1,114 +1,312 @@
 <script setup>
-import RsButton from "@/components/RsButton.vue";
-import { parse } from "@vue/compiler-sfc";
-import { watchDebounced } from "@vueuse/core";
+import { parse } from '@vue/compiler-sfc'
+import prettier from 'prettier/standalone'
+import parserHTML from 'prettier/parser-html'
+import parserBabel from 'prettier/parser-babel'
+import parserPostCSS from 'prettier/parser-postcss'
+import pluginVue from 'prettier-plugin-vue'
+import { watchDebounced, useDebounceFn } from '@vueuse/core'
+import {
+  RsAlert,
+  RsBadge,
+  RsButton,
+  RsCard,
+  RsCodeMirror,
+  RsCollapse,
+  RsCollapseItem,
+  RsDropdown,
+  RsDropdownItem,
+  RsFieldset,
+  RsModal,
+  RsProgressBar,
+  RsTab,
+  RsTabItem,
+  RsTable,
+  RsWizard,
+} from '@/components'
 
 definePageMeta({
-  title: "AI SFC Playground",
-  description: "AI SFC Playground page",
-  layout: "empty",
-  middleware: ["auth"],
+  title: 'AI SFC Playground',
+  description: 'AI SFC Playground page',
+  layout: 'empty',
+  middleware: ['auth'],
   requiresAuth: true,
-});
+})
 
 const code = ref(
   `<template>
-        <div class="p-4 bg-red-500 text-white rounded-lg"> 
-            <p class="mt-2 text-lg">{{ msg }}</p>
-            <RsButton>Button</RsButton>
-        </div>
+  <rs-card>
+    <template #header>SFC Playground Demo</template>
+    <template #body>
+      <div class="space-y-4">
+        <rs-alert variant="info">{{ msg }}</rs-alert>
+        <rs-button @click="count++">Clicked {{ count }} times</rs-button>
+        <rs-badge>{{ count > 5 ? 'High' : 'Low' }}</rs-badge>
+      </div>
     </template>
-    
-    <script setup>
-        const msg = 'Hello from SFC Playground';
-    <\/script>`
-);
+  </rs-card>
+</template>
 
-const compiledCode = ref(null);
-const componentKey = ref(0); // Key to force re-render
-const compilationError = ref(null); // Store compilation error
+<script setup>
+const msg = 'Hello from SFC Playground';
+const count = ref(0);
+<\/script>`
+)
+
+const compiledCode = ref(null)
+const componentKey = ref(0)
+const compilationError = ref(null)
+
+const previewSizes = [
+  { name: 'Mobile', width: '320px', icon: 'ph:device-mobile-camera' },
+  { name: 'Tablet', width: '768px', icon: 'ph:device-tablet-camera' },
+  { name: 'Desktop', width: '1024px', icon: 'ph:desktop' },
+  { name: 'Full', width: '100%' , icon: 'material-symbols:fullscreen'},
+]
+
+const currentPreviewSize = ref(previewSizes[3]) // Default to Full
 
 const compileCode = (newCode) => {
   try {
-    const { descriptor } = parse(newCode);
+    const { descriptor, errors } = parse(newCode)
+    if (errors && errors.length > 0) {      
+      
+      compilationError.value = {
+        message: errors[0].message,
+        location: errors[0].loc
+      };
+      return;
+    }
+
     if (descriptor.template && descriptor.scriptSetup) {
-      const template = descriptor.template.content;
-      const scriptSetup = descriptor.scriptSetup.content;
+      const template = descriptor.template.content
+      const scriptSetup = descriptor.scriptSetup.content
 
       const component = defineComponent({
         components: {
+          RsAlert,
+          RsBadge,
           RsButton,
+          RsCard,
+          RsCodeMirror,
+          RsCollapse,
+          RsCollapseItem,
+          RsDropdown,
+          RsDropdownItem,
+          RsFieldset,
+          RsModal,
+          RsProgressBar,
+          RsTab,
+          RsTabItem,
+          RsTable,
+          RsWizard,
         },
         template,
         setup() {
           try {
             const setupFunction = new Function(
-              "ref",
-              `
-              ${scriptSetup}
-              return { msg };
-            `
-            );
-            return setupFunction(ref);
+              'ref',
+              `${scriptSetup}
+              return { msg, count };`
+            )
+            return setupFunction(ref)
           } catch (error) {
-            compilationError.value = `Runtime error in setup function: ${error.message}`;
-            // console.error(compilationError.value);
-            return {};
+            compilationError.value = {
+              message: error.message,
+              location: { start: 0, end: 0 },
+            }
+            return {}
           }
         },
-      });
+      })
 
-      compiledCode.value = markRaw(component); // Mark the component as non-reactive
-      componentKey.value++; // Increment key to force re-render
-      compilationError.value = null; // Clear any previous errors
+      compiledCode.value = markRaw(component)
+      componentKey.value++
+      compilationError.value = null
     } else {
-      compiledCode.value = null;
-      compilationError.value = "Invalid SFC format.";
+      compiledCode.value = null
+      compilationError.value = 'Invalid SFC format.'
     }
   } catch (error) {
-    compiledCode.value = null;
-    compilationError.value = `Compilation error: ${error.message}`;
-    console.error(compilationError.value);
+    compiledCode.value = null
+    compilationError.value = {
+      message: error.message,
+      location: { start: 0, end: 0 },
+    }
   }
-};
+}
 
-// Watch the code and compile it whenever it changes, with debounce
 watchDebounced(
   code,
   (newCode) => {
-    compileCode(newCode);
+    compileCode(newCode)
   },
-  { debounce: 300, immediate: true } // Debounce for 300ms
-);
+  { debounce: 300, immediate: true }
+)
 
-// Compile the code on mount to render it initially
+const handleKeyDown = (e) => {
+  // Press Shift + Alt + F to format code
+  if (e.shiftKey && e.altKey && e.key === 'F') {
+    e.preventDefault()
+    debouncedFormatCode()
+  }
+}
+
 onMounted(() => {
-  compileCode(code.value);
-});
-</script>
+  compileCode(code.value)
+  window.addEventListener('keydown', handleKeyDown)
+})
 
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
+
+// Function Format Code
+const formatCode = async (code) => {
+  try {
+    const formattedCode = await prettier.format(code, {
+      parser: 'vue',
+      plugins: [parserHTML, parserBabel, parserPostCSS, pluginVue],
+      semi: false,
+      singleQuote: true,
+      trailingComma: 'es5',
+    })
+    return formattedCode
+  } catch (error) {
+    console.error('Formatting error:', error)
+    return code // Return original code if formatting fails
+  }
+}
+
+const formatCurrentCode = async () => {
+  try {
+    const formattedCode = await formatCode(code.value)
+    code.value = formattedCode
+
+    setTimeout(() => compileCode(formattedCode), 100)
+  } catch (error) {
+    console.log('Error formatting code:', error)
+  }
+}
+
+const debouncedFormatCode = useDebounceFn(formatCurrentCode, 300)
+</script>
 <template>
-  <div class="grid grid-cols-2 gap-5 p-5">
-    <FormKit
-      v-model="code"
-      type="textarea"
-      placeholder="Type your component code here"
-      :classes="{
-        outer: 'h-[90vh]',
-        input: 'h-[90vh]',
-      }"
-      spellcheck="false"
-    />
-    <div class="rounded-lg border bg-white h-[90vh] p-5">
-      <component
-        :key="componentKey"
-        v-if="compiledCode && !compilationError"
-        :is="compiledCode"
-      />
-      <div v-else-if="compilationError" class="text-red-500">
-        {{ compilationError }}
+  <div class="flex flex-col h-screen bg-gray-900">
+    <!-- Header -->
+    <header
+      class="bg-gray-800 p-2 flex flex-wrap items-center justify-between text-white"
+    >
+      <div class="flex items-center mb-2 sm:mb-0 gap-4">
+        <Icon
+          @click="navigateTo('/ai/tools')"
+          name="ph:arrow-circle-left-duotone"
+          class="cursor-pointer"
+        />
+        <img
+          src="@/assets/img/logo/logo-word-white-ai.svg"
+          alt="Vue Logo"
+          class="h-10 block mr-2"
+        />
       </div>
-      <div v-else class="text-red-500">Invalid SFC or error in compilation</div>
+      <div class="flex flex-wrap items-center space-x-2">
+        <h1 class="text-lg font-semibold">Code Playground</h1>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden">
+      <!-- Editor section -->
+      <div
+        class="w-full sm:w-1/2 flex flex-col border-b sm:border-b-0 sm:border-r border-gray-900"
+      >
+        <div class="bg-gray-800 p-2 flex justify-between items-center">
+          <rs-button
+            @click="formatCurrentCode"
+            class="px-3 py-1 bg-blue-600 text-sm rounded"
+          >
+            <Icon
+              name="vscode-icons:file-type-prettier"
+              class="!w-5 !h-5 mr-2"
+            />
+            Format Code (Shift + Alt + F)
+          </rs-button>
+        </div>
+        <CodeEditor
+          v-model="code"
+          :error="compilationError"
+          class="flex-1"
+        />
+      </div>
+
+      <!-- Preview section -->
+      <div class="w-full sm:w-1/2 bg-white overflow-auto flex flex-col">
+        <div
+          class="bg-gray-800 p-2 flex justify-between items-center text-white"
+        >
+          <h2 class="text-sm font-semibold">Preview</h2>
+          <div class="flex space-x-2">
+            <rs-button
+              v-for="size in previewSizes"
+              :key="size.name"
+              @click="currentPreviewSize = size"
+              :class="{
+                'bg-blue-600': currentPreviewSize === size,
+                'bg-gray-600': currentPreviewSize !== size,
+              }"
+              class="px-2 py-1 text-xs rounded"
+            >
+              <Icon v-if="size.icon" :name="size.icon" class="!w-5 !h-5 mr-2" />
+              {{ size.name }}
+            </rs-button>
+          </div>
+        </div>
+        <div class="flex-grow overflow-auto p-4 flex justify-center">
+          <div
+            :style="{
+              width: currentPreviewSize.width,
+              height: '100%',
+              overflow: 'auto',
+            }"
+            class="border border-gray-300 transition-all duration-300 ease-in-out"
+          >
+            <component
+              :key="componentKey"
+              v-if="compiledCode && !compilationError"
+              :is="compiledCode"
+            />
+            <div v-else-if="compilationError?.message">
+              <div class="flex justify-center items-center p-5">
+                <div class="text-center">
+                  <Icon name="ph:warning" class="text-6xl" />
+                  <p class="text-lg font-semibold mt-4">
+                   Something went wrong. Please refer the error in the editor.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-gray-500">
+              Waiting for code changes...
+              </div>  
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.device-frame {
+  background-color: #f0f0f0;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 640px) {
+  .device-frame {
+    padding: 8px;
+    border-radius: 8px;
+  }
+}
+</style>

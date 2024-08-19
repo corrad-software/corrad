@@ -236,37 +236,25 @@ onUnmounted(() => {
             Explore
           </rs-button>
         </nuxt-link>
-        <nuxt-link to="/ai/repository">
+        <nuxt-link to="/ai/tools">
           <rs-button
             variant="secondary"
             class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
           >
+            <Icon name="ph:hammer" class="!w-6 !h-6 mb-1" />
+            Tools
+          </rs-button>
+        </nuxt-link>
+        <nuxt-link to="/ai/repository" class="col-span-2">
+          <rs-button
+            variant="secondary"
+            class="w-full !justify-start !text-[rgb(var(--text-color))]"
+          >
             <Icon
               name="material-symbols:folder-open-outline"
-              class="!w-6 !h-6 mb-1"
-            />
-            Repository
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link to="/ai/markdown" class="col-span-2">
-          <rs-button
-            variant="secondary"
-            class="w-full !justify-start !text-[rgb(var(--text-color))]"
-          >
-            <Icon
-              name="material-symbols:markdown-rounded"
               class="!w-6 !h-6 mr-2"
             />
-            Markdown Editor
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link to="/ai/sfc" class="col-span-2">
-          <rs-button
-            variant="secondary"
-            class="w-full !justify-start !text-[rgb(var(--text-color))]"
-          >
-            <Icon name="ph:brackets-square-fill" class="!w-6 !h-6 mr-2" />
-            Code Playground
+            Repository
           </rs-button>
         </nuxt-link>
         <nuxt-link v-if="hasPermission()" to="/ai/assistant" class="col-span-2">
