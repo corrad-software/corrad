@@ -206,7 +206,7 @@ const debouncedFormatCode = useDebounceFn(formatCurrentCode, 300)
         <img
           src="@/assets/img/logo/logo-word-white-ai.svg"
           alt="Vue Logo"
-          class="h-10 block mr-2"
+          class="h-8 block mr-2"
         />
       </div>
       <div class="flex flex-wrap items-center space-x-2">
