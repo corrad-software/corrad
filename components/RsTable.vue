@@ -1,6 +1,7 @@
 <script setup>
 import { useLayoutStore } from "~/stores/layout";
 import { useWindowSize } from "vue-window-size";
+import { useDebounceFn } from "@vueuse/core";
 
 const layoutStore = useLayoutStore();
 const mobileWidth = layoutStore.mobileWidth;
@@ -63,9 +64,9 @@ const props = defineProps({
 
 // Default varaiable
 const columnTitle = ref([]);
-const dataTable = ref(props.data);
+const dataTable = shallowRef([]);
 const dataTitle = ref([]);
-const dataLength = ref(props.data.length);
+const dataLength = ref(0);
 
 // Advanced Option Variable
 const currentSort = ref(0);
@@ -76,6 +77,7 @@ const maxPageShown = ref(3);
 
 // Searching Variable
 const keyword = ref("");
+const debouncedKeyword = ref("");
 
 // Filtering Variable
 const filter = ref([]);
@@ -145,12 +147,21 @@ const spacingCharactertoCamelCase = (array) => {
 watch(
   () => [props.data, props.field],
   () => {
-    if (props.field && props.field.length > 0) {
-      columnTitle.value = spacingCharactertoCamelCase(props.field);
-      dataTitle.value = spacingCharactertoCamelCase(props.field);
+    if (props.data && props.data.length > 0) {
+      dataTable.value = props.data;
+      dataLength.value = props.data.length;
+      if (props.field && props.field.length > 0) {
+        columnTitle.value = spacingCharactertoCamelCase(props.field);
+        dataTitle.value = spacingCharactertoCamelCase(props.field);
+      } else {
+        columnTitle.value = Object.keys(dataTable.value[0]);
+        dataTitle.value = Object.keys(dataTable.value[0]);
+      }
     } else {
-      columnTitle.value = Object.keys(dataTable.value[0]);
-      dataTitle.value = Object.keys(dataTable.value[0]);
+      dataTable.value = [];
+      dataLength.value = 0;
+      columnTitle.value = [];
+      dataTitle.value = [];
     }
   },
   { immediate: true }
@@ -196,16 +207,20 @@ const filteredDatabyTitle = (data, title) => {
 };
 
 onMounted(() => {
-  setColumnTitle(dataTable.value[0]);
+  if (dataTable.value.length > 0) {
+    setColumnTitle(dataTable.value[0]);
+  }
 });
 
 // Computed data
 const computedData = computed(() => {
-  let result = [];
-  let totalData = 0;
-  result = dataTable.value
-    .slice()
-    .sort((a, b) => {
+  if (!dataTable.value.length) return [];
+
+  let result = dataTable.value.slice();
+
+  // Sort
+  if (currentSort.value !== null) {
+    result.sort((a, b) => {
       let modifier = 1;
 
       columnTitle.value.forEach((title, index) => {
@@ -233,33 +248,24 @@ const computedData = computed(() => {
       if (a1 < b1) return -1 * modifier;
       if (a1 > b1) return 1 * modifier;
       return 0;
-    })
-    .filter((row) => {
-      // Search all json object if keyword not equal null
-      if (keyword.value === "") return true;
-      let result = false;
-      Object.entries(row).forEach(([key, value]) => {
-        try {
-          if (
-            value.toString().toLowerCase().includes(keyword.value.toLowerCase())
-          ) {
-            result = true;
-            currentPage.value = 1;
-          }
-        } catch (error) {
-          result = false;
-        }
-      });
-      return result;
-    })
-    .filter((_, index) => {
-      let start = (currentPage.value - 1) * pageSize.value;
-      let end = currentPage.value * pageSize.value;
-      totalData++;
-      if (index >= start && index < end) return true;
     });
-  dataLength.value = totalData;
-  return result;
+  }
+
+  // Filter
+  if (debouncedKeyword.value) {
+    const lowercaseKeyword = debouncedKeyword.value.toLowerCase();
+    result = result.filter((row) =>
+      Object.values(row).some((value) =>
+        String(value).toLowerCase().includes(lowercaseKeyword)
+      )
+    );
+  }
+
+  // Pagination
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  dataLength.value = result.length;
+  return result.slice(start, end);
 });
 
 const isNumeric = (n) => {
@@ -418,11 +424,19 @@ watch(
   },
   { deep: true }
 );
+
+// Debounce the search input
+watch(
+  keyword,
+  useDebounceFn((val) => {
+    debouncedKeyword.value = val;
+  }, 300)
+);
 </script>
 
 <template>
   <div
-    v-if="data && data.length > 0 && dataTable && dataTable.length > 0"
+    v-if="dataTable && dataTable.length > 0"
     class="table-wrapper"
     :class="{
       '!border': advanced && !hideTable && optionsAdvanced.outsideBorder,
@@ -463,7 +477,6 @@ watch(
               <span class="hidden sm:block">Filter</span>
             </rs-button>
           </div>
-          <!-- <rs-button class="mt-2">asdaasd</rs-button> -->
         </div>
         <div class="flex justify-center items-center gap-x-2">
           <span class="text-[rgb(var(--text-color))]">Result per page:</span>
@@ -473,11 +486,6 @@ watch(
             :options="[5, 10, 25, 100]"
             outer-class="mb-0"
           />
-          <!-- <v-select
-            :options="[5, 10, 25, 100]"
-            v-model="pageSize"
-            :clearable="false"
-          ></v-select> -->
         </div>
       </div>
       <div
@@ -623,7 +631,7 @@ watch(
                   options.variant === 'warning' && options.striped,
                 'border-danger/20 odd:bg-white even:bg-danger/5':
                   options.variant === 'danger' && options.striped,
-                'cursor-pointer hover:bg-[rgb(var(--text-color))]':
+                'cursor-pointer hover:bg-slate-300':
                   options.hover && options.variant === 'default',
                 'cursor-pointer hover:bg-primary/5':
                   options.hover && options.variant === 'primary',
@@ -774,6 +782,24 @@ watch(
         >
           <Icon name="ic:round-keyboard-double-arrow-right" size="1rem"></Icon>
         </rs-button>
+      </div>
+    </div>
+  </div>
+  <div v-else class="table-wrapper p-4">
+    <div
+      class="border border-[rgb(var(--border-color))] rounded-lg overflow-hidden"
+    >
+      <div
+        class="bg-[rgb(var(--bg-2))] p-4 border-b border-[rgb(var(--border-color))]"
+      >
+        <h3 class="text-lg font-semibold text-[rgb(var(--text-color))]"></h3>
+      </div>
+      <div class="p-8 text-center">
+        <Icon name="mdi:table-off" class="text-gray-300 mb-4" size="48px" />
+        <p class="text-[rgb(var(--text-color))] text-lg font-medium">No data</p>
+        <p class="text-gray-500 mt-2">
+          There is no data to display at this time.
+        </p>
       </div>
     </div>
   </div>
