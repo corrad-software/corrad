@@ -40,7 +40,7 @@ const props = defineProps({
     type: Object,
     default: () => ({
       sortable: true,
-      filterable: true,
+      filterable: false,
       responsive: false,
       outsideBorder: false,
     }),
@@ -60,10 +60,13 @@ const props = defineProps({
       direction: "asc",
     }),
   },
+  showRowNumbers: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Default varaiable
-const columnTitle = ref([]);
 const dataTable = shallowRef([]);
 const dataTitle = ref([]);
 const dataLength = ref(0);
@@ -151,16 +154,13 @@ watch(
       dataTable.value = props.data;
       dataLength.value = props.data.length;
       if (props.field && props.field.length > 0) {
-        columnTitle.value = spacingCharactertoCamelCase(props.field);
         dataTitle.value = spacingCharactertoCamelCase(props.field);
       } else {
-        columnTitle.value = Object.keys(dataTable.value[0]);
         dataTitle.value = Object.keys(dataTable.value[0]);
       }
     } else {
       dataTable.value = [];
       dataLength.value = 0;
-      columnTitle.value = [];
       dataTitle.value = [];
     }
   },
@@ -170,9 +170,9 @@ watch(
 const setColumnTitle = (data) => {
   try {
     if (props.field && props.field.length == 0) {
-      columnTitle.value = Object.keys(data);
+      dataTitle.value = Object.keys(data);
     } else {
-      columnTitle.value = spacingCharactertoCamelCase(props.field);
+      dataTitle.value = spacingCharactertoCamelCase(props.field);
     }
   } catch (error) {
     console.log(error);
@@ -191,7 +191,7 @@ const filteredDatabyTitle = (data, title) => {
       });
     } else {
       // Get index title from columnTitle
-      let index = columnTitle.value.indexOf(title);
+      let index = dataTitle.value.indexOf(title);
 
       // Convert data json to array
       let arr = Object.values(data);
@@ -223,7 +223,7 @@ const computedData = computed(() => {
     result.sort((a, b) => {
       let modifier = 1;
 
-      columnTitle.value.forEach((title, index) => {
+      dataTitle.value.forEach((title, index) => {
         // console.log(title, props.sort.column);
         // First sort by column title
         if (title === props.sort.column && !sortColumnFirstTime.value) {
@@ -234,8 +234,8 @@ const computedData = computed(() => {
       });
 
       // Check if column title is number or string and convert spacing to camelcase
-      let a1 = filteredDatabyTitle(a, columnTitle.value[currentSort.value]);
-      let b1 = filteredDatabyTitle(b, columnTitle.value[currentSort.value]);
+      let a1 = filteredDatabyTitle(a, dataTitle.value[currentSort.value]);
+      let b1 = filteredDatabyTitle(b, dataTitle.value[currentSort.value]);
 
       if (typeof a1 === "string") a1 = a1.toLowerCase();
       if (typeof b1 === "string") b1 = b1.toLowerCase();
@@ -259,6 +259,14 @@ const computedData = computed(() => {
         String(value).toLowerCase().includes(lowercaseKeyword)
       )
     );
+  }
+
+  // Add row numbers if showRowNumbers is true
+  if (props.showRowNumbers) {
+    result = result.map((row, index) => ({
+      No: (currentPage.value - 1) * pageSize.value + index + 1,
+      ...row,
+    }));
   }
 
   // Pagination
@@ -343,7 +351,12 @@ const setFilter = (key, action, condition) => {
   } else {
     // If key exist, update filter
     filter.value[index].action[action] = condition;
-    // console.log(filter.value);
+    // Update references to use dataTitle
+    let columnIndex = dataTitle.value.indexOf(key);
+    if (columnIndex !== -1) {
+      // Remove column from dataTitle
+      dataTitle.value.splice(columnIndex, 1);
+    }
   }
 };
 
@@ -366,23 +379,23 @@ watch(
     filter.value.forEach((item) => {
       // Hide Column
       if (item.action.hide) {
-        // Get index title from columnTitle
-        let index = columnTitle.value.indexOf(item.key);
+        // Get index title from dataTitle
+        let index = dataTitle.value.indexOf(item.key);
 
         if (index !== -1) {
-          // Remove column from columnTitle
-          columnTitle.value.splice(index, 1);
+          // Remove column from dataTitle
+          dataTitle.value.splice(index, 1);
         }
       } else if (!item.action.hide) {
         // Get index title from dataTitle
         let indexData = dataTitle.value.indexOf(item.key);
 
-        if (!columnTitle.value.includes(item.key)) {
+        if (!dataTitle.value.includes(item.key)) {
           // Add Column back to its original position
-          columnTitle.value.splice(indexData, 0, item.key);
+          dataTitle.value.splice(indexData, 0, item.key);
 
-          // Sort the columnTitle like dataTitle
-          columnTitle.value.sort((a, b) => {
+          // Sort the dataTitle like dataTitle
+          dataTitle.value.sort((a, b) => {
             let indexA = dataTitle.value.indexOf(a);
             let indexB = dataTitle.value.indexOf(b);
             return indexA - indexB;
@@ -432,6 +445,22 @@ watch(
     debouncedKeyword.value = val;
   }, 300)
 );
+
+// Modify the columnTitle computed property
+const computedColumnTitle = computed(() => {
+  let titles =
+    props.field.length > 0
+      ? spacingCharactertoCamelCase(props.field)
+      : dataTable.value.length > 0
+      ? Object.keys(dataTable.value[0])
+      : [];
+
+  if (props.showRowNumbers) {
+    titles.unshift("No");
+  }
+
+  return titles;
+});
 </script>
 
 <template>
@@ -576,12 +605,15 @@ watch(
                   'border-danger/80': options.variant === 'danger',
                   'w-36': options.fixed,
                   'cursor-pointer': optionsAdvanced.sortable && advanced,
+                  'w-16': val === 'No' && props.showRowNumbers,
                 }"
                 style="min-width: 100px"
                 @click="
-                  optionsAdvanced.sortable && advanced ? sort(index) : null
+                  optionsAdvanced.sortable && advanced && val !== 'No'
+                    ? sort(index)
+                    : null
                 "
-                v-for="(val, index) in columnTitle"
+                v-for="(val, index) in computedColumnTitle"
                 :key="index"
               >
                 {{ camelCasetoTitle(val) }}
@@ -631,8 +663,7 @@ watch(
                   options.variant === 'warning' && options.striped,
                 'border-danger/20 odd:bg-white even:bg-danger/5':
                   options.variant === 'danger' && options.striped,
-                'cursor-pointer hover:bg-slate-300':
-                  options.hover && options.variant === 'default',
+                '': options.hover && options.variant === 'default',
                 'cursor-pointer hover:bg-primary/5':
                   options.hover && options.variant === 'primary',
                 'cursor-pointer hover:bg-secondary/5':
@@ -663,7 +694,7 @@ watch(
                   'border-warning/20': options.variant === 'warning',
                   'border-danger/20': options.variant === 'danger',
                 }"
-                v-for="(val2, index2) in columnTitle"
+                v-for="(val2, index2) in computedColumnTitle"
                 :key="index2"
               >
                 <slot
@@ -785,7 +816,7 @@ watch(
       </div>
     </div>
   </div>
-  <div v-else class="table-wrapper p-4">
+  <div v-else class="table-wrapper">
     <div
       class="border border-[rgb(var(--border-color))] rounded-lg overflow-hidden"
     >
@@ -796,9 +827,11 @@ watch(
       </div>
       <div class="p-8 text-center">
         <Icon name="mdi:table-off" class="text-gray-300 mb-4" size="48px" />
-        <p class="text-[rgb(var(--text-color))] text-lg font-medium">No data</p>
+        <p class="text-[rgb(var(--text-color))] text-lg font-medium">
+          No Data Available
+        </p>
         <p class="text-gray-500 mt-2">
-          There is no data to display at this time.
+          There are currently no entries to display in this table.
         </p>
       </div>
     </div>
