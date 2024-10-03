@@ -94,16 +94,21 @@ export const socketHandler = async (io: Server) => {
           if (message.files && message.files.length > 0) {
             fileAttachments = await Promise.all(
               message.files.map(async (file) => {
-                const fileExtension = file.name.split(".").pop();
+                const fileExtension = file.name.split(".").pop().toLowerCase();
                 const isImage = ["jpg", "jpeg", "png", "gif"].includes(
                   fileExtension
                 );
+
+                if (isImage) {
+                  // For images, we don't need to upload to OpenAI
+                  return null;
+                }
 
                 const uploadFile = await openai?.files.create({
                   file: fs.createReadStream(
                     path.join(process.cwd(), "public", "uploads", file.name)
                   ),
-                  purpose: isImage ? "vision" : "assistants",
+                  purpose: "assistants",
                 });
 
                 console.log("File uploaded:", uploadFile);
@@ -247,7 +252,8 @@ export const socketHandler = async (io: Server) => {
               await openai?.beta.threads.messages.create(threadID, {
                 role: message.sender,
                 content: chunk,
-                attachments: arrayAttachments,
+                // Remove attachments for OpenAI API call
+                // attachments: arrayAttachments,
               });
             }
           }
@@ -256,8 +262,6 @@ export const socketHandler = async (io: Server) => {
             assistant_id: assistantID,
             stream: true,
           });
-          // console.log("Stream created:", stream);
-          // return;
 
           let fullResponse = "";
           let completed = false;

@@ -2,6 +2,7 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import CryptoJS from "crypto-js";
+import Tesseract from "tesseract.js";
 
 definePageMeta({
   title: "AI",
@@ -159,69 +160,100 @@ onUnmounted(() => {
   $io.off("messageError");
   $io.off("error");
 });
-const sendMessage = async () => {
-  console.log(newMessage.value.length);
-  
-  // Check if message has more than 20000 characters and prevent sending if true and tell the user
-  if (newMessage.value.length > 25000) {
-    $swal.fire({
-      icon: "error",
-      title: "Message too long",
-      text: "Message cannot be more than 25000 characters",
-    });
-    return;
-  }
 
+const isOCRProcessing = ref(false);
+const ocrProgress = ref(0);
+
+const processFile = async (file) => {
+  const timestamp = Date.now();
+  const fileId = CryptoJS.SHA256(timestamp + file.name + Date.now())
+    .toString()
+    .substr(0, 16);
+  const fileExtension = file.name.split(".").pop().toLowerCase();
+  const newFileName = `${timestamp}-${fileId}.${fileExtension}`;
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  // Check if the file is an image
+  const isImage = ["jpg", "jpeg", "png", "gif"].includes(fileExtension);
+
+  if (isImage) {
+    // Perform OCR on the image
+    isOCRProcessing.value = true;
+    ocrProgress.value = 0;
+
+    const {
+      data: { text },
+    } = await Tesseract.recognize(file, "eng", {
+      logger: (m) => {
+        if (m.status === "recognizing text") {
+          ocrProgress.value = parseInt(m.progress * 100);
+        }
+      },
+    });
+
+    isOCRProcessing.value = false;
+    ocrProgress.value = 0;
+
+    return { type: "image", text };
+  } else {
+    // Handle non-image files
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(file.size, start + CHUNK_SIZE);
+      const chunk = file.slice(start, end);
+      const chunkBase64 = await fileToBase64(chunk);
+
+      await new Promise((resolve) => {
+        $io.emit(
+          "fileChunk",
+          {
+            fileId,
+            fileName: newFileName,
+            chunkIndex: i,
+            totalChunks,
+            chunk: chunkBase64,
+          },
+          resolve
+        );
+      });
+    }
+
+    return {
+      type: "file",
+      file: {
+        fileId,
+        name: newFileName,
+        originalName: file.name,
+        type: file.type,
+        url: `/uploads/${newFileName}`,
+        openAIFileId: null,
+      },
+    };
+  }
+};
+
+const sendMessage = async () => {
   if (newMessage.value.trim() || fileAttachments.value.length > 0) {
     let message = {
       sender: "user",
-      content: newMessage.value,
+      content: newMessage.value.trim(),
       type: "text",
       files: [],
     };
 
     if (fileAttachments.value.length > 0) {
       for (const file of fileAttachments.value) {
-        const timestamp = Date.now();
-        const fileId = CryptoJS.SHA256(timestamp + file.name + Date.now())
-          .toString()
-          .substr(0, 16);
-        const fileExtension = file.name.split(".").pop();
-        const newFileName = `${timestamp}-${fileId}.${fileExtension}`;
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-        for (let i = 0; i < totalChunks; i++) {
-          const start = i * CHUNK_SIZE;
-          const end = Math.min(file.size, start + CHUNK_SIZE);
-          const chunk = file.slice(start, end);
-          const chunkBase64 = await fileToBase64(chunk);
-
-          await new Promise((resolve) => {
-            $io.emit(
-              "fileChunk",
-              {
-                fileId,
-                fileName: newFileName,
-                chunkIndex: i,
-                totalChunks,
-                chunk: chunkBase64,
-              },
-              resolve
-            );
-          });
+        const result = await processFile(file);
+        if (result.type === "image") {
+          message.content += `\n\nImage content (OCR result): ${result.text}\n\nPlease note that this text was extracted from an image using OCR technology. The accuracy may vary depending on the image quality and complexity. Consider this context when interpreting the content.`;
+        } else {
+          message.files.push(result.file);
         }
-
-        message.files.push({
-          fileId,
-          name: newFileName,
-          originalName: file.name,
-          type: file.type,
-          url: `/uploads/${newFileName}`,
-          openAIFileId: null,
-        });
       }
 
-      message.type = "file";
+      if (message.files.length > 0) {
+        message.type = "file";
+      }
     }
 
     isStreaming.value = true;
@@ -488,7 +520,7 @@ const fileToBase64 = (file) => {
                   </span>
                 </div>
               </div>
-              <p v-if="message.content">
+              <p v-if="message.content" class="whitespace-pre-wrap">
                 {{ message.content }}
               </p>
             </span>
@@ -584,7 +616,7 @@ const fileToBase64 = (file) => {
             :classes="{
               outer: 'hidden',
             }"
-            accept=".pdf,.doc,.docx,.xml,.md"
+            accept="image/*"
             multiple
           ></FormKit>
           <rs-button
@@ -601,6 +633,40 @@ const fileToBase64 = (file) => {
         </div>
       </div>
     </FormKit>
+
+    <Transition
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0 translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-150"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-1"
+    >
+      <div
+        v-if="isOCRProcessing"
+        class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-64 md:w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-200"
+            >Processing image</span
+          >
+          <span class="text-sm font-medium text-blue-600 dark:text-blue-400"
+            >{{ ocrProgress }}%</span
+          >
+        </div>
+        <div
+          class="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"
+        >
+          <div
+            class="absolute top-0 left-0 h-full bg-blue-600 dark:bg-blue-500 transition-all duration-300 ease-out"
+            :style="{ width: `${ocrProgress}%` }"
+          ></div>
+        </div>
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Extracting text from image...
+        </p>
+      </div>
+    </Transition>
   </div>
   <div v-else>
     <div class="max-w-7xl mx-auto mt-12">
@@ -782,5 +848,22 @@ const fileToBase64 = (file) => {
   display: block;
   overflow-x: auto;
   padding: 1em;
+}
+
+.ocr-processing {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+}
+
+.ocr-processing progress {
+  width: 100%;
+  height: 20px;
 }
 </style>
