@@ -25,7 +25,7 @@ definePageMeta({
         </div>
       </NuxtLink>
 
-      <NuxtLink to="/ai/sfc">
+      <!-- <NuxtLink to="/ai/sfc">
         <div
           class="bg-secondary hover:bg-primary hover:text-white transition-all flex flex-col justify-between h-full p-4 rounded gap-4"
         >
@@ -37,7 +37,7 @@ definePageMeta({
             </p>
           </div>
         </div>
-      </NuxtLink>
+      </NuxtLink> -->
     </div>
   </div>
 </template>

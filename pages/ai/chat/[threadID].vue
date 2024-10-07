@@ -143,6 +143,11 @@ const stopStreaming = () => {
   $io.emit("stopStream", threadID);
 };
 
+// Unmounted stop streaming
+onUnmounted(() => {
+  stopStreaming();
+});
+
 watch(
   () => messages.value,
   () => {

@@ -5,10 +5,14 @@ import {
   TextRun,
   ImageRun,
   HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  BorderStyle,
 } from "docx";
 import { marked } from "marked";
-import mermaid from "mermaid";
 import { JSDOM } from "jsdom";
+import puppeteer from "puppeteer";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -25,7 +29,9 @@ export default defineEventHandler(async (event) => {
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
 
-    mermaid.initialize({ startOnLoad: false });
+    // Launch a headless browser
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
 
     for (const child of document.body.childNodes) {
       if (child.nodeType === dom.window.Node.TEXT_NODE) {
@@ -60,20 +66,82 @@ export default defineEventHandler(async (event) => {
               );
             }
             break;
+          case "TABLE":
+            const table = new Table({
+              rows: Array.from(child.rows).map((row) => {
+                return new TableRow({
+                  children: Array.from(row.cells).map((cell) => {
+                    return new TableCell({
+                      children: [new Paragraph(cell.textContent)],
+                      borders: {
+                        top: { style: BorderStyle.SINGLE, size: 1 },
+                        bottom: { style: BorderStyle.SINGLE, size: 1 },
+                        left: { style: BorderStyle.SINGLE, size: 1 },
+                        right: { style: BorderStyle.SINGLE, size: 1 },
+                      },
+                    });
+                  }),
+                });
+              }),
+            });
+            paragraphs.push(table);
+            break;
           case "PRE":
             if (
               child.firstChild &&
               child.firstChild.classList.contains("language-mermaid")
             ) {
               try {
-                const { svg } = await mermaid.render(
-                  "mermaid-diagram",
-                  child.textContent
-                );
-                const base64Svg = Buffer.from(svg).toString("base64");
+                // Render Mermaid diagram using Puppeteer
+                await page.setContent(`
+                  <html>
+                    <body>
+                      <pre class="mermaid">${child.textContent}</pre>
+                      <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+                      <script>
+                        mermaid.initialize({ startOnLoad: true });
+                      </script>
+                    </body>
+                  </html>
+                `);
+                await page.waitForSelector("svg");
+                const element = await page.$("svg");
+
+                // Get the bounding box of the SVG
+                const boundingBox = await element.boundingBox();
+
+                // Calculate dimensions while maintaining aspect ratio
+                const maxWidth = 500;
+                const maxHeight = 300;
+                let width = boundingBox.width;
+                let height = boundingBox.height;
+
+                if (width > maxWidth) {
+                  height = (height * maxWidth) / width;
+                  width = maxWidth;
+                }
+
+                if (height > maxHeight) {
+                  width = (width * maxHeight) / height;
+                  height = maxHeight;
+                }
+
+                const pngBuffer = await element.screenshot({
+                  type: "png",
+                  clip: {
+                    x: boundingBox.x,
+                    y: boundingBox.y,
+                    width: boundingBox.width,
+                    height: boundingBox.height,
+                  },
+                });
+
                 const imageRun = new ImageRun({
-                  data: base64Svg,
-                  transformation: { width: 500, height: 300 },
+                  data: pngBuffer,
+                  transformation: {
+                    width: width,
+                    height: height,
+                  },
                 });
                 paragraphs.push(new Paragraph({ children: [imageRun] }));
               } catch (error) {
@@ -104,6 +172,9 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
+
+    // Close the browser
+    await browser.close();
 
     doc.addSection({ children: paragraphs });
 
