@@ -8,7 +8,11 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Get user from database
-    const allUser = await prisma.user.findMany();
+    const allUser = await prisma.user.findMany({
+      where: {
+        userStatus: "ACTIVE",
+      },
+    });
 
     // Check if the user already exists
     const userExist = allUser.find((user) => {
@@ -30,86 +34,67 @@ export default defineEventHandler(async (event) => {
       })
     );
 
-    // If role is not empty
-    if (body.module == "user") {
-      if (body.role.length == 0) {
-        return {
-          statusCode: 400,
-          message: "Please select at least one role",
-        };
-      }
+    // Add New User
+    const user = await prisma.user.create({
+      data: {
+        userSecretKey: secretKey,
+        userUsername: body.username,
+        userPassword: password,
+        userFullName: body?.fullname || "",
+        userEmail: body?.email || "",
+        userPhone: body?.phone || "",
+        userStatus: "ACTIVE",
+        userCreatedDate: new Date(),
+      },
+    });
 
-      body.role.forEach((el) => {
-        // Check if roleID is valid for each role
-        if (!checkRoleID(el.value)) {
-          return {
-            statusCode: 400,
-            message: "Role ID is not valid",
-          };
-        }
-      });
+    if (user) {
+      // Add user roles if provided
+      if (body.role && Array.isArray(body.role)) {
+        const userRoles = await Promise.all(
+          body.role.map(async (role) => {
+            const existingRole = await prisma.role.findFirst({
+              where: {
+                roleID: role.value,
+              },
+            });
 
-      // Add New User
-      const user = await prisma.user.create({
-        data: {
-          userSecretKey: secretKey,
-          userUsername: body.username,
-          userPassword: password,
-          userFullName: body?.fullname || "",
-          userEmail: body?.email || "",
-          userPhone: body?.phone || "",
-          userStatus: "ACTIVE",
-          userCreatedDate: new Date(),
-        },
-      });
+            if (existingRole) {
+              return prisma.userrole.create({
+                data: {
+                  userRoleUserID: user.userID,
+                  userRoleRoleID: role.value,
+                  userRoleCreatedDate: new Date(),
+                },
+              });
+            }
+            return null;
+          })
+        );
 
-      if (user) {
-        // Add user role
-        body.role.forEach(async (el) => {
-          const userRole = await prisma.userrole.create({
-            data: {
-              userRoleUserID: user.userID,
-              userRoleRoleID: el.value,
-              userRoleCreatedDate: new Date(),
-            },
-          });
-        });
+        const validUserRoles = userRoles.filter(Boolean);
 
         return {
           statusCode: 200,
           message: "User successfully added!",
-        };
-      } else {
-        return {
-          statusCode: 500,
-          message: "Something went wrong! Please contact your administrator.",
-        };
-      }
-    } else if (body.module == "role") {
-      // Add New User
-      const user = await prisma.user.create({
-        data: {
-          userSecretKey: secretKey,
-          userUsername: body.username,
-          userPassword: password,
-          userFullName: body?.fullname || "",
-          userEmail: body?.email || "",
-          userPhone: body?.phone || "",
-          userStatus: "ACTIVE",
-          userCreatedDate: new Date(),
-        },
-      });
-      if (user) {
-        return {
-          statusCode: 200,
-          message: "User successfully added!",
-        };
-      } else {
-        return {
-          statusCode: 500,
-          message: "Something went wrong! Please contact your administrator.",
+          data: {
+            user,
+            assignedRoles: validUserRoles.length,
+            totalRoles: body.role.length,
+          },
         };
       }
+
+      return {
+        statusCode: 200,
+        message: "User successfully added!",
+        data: { user },
+      };
+    } else {
+      return {
+        statusCode: 500,
+        message: "Something went wrong! Please contact your administrator.",
+      };
     }
   } catch (error) {
     return {

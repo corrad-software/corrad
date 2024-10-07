@@ -3,7 +3,11 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Check if the role already exists
-    const allRole = await prisma.role.findMany();
+    const allRole = await prisma.role.findMany({
+      where: {
+        roleStatus: "ACTIVE",
+      },
+    });
 
     const roleExist = allRole.find((role) => {
       return role?.roleName.toLowerCase() === body?.name.toLowerCase();
@@ -16,71 +20,63 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    if (body.module == "user") {
-      // add new role
-      const role = await prisma.role.create({
-        data: {
-          roleName: body.name,
-          roleDescription: body.description || "",
-          roleStatus: "ACTIVE",
-          roleCreatedDate: new Date(),
-        },
-      });
+    // add new role
+    const role = await prisma.role.create({
+      data: {
+        roleName: body.name,
+        roleDescription: body.description || "",
+        roleStatus: "ACTIVE",
+        roleCreatedDate: new Date(),
+      },
+    });
 
-      if (role) {
-        return {
-          statusCode: 200,
-          message: "Role successfully added!",
-        };
-      } else {
-        return {
-          statusCode: 500,
-          message: "Something went wrong! Please contact your administrator.",
-        };
-      }
-    } else if (body.module == "role") {
-      // add new role
-      const role = await prisma.role.create({
-        data: {
-          roleName: body.name,
-          roleDescription: body.description || "",
-          roleStatus: "ACTIVE",
-          roleCreatedDate: new Date(),
-        },
-      });
+    if (role) {
+      // Add User to the role if users are provided
+      if (body.users && Array.isArray(body.users)) {
+        const userRoles = await Promise.all(
+          body.users.map(async (el) => {
+            const user = await prisma.user.findFirst({
+              where: {
+                userUsername: el.value,
+              },
+            });
 
-      if (role) {
-        // Add User to the role
-        body.users.forEach(async (el) => {
-          // Select user where username
-          const user = await prisma.user.findFirst({
-            where: {
-              userUsername: el.value,
-            },
-          });
+            if (user) {
+              return prisma.userrole.create({
+                data: {
+                  userRoleUserID: user.userID,
+                  userRoleRoleID: role.roleID,
+                  userRoleCreatedDate: new Date(),
+                },
+              });
+            }
+            return null;
+          })
+        );
 
-          if (!user) return;
-
-          // Add UserRole
-          const userRole = await prisma.userrole.create({
-            data: {
-              userRoleUserID: user.userID,
-              userRoleRoleID: role.roleID,
-              userRoleCreatedDate: new Date(),
-            },
-          });
-        });
+        const validUserRoles = userRoles.filter(Boolean);
 
         return {
           statusCode: 200,
           message: "Role successfully added!",
-        };
-      } else {
-        return {
-          statusCode: 500,
-          message: "Something went wrong! Please contact your administrator.",
+          data: {
+            role,
+            assignedUsers: validUserRoles.length,
+            totalUsers: body.users.length,
+          },
         };
       }
+
+      return {
+        statusCode: 200,
+        message: "Role successfully added!",
+        data: { role },
+      };
+    } else {
+      return {
+        statusCode: 500,
+        message: "Something went wrong! Please contact your administrator.",
+      };
     }
   } catch (error) {
     return {

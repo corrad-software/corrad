@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    if (user) {
+    if (user.count > 0) {
       const getUserID = await prisma.user.findFirst({
         where: {
           userUsername: body.username,
@@ -24,34 +24,59 @@ export default defineEventHandler(async (event) => {
       });
 
       if (getUserID) {
-        // Delete all user role
-        const userRole = await prisma.userrole.deleteMany({
+        // Delete all user roles
+        await prisma.userrole.deleteMany({
           where: {
             userRoleUserID: getUserID.userID,
           },
         });
 
-        if (userRole) {
-          const userRoleList = body.role;
+        // Add new user roles
+        if (body.role && Array.isArray(body.role)) {
+          const userRoles = await Promise.all(
+            body.role.map(async (role) => {
+              const existingRole = await prisma.role.findFirst({
+                where: {
+                  roleID: role.value,
+                },
+              });
 
-          // Add new user role
-          userRoleList.forEach(async (role) => {
-            const userRole = await prisma.userrole.create({
-              data: {
-                userRoleUserID: getUserID.userID,
-                userRoleRoleID: role.value,
-                userRoleCreatedDate: new Date(),
-              },
-            });
-          });
+              if (existingRole) {
+                return prisma.userrole.create({
+                  data: {
+                    userRoleUserID: getUserID.userID,
+                    userRoleRoleID: role.value,
+                    userRoleCreatedDate: new Date(),
+                  },
+                });
+              }
+              return null;
+            })
+          );
+
+          const validUserRoles = userRoles.filter(Boolean);
 
           return {
             statusCode: 200,
             message: "User updated successfully",
+            data: {
+              assignedRoles: validUserRoles.length,
+              totalRoles: body.role.length,
+            },
           };
         }
+
+        return {
+          statusCode: 200,
+          message: "User updated successfully",
+        };
       }
     }
+
+    return {
+      statusCode: 404,
+      message: "User not found",
+    };
   } catch (error) {
     return {
       statusCode: 500,

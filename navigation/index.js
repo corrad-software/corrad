@@ -71,6 +71,12 @@ export default [
         icon: "material-symbols:api-rounded",
         child: [],
       },
+      {
+        title: "Code Playground",
+        path: "/devtool/code-playground",
+        icon: "mdi:code-braces",
+        child: [],
+      },
     ],
     meta: {
       auth: {
@@ -91,7 +97,7 @@ export default [
       {
         title: "UI Components",
         icon: "material-symbols:settings-input-component-outline-rounded",
-        path: "https://corradui.datasc.dev",
+        path: "https://ui.corrad.ai",
         external: true,
       },
     ],

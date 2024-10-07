@@ -14,39 +14,53 @@ export default defineEventHandler(async (event) => {
     });
 
     if (role) {
-      // Delete all user role
-      const deleteUserRole = await prisma.userrole.deleteMany({
+      // Delete all user roles for this role
+      await prisma.userrole.deleteMany({
         where: {
           userRoleRoleID: body.id,
         },
       });
 
-      if (deleteUserRole) {
-        // Add User to the role
-        body.users.forEach(async (el) => {
-          // Select user where username
-          const user = await prisma.user.findFirst({
-            where: {
-              userUsername: el.value,
-            },
-          });
+      // Add User to the role if users are provided
+      if (body.users && Array.isArray(body.users)) {
+        const userRoles = await Promise.all(
+          body.users.map(async (el) => {
+            const user = await prisma.user.findFirst({
+              where: {
+                userUsername: el.value,
+              },
+            });
 
-          if (!user) return;
+            if (user) {
+              return prisma.userrole.create({
+                data: {
+                  userRoleUserID: user.userID,
+                  userRoleRoleID: body.id,
+                  userRoleCreatedDate: new Date(),
+                },
+              });
+            }
+            return null;
+          })
+        );
 
-          // Add UserRole
-          const userRole = await prisma.userrole.create({
-            data: {
-              userRoleUserID: user.userID,
-              userRoleRoleID: body.id,
-              userRoleCreatedDate: new Date(),
-            },
-          });
-        });
+        const validUserRoles = userRoles.filter(Boolean);
+
+        return {
+          statusCode: 200,
+          message: "Role successfully edited!",
+          data: {
+            role,
+            assignedUsers: validUserRoles.length,
+            totalUsers: body.users.length,
+          },
+        };
       }
 
       return {
         statusCode: 200,
         message: "Role successfully edited!",
+        data: { role },
       };
     } else {
       return {

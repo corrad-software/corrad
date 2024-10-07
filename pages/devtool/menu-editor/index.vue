@@ -116,6 +116,30 @@ const openModalEdit = (menu) => {
 };
 
 const saveEditMenu = async () => {
+  // Check if name is empty
+  if (!showModalEditForm.value.name) {
+    nuxtApp.$swal.fire({
+      title: "Error",
+      text: "Name is required.",
+      icon: "error",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  }
+
+  // Check if the path has weird symbols for path return error. Use regex
+  if (/[^a-zA-Z0-9_-]/.test(showModalEditForm.value.path)) {
+    nuxtApp.$swal.fire({
+      title: "Error",
+      text: "Path contains invalid characters. Only letters, numbers, dashes, and underscores are allowed.",
+      icon: "error",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+
+    return;
+  }
+
   const res = await useFetch("/api/devtool/menu/edit", {
     method: "POST",
     initialCache: false,
@@ -154,6 +178,27 @@ const openModalAdd = () => {
 };
 
 const saveAddMenu = async () => {
+  // Check if name is empty
+  if (!showModalAddForm.value.name) {
+    nuxtApp.$swal.fire({
+      title: "Error",
+      text: "Name is required.",
+      icon: "error",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  }
+
+  // Check if the path has weird symbols for path return error. Use regex
+  if (/[^a-zA-Z0-9_-]/.test(showModalAddForm.value.path)) {
+    nuxtApp.$swal.fire({
+      title: "Error",
+      text: "Path contains invalid characters. Only letters, numbers, dashes, and underscores are allowed.",
+      icon: "error",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  }
   const res = await useFetch("/api/devtool/menu/add", {
     method: "POST",
     initialCache: false,
@@ -398,6 +443,21 @@ const addMenuFromList = () => {
 //-----------------------------------------------------------------------------
 //-------------------------SECOND CHILD TAB ITEM (END)-------------------------
 //-----------------------------------------------------------------------------
+
+// Add this watcher after the showModalEditForm ref declaration
+watch(
+  () => showModalEditForm.value,
+  (newTitle) => {
+    showModalEditForm.value.name = newTitle.toLowerCase().replace(/\s+/g, "-");
+  }
+);
+
+watch(
+  () => showModalAddForm.value.title,
+  (newTitle) => {
+    showModalAddForm.value.name = newTitle.toLowerCase().replace(/\s+/g, "-");
+  }
+);
 </script>
 
 <template>
@@ -526,7 +586,9 @@ const addMenuFromList = () => {
                     :sort="false"
                   >
                     <template #item="{ element }">
-                      <rs-card class="p-4 mb-4 border-2 border-[rgb(var(--border-color))] !shadow-none">
+                      <rs-card
+                        class="p-4 mb-4 border-2 border-[rgb(var(--border-color))] !shadow-none"
+                      >
                         <div class="flex justify-between items-center">
                           <p>
                             {{ kebabtoTitle(element.name) }} (
@@ -607,11 +669,11 @@ const addMenuFromList = () => {
         label="Title"
         v-model="showModalEditForm.title"
       ></FormKit>
-      <FormKit
+      <!-- <FormKit
         type="text"
         label="Name"
         v-model="showModalEditForm.name"
-      ></FormKit>
+      ></FormKit> -->
       <FormKit
         type="text"
         label="Path"
@@ -635,11 +697,11 @@ const addMenuFromList = () => {
         label="Title"
         v-model="showModalAddForm.title"
       ></FormKit>
-      <FormKit
+      <!-- <FormKit
         type="text"
         label="Name"
         v-model="showModalAddForm.name"
-      ></FormKit>
+      ></FormKit> -->
       <FormKit
         type="text"
         label="Path"

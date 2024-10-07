@@ -17,46 +17,39 @@ model audit {
 }
 
 model user {
-  userID             Int                  @id @default(autoincrement())
-  userSecretKey      String?              @db.VarChar(255)
-  userUsername       String?              @unique(map: "userUsername") @db.VarChar(255)
-  userPassword       String?              @db.VarChar(255)
-  userFullName       String?              @db.VarChar(255)
-  userEmail          String?              @db.VarChar(255)
-  userPhone          String?              @db.VarChar(255)
-  userStatus         String?              @db.VarChar(255)
-  userCreatedDate    DateTime?            @db.DateTime(0)
-  userModifiedDate   DateTime?            @db.DateTime(0)
-  chat               chat[]
-  project            project[]
-  project_permission project_permission[]
-  thread             thread[]
-  userrole           userrole[]
+  userID           Int        @id @default(autoincrement())
+  userSecretKey    String?    @db.VarChar(255)
+  userUsername     String?    @db.VarChar(255)
+  userPassword     String?    @db.VarChar(255)
+  userFullName     String?    @db.VarChar(255)
+  userEmail        String?    @db.VarChar(255)
+  userPhone        String?    @db.VarChar(255)
+  userStatus       String?    @db.VarChar(255)
+  userCreatedDate  DateTime?  @db.DateTime(0)
+  userModifiedDate DateTime?  @db.DateTime(0)
+  userrole         userrole[]
 }
 
 model role {
-  roleID             Int                  @id @default(autoincrement())
-  roleName           String?              @db.VarChar(255)
-  roleDescription    String?              @db.VarChar(255)
-  roleStatus         String?              @db.VarChar(255)
-  roleCreatedDate    DateTime?            @db.DateTime(0)
-  roleModifiedDate   DateTime?            @db.DateTime(0)
-  project_permission project_permission[]
-  userrole           userrole[]
+  roleID           Int        @id @default(autoincrement())
+  roleName         String?    @db.VarChar(255)
+  roleDescription  String?    @db.VarChar(255)
+  roleStatus       String?    @db.VarChar(255)
+  roleCreatedDate  DateTime?  @db.DateTime(0)
+  roleModifiedDate DateTime?  @db.DateTime(0)
+  userrole         userrole[]
 }
 
 model lookup {
-  lookupID           Int         @id @default(autoincrement())
+  lookupID           Int       @id @default(autoincrement())
   lookupOrder        Int?
-  lookupTitle        String?     @db.VarChar(255)
-  lookupRefCode      String?     @db.VarChar(255)
-  lookupValue        String?     @db.VarChar(255)
-  lookupType         String?     @db.VarChar(255)
-  lookupStatus       String?     @db.VarChar(255)
-  lookupCreatedDate  DateTime?   @db.DateTime(0)
-  lookupModifiedDate DateTime?   @db.DateTime(0)
-  assistant          assistant[]
-  project            project[]
+  lookupTitle        String?   @db.VarChar(255)
+  lookupRefCode      String?   @db.VarChar(255)
+  lookupValue        String?   @db.VarChar(255)
+  lookupType         String?   @db.VarChar(255)
+  lookupStatus       String?   @db.VarChar(255)
+  lookupCreatedDate  DateTime? @db.DateTime(0)
+  lookupModifiedDate DateTime? @db.DateTime(0)
 }
 
 model userrole {
@@ -71,146 +64,23 @@ model userrole {
   @@index([userRoleUserID], map: "FK_userrole_user")
 }
 
-model assistant {
-  assistantID           Int       @id @default(autoincrement())
-  assistantOAIID        String?   @db.VarChar(255)
-  assistantImg          String?   @db.VarChar(255)
-  assistantName         String?   @db.VarChar(255)
-  assistantDescription  String?   @db.VarChar(255)
-  assistantType         Int?
-  assistantStatus       String?   @db.VarChar(255)
-  assistantVerified     Boolean?  @db.Bit(1)
-  assistantCreatedDate  DateTime? @db.DateTime(0)
-  assistantModifiedDate DateTime? @db.DateTime(0)
-  lookup                lookup?   @relation(fields: [assistantType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "assistant_ibfk_1")
-  thread                thread[]
-
-  @@index([assistantType], map: "assistantType")
-}
-
-model chat {
-  chatID           Int        @id @default(autoincrement())
-  userID           Int?
-  threadID         Int?
-  projectID        Int?
-  chatOAIMessageID String?    @unique(map: "chatOAIMessageID") @db.VarChar(255)
-  chatType         String?    @db.VarChar(255)
-  chatRole         String?    @db.VarChar(255)
-  chatMessage      String?    @db.LongText
-  chatCreatedDate  DateTime?  @db.DateTime(0)
-  chatModifiedDate DateTime?  @db.DateTime(0)
-  user             user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_1")
-  thread           thread?    @relation(fields: [threadID], references: [threadID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_2")
-  project          project?   @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "chat_ibfk_3")
-  chatFile         chatFile[]
-
-  @@index([projectID], map: "projectID")
-  @@index([threadID], map: "threadID")
-  @@index([userID], map: "userID")
-}
-
-model chatFile {
-  chatFileID Int   @id @default(autoincrement())
-  fileID     Int?
-  chatID     Int?
-  file       file? @relation(fields: [fileID], references: [fileID], onDelete: NoAction, onUpdate: NoAction, map: "chatFile_ibfk_1")
-  chat       chat? @relation(fields: [chatID], references: [chatID], onDelete: NoAction, onUpdate: NoAction, map: "chatFile_ibfk_2")
-
-  @@index([chatID], map: "chatID")
-  @@index([fileID], map: "fileID")
-}
-
-model configuration {
-  configurationID           Int       @id @default(autoincrement())
-  configurationName         String?   @db.VarChar(255)
-  configurationCode         String?   @unique(map: "configurationCode") @db.VarChar(255)
-  configurationType         String?   @db.VarChar(255)
-  configurationValue        String?   @db.VarChar(255)
-  configurationCreatedDate  DateTime? @db.DateTime(0)
-  configurationModifiedDate DateTime? @db.DateTime(0)
-}
-
-model file {
-  fileID           Int        @id @default(autoincrement())
-  fileOAIID        String?    @unique(map: "fileOAIID") @db.VarChar(255)
-  fileName         String?    @db.VarChar(255)
-  fileOriginalName String?    @db.VarChar(255)
-  fileType         String?    @db.VarChar(255)
-  fileURL          String?    @db.VarChar(255)
-  fileBytes        Int?
-  fileCreatedDate  DateTime?  @db.DateTime(0)
-  fileModifiedDate DateTime?  @db.DateTime(0)
-  chatFile         chatFile[]
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model project {
-  projectID                                                          Int                  @id @default(autoincrement())
-  projectUniqueID                                                    String               @unique(map: "projectUniqueID") @db.VarChar(255)
-  userID                                                             Int?
-  projectName                                                        String?              @db.VarChar(255)
-  projectDescription                                                 String?              @db.VarChar(255)
-  projectDefault                                                     Boolean?             @default(dbgenerated("b'0'")) @db.Bit(1)
-  projectType                                                        Int?
-  projectCreatedDate                                                 DateTime?            @db.DateTime(0)
-  projectModifiedDate                                                DateTime?            @db.DateTime(0)
-  chat                                                               chat[]
-  user                                                               user?                @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_2")
-  lookup                                                             lookup?              @relation(fields: [projectType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_3")
-  project_permission_project_permission_projectPermissionIDToproject project_permission?  @relation("project_permission_projectPermissionIDToproject")
-  project_permission_project_permission_projectIDToproject           project_permission[] @relation("project_permission_projectIDToproject")
-  repository                                                         repository[]
-
-  @@index([projectType], map: "projectType")
-  @@index([userID], map: "userID")
-}
-
-model project_permission {
-  projectPermissionID                                     Int       @id @default(autoincrement())
-  userID                                                  Int?
-  roleID                                                  Int?
-  projectID                                               Int?
-  projectPermissionStatus                                 String?   @db.VarChar(255)
-  projectPermissionCreatedDate                            DateTime? @db.DateTime(0)
-  projectPermissionModifiedDate                           DateTime? @db.DateTime(0)
-  project_project_permission_projectPermissionIDToproject project   @relation("project_permission_projectPermissionIDToproject", fields: [projectPermissionID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_1")
-  user                                                    user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_2")
-  role                                                    role?     @relation(fields: [roleID], references: [roleID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_3")
-  project_project_permission_projectIDToproject           project?  @relation("project_permission_projectIDToproject", fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "project_permission_ibfk_4")
-
-  @@index([projectID], map: "projectID")
-  @@index([roleID], map: "roleID")
-  @@index([userID], map: "userID")
-}
-
-model repository {
-  repositoryID           Int       @id @default(autoincrement())
-  projectID              Int?
-  repositoryName         String?   @db.VarChar(255)
-  repositoryDescription  String?   @db.VarChar(255)
-  repositoryVersion      String?   @db.VarChar(255)
-  repositoryContent      String?   @db.LongText
-  repositoryStatus       String?   @db.VarChar(255)
-  repositoryCreatedDate  DateTime? @db.DateTime(0)
-  repositoryModifiedDate DateTime? @db.DateTime(0)
-  project                project?  @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "repository_ibfk_1")
-
-  @@index([projectID], map: "projectID")
-  @@index([repositoryStatus], map: "repositoryStatus")
-}
-
-model thread {
-  threadID           Int        @id @default(autoincrement())
-  userID             Int?
-  assistantID        Int?
-  threadTitle        String?    @db.VarChar(255)
-  threadOAIID        String?    @unique(map: "threadOAIID") @db.VarChar(255)
-  threadCreatedDate  DateTime?  @db.DateTime(0)
-  threadModifiedDate DateTime?  @db.DateTime(0)
-  chat               chat[]
-  assistant          assistant? @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
-  user               user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_2")
-
-  @@index([assistantID], map: "assistantID")
-  @@index([userID], map: "userID")
+model survey_list {
+  data_id               Int     @id
+  survey_id             String  @default("0") @db.VarChar(255)
+  vehicle_number        String  @default("0") @db.VarChar(255)
+  vehicle_timein        String? @db.VarChar(255)
+  vehicle_timeout       String? @db.VarChar(255)
+  project_id            Int?
+  project_name          String? @db.VarChar(255)
+  project_eecode        String? @db.VarChar(255)
+  project_parker_type   String? @db.VarChar(255)
+  project_surveyor_name String? @db.VarChar(255)
+  ref_id                Int?
+  ref_type              String? @db.VarChar(255)
+  vehicle_status        String? @db.VarChar(255)
+  data_status           String? @db.VarChar(255)
+  created_by            String? @db.VarChar(255)
+  created_at            String? @db.VarChar(255)
+  updated_by            String? @db.VarChar(255)
+  updated_at            String? @db.VarChar(255)
 }

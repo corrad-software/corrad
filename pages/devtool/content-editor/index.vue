@@ -11,13 +11,15 @@ const router = useRouter();
 const getPages = router.getRoutes();
 
 const pages = getPages.filter((page) => {
-  // filter out the pages that are not in the admin folder
-  return (
-    page.path.includes("/devtool") === false &&
-    page.meta?.title &&
-    page.meta?.title !== "Home" &&
-    page.name
-  );
+  // Filter out pages in the devtool path
+  if (page.path.includes("/devtool")) {
+    return false;
+  }
+
+  // Use page.name if page.meta.title doesn't exist
+  const pageTitle = page.meta?.title || page.name;
+
+  return pageTitle && pageTitle !== "Home" && page.name;
 });
 
 const searchText = ref("");
@@ -29,9 +31,8 @@ const modalData = ref({
 
 const searchPages = () => {
   return pages.filter((page) => {
-    return page.meta.title
-      .toLowerCase()
-      .includes(searchText.value.toLowerCase());
+    const pageTitle = page.meta?.title || page.name;
+    return pageTitle.toLowerCase().includes(searchText.value.toLowerCase());
   });
 };
 
@@ -161,7 +162,7 @@ const confirmModal = async () => {
           >
             <div class="pb-4">
               <h4 class="font-semibold">
-                {{ capitalizeSentence(page.meta.title) }}
+                {{ capitalizeSentence(page.meta?.title || page.name) }}
               </h4>
               <nuxt-link :to="page.path">
                 <div
@@ -180,13 +181,13 @@ const confirmModal = async () => {
               class="button-list flex justify-between border-t pt-4 border-gray-300"
             >
               <div class="flex gap-x-2">
-                <nuxt-link
+                <!-- <nuxt-link
                   :to="`/devtool/content-editor/canvas?page=${page.name}`"
                 >
                   <rs-button variant="primary" class="!py-2 !px-3">
                     <Icon name="ph:paint-brush-broad"></Icon>
                   </rs-button>
-                </nuxt-link>
+                </nuxt-link> -->
                 <nuxt-link
                   :to="`/devtool/content-editor/code?page=${page.name}`"
                 >

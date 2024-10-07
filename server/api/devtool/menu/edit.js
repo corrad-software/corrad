@@ -4,76 +4,79 @@ import path from "path";
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  if (body.filePath != body.formData.path) {
-    try {
-      // Check if last character is not slash
-      if (body.filePath.slice(-1) != "/") {
-        body.filePath = body.filePath + "/";
-      }
+  // Normalize paths
+  const oldPath = body.filePath.endsWith("/")
+    ? body.filePath
+    : body.filePath + "/";
+  const newPath = body.formData.path.endsWith("/")
+    ? body.formData.path
+    : body.formData.path + "/";
 
-      // Get old file path
-      const oldFilePath = path.join(
-        process.cwd() + "pages",
-        body.filePath + "index.vue"
-      );
+  // Get file paths
+  const oldFilePath = path.join(process.cwd(), "pages", oldPath, "index.vue");
+  const newFilePath = path.join(process.cwd(), "pages", newPath, "index.vue");
 
-      // Check if last character is not a slash
-      if (body.formData.path.slice(-1) != "/") {
-        body.formData.path = body.formData.path + "/";
-      }
-
-      // Get new file path
-      const newFilePath = path.join(
-        process.cwd(),
-        "pages",
-        body.formData.path,
-        "index.vue"
-      );
-
-      // Create the folder if doesn't exist
+  try {
+    if (oldPath !== newPath) {
+      // Create the new folder if it doesn't exist
       fs.mkdirSync(path.dirname(newFilePath), { recursive: true });
 
-      // Create new file
-      fs.writeFileSync(
-        newFilePath,
-        `<script setup>
-          definePageMeta({
-            title: "${
-              body.formData.title ? body.formData.title : body.formData.name
-            }",
-          });
-        </script>
-        <template>
-          <div>
-            <LayoutsBreadcrumb />
-          </div>
-        </template>
-      `
+      // Read the content of the old file
+      let content = fs.readFileSync(oldFilePath, "utf8");
+
+      // Update the metadata in the content
+      content = content.replace(
+        /definePageMeta\({[\s\S]*?}\);/,
+        `definePageMeta({
+  title: "${body.formData.title || body.formData.name}",
+});`
       );
 
-      // copy old file to new file
-      fs.copyFile(oldFilePath, newFilePath, (err) => {
-        if (err) throw err;
-        console.log("successfully copied old file to new file");
-      });
+      // Write the updated content to the new file
+      fs.writeFileSync(newFilePath, content);
+
+      // Delete the old file
+      fs.unlinkSync(oldFilePath);
+
+      // Remove empty directories
+      let dirToCheck = path.dirname(oldFilePath);
+      while (dirToCheck !== path.join(process.cwd(), "pages")) {
+        if (fs.readdirSync(dirToCheck).length === 0) {
+          fs.rmdirSync(dirToCheck);
+          dirToCheck = path.dirname(dirToCheck);
+        } else {
+          break;
+        }
+      }
 
       return {
         statusCode: 200,
-        message: "Menu successfully saved",
+        message:
+          "Menu successfully copied to new location with updated metadata, and old menu deleted",
       };
-    } catch (error) {
-      console.log(error);
+    } else {
+      // If paths are the same, just update the existing file's metadata
+      let content = fs.readFileSync(oldFilePath, "utf8");
+
+      content = content.replace(
+        /definePageMeta\({[\s\S]*?}\);/,
+        `definePageMeta({
+  title: "${body.formData.title || body.formData.name}",
+});`
+      );
+
+      fs.writeFileSync(oldFilePath, content);
+
       return {
-        statusCode: 500,
-        message: error,
+        statusCode: 200,
+        message: "Menu metadata successfully updated at the same location",
       };
     }
-
-    // fs.writeFile;
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      message: error.message,
+    };
   }
-
-  return {
-    statusCode: 200,
-    message: "null",
-  };
 });
