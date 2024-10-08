@@ -86,6 +86,13 @@ export default [
             "icon": "icon-park-twotone:more-four",
             "child": [],
             "meta": {}
+          },
+          {
+            "title": "Sub menu 2",
+            "path": "/haqeem/user/list-2",
+            "icon": "icon-park-twotone:more-four",
+            "child": [],
+            "meta": {}
           }
         ],
         "meta": {}
