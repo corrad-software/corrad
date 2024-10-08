@@ -384,6 +384,132 @@ export const socketHandler = async (io: Server) => {
       }
     });
 
+    socket.on(
+      "regenerateResponse",
+      async ({
+        threadID,
+        assistantID,
+        projectID,
+        user,
+        message,
+        assistantMessageId,
+      }) => {
+        try {
+          io.to(threadID).emit("messageStart");
+
+          // Delete the previous assistant message from the database
+          await prisma?.chat.deleteMany({
+            where: {
+              chatOAIMessageID: assistantMessageId,
+              thread: {
+                threadOAIID: threadID,
+              },
+              project: {
+                projectUniqueID: projectID,
+              },
+            },
+          });
+
+          // Process the message with OpenAI
+          await openai?.beta.threads.messages.create(threadID, {
+            role: "user",
+            content: message.content,
+          });
+
+          const stream = await openai?.beta.threads.runs.create(threadID, {
+            assistant_id: assistantID,
+            stream: true,
+          });
+
+          let fullResponse = "";
+          let completed = false;
+
+          for await (const ev of stream) {
+            console.log("Event:", ev);
+
+            if (
+              ev.event === "thread.run.in_progress" ||
+              ev.event === "thread.run.created"
+            ) {
+              // Add the run to activeStreams
+              activeStreams.set(threadID, {
+                runId: ev.data.id,
+                isActive: true,
+              });
+            }
+
+            if (ev.event === "thread.message.delta" && ev.data.delta?.content) {
+              for (const content of ev.data.delta.content) {
+                if (content.type === "text") {
+                  fullResponse += content.text.value;
+                  io.to(threadID).emit("messageChunk", content.text.value);
+                }
+              }
+            }
+
+            if (ev.event === "thread.run.completed") {
+              completed = true;
+              break;
+            }
+
+            if (ev.event === "thread.run.failed") {
+              throw new Error("Run failed");
+            }
+          }
+
+          // Remove the stream from activeStreams
+          activeStreams.delete(threadID);
+
+          if (!completed) {
+            io.to(threadID).emit("messageError", "Run failed");
+            return;
+          }
+
+          const messages = await openai.beta.threads.messages.list(threadID);
+          const lastMessage = messages.data[0];
+          if (lastMessage.role === "assistant") {
+            const finalContent = lastMessage.content[0].text.value;
+            if (finalContent !== fullResponse) {
+              const remainingContent = finalContent.slice(fullResponse.length);
+              io.to(threadID).emit("messageChunk", remainingContent);
+            }
+          }
+
+          io.to(threadID).emit("messageEnd");
+
+          const createMessageResponse = await prisma?.chat.create({
+            data: {
+              chatMessage: lastMessage.content[0].text.value,
+              chatRole: "assistant",
+              chatType: "text",
+              chatOAIMessageID: lastMessage.id,
+              thread: {
+                connect: {
+                  threadOAIID: threadID,
+                },
+              },
+              project: {
+                connect: {
+                  projectUniqueID: projectID,
+                },
+              },
+              chatCreatedDate: DateTime.now().toISO(),
+            },
+          });
+
+          console.log("Regenerated message created:", createMessageResponse);
+
+          io.to(threadID).emit("messageClear");
+        } catch (error) {
+          console.error("Error regenerating response:", error);
+          io.to(threadID).emit(
+            "messageError",
+            "Failed to regenerate response. Please try again."
+          );
+        }
+      }
+    );
+
     socket.on("disconnect", () => {
       console.log("Client disconnected");
     });

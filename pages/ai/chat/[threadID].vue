@@ -435,6 +435,36 @@ const fileToBase64 = (file) => {
     reader.onerror = (error) => reject(error);
   });
 };
+
+const regenerateResponse = async (index) => {
+  try {
+    const userMessage = messages.value[index - 1]; // Assuming the user message is always before the assistant's
+    const assistantMessage = messages.value[index];
+
+    // Remove the assistant's message from the UI
+    messages.value.splice(index, 1);
+
+    // Emit event to regenerate response
+    $io.emit("regenerateResponse", {
+      threadID,
+      assistantID: assistantID.value,
+      projectID: projectID.value,
+      user: user.value,
+      message: userMessage,
+      assistantMessageId: assistantMessage.chatOAIMessageID,
+    });
+
+    // Start streaming new response
+    isStreaming.value = true;
+  } catch (error) {
+    console.error("Error regenerating response:", error);
+    $swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to regenerate response. Please try again.",
+    });
+  }
+};
 </script>
 
 <template>
@@ -531,8 +561,10 @@ const fileToBase64 = (file) => {
             </span>
           </div>
           <div
-            v-if="message.sender === 'assistant'"
-            class="flex justify-start mt-2 relative gap-4"
+            :class="[
+              'flex justify-start mt-2 relative gap-4',
+              message.sender === 'user' ? 'justify-end' : '',
+            ]"
           >
             <button
               @click="copyToClipboard(message.content, index)"
@@ -543,11 +575,15 @@ const fileToBase64 = (file) => {
             </button>
             <div
               v-if="copiedIndex === index"
-              class="absolute left-0 bottom-full mb-2 bg-gray-700 text-white text-xs py-1 px-2 rounded"
+              :class="[
+                'absolute bottom-full mb-2 bg-gray-700 text-white text-xs py-1 px-2 rounded',
+                message.sender === 'user' ? 'right-0' : 'left-0',
+              ]"
             >
               Copied!
             </div>
             <button
+              v-if="message.sender === 'assistant'"
               @click="markdownToEditor(message.content)"
               class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
             >
@@ -556,6 +592,18 @@ const fileToBase64 = (file) => {
                 class="w-4 h-4 mr-1"
               />
               Send to editor
+            </button>
+            <button
+              v-if="
+                message.sender === 'assistant' &&
+                index === messages.length - 1 &&
+                !isStreaming
+              "
+              @click="regenerateResponse(index)"
+              class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
+            >
+              <Icon name="mdi:refresh" class="w-4 h-4 mr-1" />
+              Regenerate
             </button>
           </div>
         </div>

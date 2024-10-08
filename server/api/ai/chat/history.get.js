@@ -53,6 +53,7 @@ export default defineEventHandler(async (event) => {
         projectID: project.projectID,
       },
       select: {
+        chatOAIMessageID: true,
         chatMessage: true,
         chatRole: true,
         chatType: true,
@@ -84,6 +85,7 @@ export default defineEventHandler(async (event) => {
 
     const remapHistory = history.map((item) => {
       return {
+        chatOAIMessageID: item.chatOAIMessageID,
         content: item.chatMessage,
         sender: item.chatRole,
         type: item.chatType,
