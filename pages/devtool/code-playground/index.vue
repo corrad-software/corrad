@@ -91,12 +91,7 @@ dropdownThemes.value = themes.map((theme) => {
 // watch for changes in the theme
 watch(editorTheme, (theme) => {
   themeStore.setCodeTheme(theme.value);
-  forceRerender();
 });
-
-const forceRerender = () => {
-  componentKey.value += 1;
-};
 
 const compileCode = (newCode) => {
   try {
@@ -265,7 +260,6 @@ const debouncedFormatCode = useDebounceFn(formatCurrentCode, 300);
         </div>
         <div class="flex-grow overflow-hidden">
           <rs-code-mirror
-            :key="componentKey"
             v-model="code"
             mode="javascript"
             :error="compilationError"

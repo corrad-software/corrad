@@ -223,7 +223,8 @@ const saveAddMenu = async () => {
       showConfirmButton: false,
     });
     // refresh the page
-    nuxtApp.$router.go();
+    // nuxtApp.$router.go();
+    window.location.reload();
   } else {
     nuxtApp.$swal.fire({
       title: "Error",
