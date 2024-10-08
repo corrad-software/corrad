@@ -9,27 +9,74 @@ export default [
         "icon": "ic:outline-dashboard",
         "child": [],
         "meta": {}
-      },
-      {
-        "title": "User",
-        "path": "/User",
-        "icon": "",
-        "child": [
-          {
-            "title": "Listing",
-            "path": "/Listing",
-            "icon": "",
-            "child": []
-          },
-          {
-            "title": "Permohonan",
-            "path": "/Permohonan",
-            "icon": "",
-            "child": []
-          }
-        ]
       }
     ]
+  },
+  {
+    "header": "Playground",
+    "description": "Component playground",
+    "child": [
+      {
+        "title": "Component playground",
+        "path": "/playground/test",
+        "icon": "material-symbols:play-shapes-outline-rounded",
+        "child": [],
+        "meta": {}
+      }
+    ],
+    "meta": {}
+  },
+  {
+    "header": "Customer",
+    "description": "Manage your customer",
+    "child": [
+      {
+        "title": "User",
+        "path": "/customer/Listing",
+        "icon": "mdi:users",
+        "child": [],
+        "meta": {
+          "auth": {
+            "role": [
+              "haqeem_role_1",
+              "Admin",
+              "Developer"
+            ]
+          }
+        }
+      },
+      {
+        "title": "Add User",
+        "path": "/customer/AddUser",
+        "icon": "mdi:add",
+        "child": [],
+        "meta": {
+          "auth": {
+            "role": [
+              "haqeem_role_2",
+              "Admin",
+              "Developer"
+            ]
+          }
+        }
+      },
+      {
+        "title": "Edit User",
+        "path": "/customer/EditUser",
+        "icon": "mdi:edit",
+        "child": [],
+        "meta": {
+          "auth": {
+            "role": [
+              "haqeem_role_3",
+              "Admin",
+              "Developer"
+            ]
+          }
+        }
+      }
+    ],
+    "meta": {}
   },
   {
     "header": "Administration",

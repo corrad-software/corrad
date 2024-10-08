@@ -1,6 +1,6 @@
 <script setup>
         definePageMeta({
-          title: "User",
+          title: "Component playground",
         });
       </script>
       <template>
