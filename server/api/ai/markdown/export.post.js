@@ -12,11 +12,11 @@ import {
 } from "docx";
 import { marked } from "marked";
 import { JSDOM } from "jsdom";
-import puppeteer from "puppeteer";
+import sharp from "sharp";
 
 export default defineEventHandler(async (event) => {
   try {
-    const { markdownContent } = await readBody(event);
+    const { markdownContent, mermaidDiagrams } = await readBody(event);
 
     const doc = new Document({
       sections: [],
@@ -29,10 +29,6 @@ export default defineEventHandler(async (event) => {
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
 
-    // Launch a headless browser
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-
     for (const child of document.body.childNodes) {
       if (child.nodeType === dom.window.Node.TEXT_NODE) {
         paragraphs.push(
@@ -41,15 +37,50 @@ export default defineEventHandler(async (event) => {
       } else if (child.nodeType === dom.window.Node.ELEMENT_NODE) {
         switch (child.tagName) {
           case "H1":
+            paragraphs.push(
+              new Paragraph({
+                text: child.textContent,
+                heading: HeadingLevel.HEADING_1,
+              })
+            );
+            break;
           case "H2":
+            paragraphs.push(
+              new Paragraph({
+                text: child.textContent,
+                heading: HeadingLevel.HEADING_2,
+              })
+            );
+            break;
           case "H3":
+            paragraphs.push(
+              new Paragraph({
+                text: child.textContent,
+                heading: HeadingLevel.HEADING_3,
+              })
+            );
+            break;
           case "H4":
+            paragraphs.push(
+              new Paragraph({
+                text: child.textContent,
+                heading: HeadingLevel.HEADING_4,
+              })
+            );
+            break;
           case "H5":
+            paragraphs.push(
+              new Paragraph({
+                text: child.textContent,
+                heading: HeadingLevel.HEADING_5,
+              })
+            );
+            break;
           case "H6":
             paragraphs.push(
               new Paragraph({
                 text: child.textContent,
-                heading: HeadingLevel[child.tagName],
+                heading: HeadingLevel.HEADING_6,
               })
             );
             break;
@@ -92,55 +123,26 @@ export default defineEventHandler(async (event) => {
               child.firstChild.classList.contains("language-mermaid")
             ) {
               try {
-                // Render Mermaid diagram using Puppeteer
-                await page.setContent(`
-                  <html>
-                    <body>
-                      <pre class="mermaid">${child.textContent}</pre>
-                      <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-                      <script>
-                        mermaid.initialize({ startOnLoad: true });
-                      </script>
-                    </body>
-                  </html>
-                `);
-                await page.waitForSelector("svg");
-                const element = await page.$("svg");
+                // Initialize mermaid
+                mermaid.initialize({ startOnLoad: false });
 
-                // Get the bounding box of the SVG
-                const boundingBox = await element.boundingBox();
+                // Render Mermaid diagram
+                const { svg } = await mermaid.render(
+                  "mermaid-diagram",
+                  child.textContent
+                );
 
-                // Calculate dimensions while maintaining aspect ratio
-                const maxWidth = 500;
-                const maxHeight = 300;
-                let width = boundingBox.width;
-                let height = boundingBox.height;
-
-                if (width > maxWidth) {
-                  height = (height * maxWidth) / width;
-                  width = maxWidth;
-                }
-
-                if (height > maxHeight) {
-                  width = (width * maxHeight) / height;
-                  height = maxHeight;
-                }
-
-                const pngBuffer = await element.screenshot({
-                  type: "png",
-                  clip: {
-                    x: boundingBox.x,
-                    y: boundingBox.y,
-                    width: boundingBox.width,
-                    height: boundingBox.height,
-                  },
-                });
+                // Convert SVG to PNG using sharp
+                const pngBuffer = await sharp(Buffer.from(svg))
+                  .resize({ width: 500, height: 300, fit: "inside" })
+                  .png()
+                  .toBuffer();
 
                 const imageRun = new ImageRun({
                   data: pngBuffer,
                   transformation: {
-                    width: width,
-                    height: height,
+                    width: 500,
+                    height: 300,
                   },
                 });
                 paragraphs.push(new Paragraph({ children: [imageRun] }));
@@ -165,6 +167,70 @@ export default defineEventHandler(async (event) => {
               );
             }
             break;
+          case "P":
+            const mermaidMatch = child.textContent
+              .trim()
+              .match(/^\[MERMAID_DIAGRAM_(\d+)\]$/);
+            if (mermaidMatch) {
+              const diagramIndex = parseInt(mermaidMatch[1]);
+              const diagramKeys = Object.keys(mermaidDiagrams);
+              const actualIndex = diagramKeys[diagramIndex] || diagramKeys[0];
+              const diagram = mermaidDiagrams[actualIndex];
+
+              if (diagram) {
+                const base64Data = diagram.data.split(",")[1];
+                const imageBuffer = Buffer.from(base64Data, "base64");
+
+                // Calculate dimensions to maintain exact aspect ratio
+                const maxWidth = 600; // Maximum width in the document
+                const maxHeight = 800; // Increased maximum height
+                let width, height;
+
+                if (diagram.aspectRatio > maxWidth / maxHeight) {
+                  // Image is wider than the target aspect ratio
+                  width = maxWidth;
+                  height = Math.round(width / diagram.aspectRatio);
+                } else {
+                  // Image is taller than the target aspect ratio
+                  height = maxHeight;
+                  width = Math.round(height * diagram.aspectRatio);
+                }
+
+                const pngBuffer = await sharp(imageBuffer)
+                  .resize({
+                    width: width,
+                    height: height,
+                    fit: sharp.fit.contain,
+                    background: { r: 255, g: 255, b: 255, alpha: 1 },
+                  })
+                  .png({ quality: 100 })
+                  .toBuffer();
+
+                const imageRun = new ImageRun({
+                  data: pngBuffer,
+                  transformation: {
+                    width: width,
+                    height: height,
+                  },
+                });
+                paragraphs.push(new Paragraph({ children: [imageRun] }));
+              } else {
+                paragraphs.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun(
+                        `[Mermaid Diagram ${diagramIndex} not found]`
+                      ),
+                    ],
+                  })
+                );
+              }
+            } else {
+              paragraphs.push(
+                new Paragraph({ children: [new TextRun(child.textContent)] })
+              );
+            }
+            break;
           default:
             paragraphs.push(
               new Paragraph({ children: [new TextRun(child.textContent)] })
@@ -172,9 +238,6 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
-
-    // Close the browser
-    await browser.close();
 
     doc.addSection({ children: paragraphs });
 

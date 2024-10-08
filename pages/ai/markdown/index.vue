@@ -4,6 +4,7 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { useDebounceFn } from "@vueuse/core";
 import mermaid from "mermaid";
+import { saveAs } from "file-saver";
 
 definePageMeta({
   title: "Markdown Editor",
@@ -169,12 +170,81 @@ const exportMarkdown = () => {
 
 const exportMarkdownToWord = async () => {
   try {
+    await mermaid.init(undefined, document.querySelectorAll(".mermaid"));
+
+    const mermaidDiagrams = {};
+    const mermaidElements = document.querySelectorAll(".mermaid");
+    let diagramCount = 0;
+
+    for (const element of mermaidElements) {
+      const svg = element.querySelector("svg");
+      if (svg) {
+        const scale = 4; // High resolution scale factor
+        let svgWidth, svgHeight;
+
+        // Try to get dimensions from viewBox first
+        const viewBox = svg.getAttribute("viewBox");
+        if (viewBox) {
+          const [, , vbWidth, vbHeight] = viewBox.split(" ").map(Number);
+          svgWidth = vbWidth;
+          svgHeight = vbHeight;
+        } else {
+          // Fallback to getBoundingClientRect
+          const rect = svg.getBoundingClientRect();
+          svgWidth = rect.width;
+          svgHeight = rect.height;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            mermaidDiagrams[diagramCount] = {
+              data: canvas.toDataURL("image/png"),
+              width: svgWidth,
+              height: svgHeight,
+              aspectRatio: svgWidth / svgHeight,
+            };
+            resolve();
+          };
+          img.onerror = reject;
+          img.src =
+            "data:image/svg+xml;base64," +
+            btoa(unescape(encodeURIComponent(svgData)));
+        });
+        diagramCount++;
+      }
+    }
+
+    // Preprocess markdown to add line breaks around Mermaid diagrams
+    let processedMarkdown = markdownContent.value.replace(
+      /```mermaid([\s\S]*?)```/g,
+      (match, diagramCode, index) => {
+        return `\n\n[MERMAID_DIAGRAM_${index}]\n\n`;
+      }
+    );
+
+    // Ensure there are no consecutive blank lines (which might be interpreted as paragraph breaks)
+    processedMarkdown = processedMarkdown.replace(/\n{3,}/g, "\n\n");
+
     const response = await fetch("/api/ai/markdown/export", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ markdownContent: markdownContent.value }),
+      body: JSON.stringify({
+        markdownContent: processedMarkdown,
+        mermaidDiagrams: mermaidDiagrams,
+      }),
     });
 
     if (!response.ok) {
@@ -192,6 +262,97 @@ const exportMarkdownToWord = async () => {
     window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error("Error exporting to Word:", error);
+    // Show an error message to the user
+  }
+};
+
+const exportMarkdownToPDF = async () => {
+  try {
+    await mermaid.init(undefined, document.querySelectorAll(".mermaid"));
+
+    const mermaidDiagrams = {};
+    const mermaidElements = document.querySelectorAll(".mermaid");
+    let diagramCount = 0;
+
+    for (const element of mermaidElements) {
+      const svg = element.querySelector("svg");
+      if (svg) {
+        const scale = 4; // High resolution scale factor
+        let svgWidth, svgHeight;
+
+        // Try to get dimensions from viewBox first
+        const viewBox = svg.getAttribute("viewBox");
+        if (viewBox) {
+          const [, , vbWidth, vbHeight] = viewBox.split(" ").map(Number);
+          svgWidth = vbWidth;
+          svgHeight = vbHeight;
+        } else {
+          // Fallback to getBoundingClientRect
+          const rect = svg.getBoundingClientRect();
+          svgWidth = rect.width;
+          svgHeight = rect.height;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            mermaidDiagrams[diagramCount] = {
+              data: canvas.toDataURL("image/png"),
+              width: svgWidth,
+              height: svgHeight,
+              aspectRatio: svgWidth / svgHeight,
+            };
+            resolve();
+          };
+          img.onerror = reject;
+          img.src =
+            "data:image/svg+xml;base64," +
+            btoa(unescape(encodeURIComponent(svgData)));
+        });
+        diagramCount++;
+      }
+    }
+
+    // Preprocess markdown to add line breaks around Mermaid diagrams
+    let processedMarkdown = markdownContent.value.replace(
+      /```mermaid([\s\S]*?)```/g,
+      (match, diagramCode, index) => {
+        return `\n\n[MERMAID_DIAGRAM_${index}]\n\n`;
+      }
+    );
+
+    // Ensure there are no consecutive blank lines (which might be interpreted as paragraph breaks)
+    processedMarkdown = processedMarkdown.replace(/\n{3,}/g, "\n\n");
+
+    const response = await fetch("/api/ai/markdown/export-pdf", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        markdownContent: processedMarkdown,
+        mermaidDiagrams: mermaidDiagrams,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate PDF document");
+    }
+
+    const blob = await response.blob();
+    saveAs(blob, "markdown_export.pdf");
+  } catch (error) {
+    console.error("Error exporting to PDF:", error);
     // Show an error message to the user
   }
 };
@@ -275,14 +436,23 @@ onMounted(() => {
                 >
                   Export as Word
                 </li>
+                <!-- <li
+                  @click="exportMarkdownToPDF"
+                  class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
+                >
+                  Export as PDF
+                </li> -->
               </ul>
             </template>
           </VDropdown>
         </div>
       </div>
     </div>
-    <div v-if="!isFullscreen" class="flex w-full h-[70dvh]">
-      <div class="flex-1 border-0 bg-white">
+    <div
+      v-if="!isFullscreen"
+      class="flex flex-col md:flex-row w-full h-[70dvh]"
+    >
+      <div class="flex-1 border-0 bg-white h-[50vh] md:h-auto">
         <client-only>
           <QuillEditor
             v-model:content="markdownContent"
@@ -290,10 +460,13 @@ onMounted(() => {
             :toolbar="toolbar"
             theme="snow"
             @update:content="updateMarkdown"
+            class="h-full"
           />
         </client-only>
       </div>
-      <div class="flex-1 border border-l-0 bg-[#F3F3F3] p-2 overflow-auto">
+      <div
+        class="flex-1 border border-t-0 md:border-t md:border-l-0 bg-[#F3F3F3] p-2 overflow-auto h-[50vh] md:h-auto"
+      >
         <div
           v-if="previewActive"
           :key="isFullscreen"
@@ -350,15 +523,7 @@ onMounted(() => {
 
 <style scoped>
 :deep(.ql-container) {
-  height: 94.5% !important;
-}
-
-.fixed {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  height: calc(100% - 42px) !important; /* Adjust for toolbar height */
 }
 
 /*  New styles for markdown content   */
@@ -525,5 +690,11 @@ onMounted(() => {
   display: block;
   overflow-x: auto;
   padding: 1em;
+}
+
+@media (max-width: 768px) {
+  :deep(.ql-container) {
+    height: calc(50vh - 42px) !important; /* Adjust for mobile view */
+  }
 }
 </style>

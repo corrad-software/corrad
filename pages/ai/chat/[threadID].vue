@@ -78,14 +78,64 @@ if (history.value.statusCode === 200) {
   messages.value = history.value.data;
 }
 
+const isReconnecting = ref(false);
+
+const isAutoScrolling = ref(true);
+const lastScrollTop = ref(0);
+const isUserScrolling = ref(false);
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    const messageContainer = document.querySelector(".message-container");
+    if (messageContainer && isAutoScrolling.value) {
+      messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+  });
+};
+
+const handleScroll = () => {
+  const messageContainer = document.querySelector(".message-container");
+  if (messageContainer) {
+    const { scrollTop, scrollHeight, clientHeight } = messageContainer;
+    const isScrolledToBottom = scrollHeight - scrollTop === clientHeight;
+
+    if (isScrolledToBottom) {
+      isAutoScrolling.value = true;
+      isUserScrolling.value = false;
+    } else if (scrollTop < lastScrollTop.value) {
+      isAutoScrolling.value = false;
+      isUserScrolling.value = true;
+    }
+
+    lastScrollTop.value = scrollTop;
+  }
+};
+
+const handleScrollStart = () => {
+  isUserScrolling.value = true;
+};
+
+const handleScrollEnd = () => {
+  isUserScrolling.value = false;
+};
+
 // Socket.io setup
 onMounted(() => {
   $io.emit("joinRoom", threadID);
 
+  $io.on("previousStreamStopped", () => {
+    console.log("Previous stream was stopped due to page refresh");
+    isReconnecting.value = true;
+    // You might want to show a message to the user here
+  });
+
   $io.on("messageStart", () => {
     isTyping.value = true;
     currentStreamedMessage.value = "";
-    messages.value.push({ sender: "assistant", content: "" });
+    if (!isReconnecting.value) {
+      messages.value.push({ sender: "assistant", content: "" });
+    }
+    isReconnecting.value = false;
   });
 
   $io.on("messageChunk", (chunk) => {
@@ -108,11 +158,19 @@ onMounted(() => {
     isTyping.value = false;
     isStreaming.value = false;
     currentStreamedMessage.value = "";
-    $swal.fire({
-      icon: "error",
-      title: "Error",
-      text: errorMessage,
-    });
+    if (messages.value[messages.value.length - 1].sender === "assistant") {
+      messages.value[messages.value.length - 1] = {
+        sender: "assistant",
+        content: "",
+        error: errorMessage,
+      };
+    } else {
+      messages.value.push({
+        sender: "assistant",
+        content: "",
+        error: errorMessage,
+      });
+    }
   });
 
   $io.on("streamStopped", () => {
@@ -127,34 +185,17 @@ onMounted(() => {
     });
   });
 
+  const messageContainer = document.querySelector(".message-container");
+  if (messageContainer) {
+    messageContainer.addEventListener("scroll", handleScroll);
+    messageContainer.addEventListener("mousedown", handleScrollStart);
+    messageContainer.addEventListener("touchstart", handleScrollStart);
+    messageContainer.addEventListener("mouseup", handleScrollEnd);
+    messageContainer.addEventListener("touchend", handleScrollEnd);
+  }
+
   scrollToBottom();
 });
-
-const scrollToBottom = () => {
-  nextTick(() => {
-    const messageContainer = document.querySelector(".message-container");
-    if (messageContainer) {
-      messageContainer.scrollTop = messageContainer.scrollHeight;
-    }
-  });
-};
-
-const stopStreaming = () => {
-  $io.emit("stopStream", threadID);
-};
-
-// Unmounted stop streaming
-onUnmounted(() => {
-  stopStreaming();
-});
-
-watch(
-  () => messages.value,
-  () => {
-    scrollToBottom();
-  },
-  { deep: true }
-);
 
 onUnmounted(() => {
   $io.emit("leaveRoom", threadID);
@@ -164,7 +205,28 @@ onUnmounted(() => {
   $io.off("messageClear");
   $io.off("messageError");
   $io.off("error");
+
+  const messageContainer = document.querySelector(".message-container");
+  if (messageContainer) {
+    messageContainer.removeEventListener("scroll", handleScroll);
+    messageContainer.removeEventListener("mousedown", handleScrollStart);
+    messageContainer.removeEventListener("touchstart", handleScrollStart);
+    messageContainer.removeEventListener("mouseup", handleScrollEnd);
+    messageContainer.removeEventListener("touchend", handleScrollEnd);
+  }
+
+  stopStreaming();
 });
+
+watch(
+  () => messages.value,
+  () => {
+    if (isAutoScrolling.value && !isUserScrolling.value) {
+      scrollToBottom();
+    }
+  },
+  { deep: true }
+);
 
 const isOCRProcessing = ref(false);
 const ocrProgress = ref(0);
@@ -458,12 +520,16 @@ const regenerateResponse = async (index) => {
     isStreaming.value = true;
   } catch (error) {
     console.error("Error regenerating response:", error);
-    $swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Failed to regenerate response. Please try again.",
+    messages.value.push({
+      sender: "assistant",
+      content: "",
+      error: "Failed to regenerate response. Please try again.",
     });
   }
+};
+
+const stopStreaming = () => {
+  $io.emit("stopStream", threadID);
 };
 </script>
 
@@ -492,7 +558,7 @@ const regenerateResponse = async (index) => {
     </div>
 
     <!-- Scrollable conversation area -->
-    <div class="flex-1 p-4 mt-12 space-y-6">
+    <div class="flex-1 p-4 mt-12 space-y-6 relative">
       <NuxtScrollbar style="max-height: 80dvh" class="message-container pr-5">
         <div
           v-for="(message, index) in messages"
@@ -509,7 +575,7 @@ const regenerateResponse = async (index) => {
           </div>
           <div
             :class="[
-              'max-w-full md:max-w-[70%] rounded-2xl p-4',
+              'max-w-full rounded-2xl p-4 break-words',
               message.sender === 'user'
                 ? 'bg-primary text-white ml-auto'
                 : 'bg-secondary !text-[rgb(var(--text-color))]',
@@ -561,6 +627,21 @@ const regenerateResponse = async (index) => {
             </span>
           </div>
           <div
+            v-if="message.error"
+            class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 mt-4"
+          >
+            <p class="font-bold">Error</p>
+            <p>{{ message.error }}</p>
+            <button
+              @click="regenerateResponse(index)"
+              class="mt-2 text-sm text-red-600 hover:text-red-800 flex items-center"
+            >
+              <Icon name="mdi:refresh" class="w-4 h-4 mr-1" />
+              Try again
+            </button>
+          </div>
+          <div
+            v-if="!message.error"
             :class="[
               'flex justify-start mt-2 relative gap-4',
               message.sender === 'user' ? 'justify-end' : '',
@@ -608,6 +689,18 @@ const regenerateResponse = async (index) => {
           </div>
         </div>
       </NuxtScrollbar>
+
+      <button
+        v-if="!isAutoScrolling"
+        @click="
+          isAutoScrolling = true;
+          isUserScrolling = false;
+          scrollToBottom();
+        "
+        class="fixed bottom-24 right-8 bg-primary text-white rounded-full p-2 shadow-lg"
+      >
+        <Icon name="mdi:arrow-down" class="w-6 h-6" />
+      </button>
     </div>
 
     <div v-if="isTyping" class="flex items-end overflow-y-auto px-4 py-2">
@@ -720,6 +813,10 @@ const regenerateResponse = async (index) => {
         </p>
       </div>
     </Transition>
+
+    <div v-if="isReconnecting" class="text-yellow-500 mb-2">
+      Reconnected. Previous response was interrupted.
+    </div>
   </div>
   <div v-else>
     <div class="max-w-7xl mx-auto mt-12">
@@ -743,7 +840,8 @@ const regenerateResponse = async (index) => {
 .markdown-preview {
   line-height: 1.6;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
+  word-wrap: break-word;
 }
 
 .markdown-preview :deep(h1),
@@ -918,5 +1016,9 @@ const regenerateResponse = async (index) => {
 .ocr-processing progress {
   width: 100%;
   height: 20px;
+}
+
+.message-container {
+  scroll-behavior: smooth;
 }
 </style>

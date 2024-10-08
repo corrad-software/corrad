@@ -5,6 +5,7 @@ import path from "path";
 
 const MAX_CHUNK_LENGTH = 100000;
 const activeStreams = new Map();
+const activeThreads = new Map();
 
 function splitMessageIntoChunks(message) {
   const chunks = [];
@@ -40,14 +41,40 @@ export const socketHandler = async (io: Server) => {
   io.on("connection", async (socket) => {
     console.log("New client connected");
 
-    socket.on("joinRoom", (threadID) => {
+    socket.on("joinRoom", async (threadID) => {
       socket.join(threadID);
       console.log(`Client joined room: ${threadID}`);
+
+      // Check if there's an active stream for this thread
+      const activeStream = activeStreams.get(threadID);
+      if (activeStream) {
+        // Cancel the existing run
+        try {
+          await openai?.beta.threads.runs.cancel(threadID, activeStream.runId);
+          console.log(`Cancelled existing run for thread: ${threadID}`);
+        } catch (error) {
+          console.error("Error cancelling run:", error);
+        }
+
+        // Clear the active stream
+        activeStreams.delete(threadID);
+
+        // Emit an event to inform the client that the previous stream was stopped
+        io.to(threadID).emit("previousStreamStopped");
+      }
+
+      // Set the active thread
+      activeThreads.set(threadID, socket.id);
     });
 
     socket.on("leaveRoom", (threadID) => {
       socket.leave(threadID);
       console.log(`Client left room: ${threadID}`);
+
+      // Remove the active thread
+      if (activeThreads.get(threadID) === socket.id) {
+        activeThreads.delete(threadID);
+      }
     });
 
     socket.on("fileChunk", (data, callback) => {
@@ -88,6 +115,14 @@ export const socketHandler = async (io: Server) => {
       "sendMessage",
       async ({ threadID, assistantID, projectID, user, message }) => {
         try {
+          // Check if this socket is the active one for the thread
+          if (activeThreads.get(threadID) !== socket.id) {
+            console.log(
+              `Ignoring message from inactive socket for thread: ${threadID}`
+            );
+            return;
+          }
+
           io.to(threadID).emit("messageStart");
 
           let fileAttachments = [];
@@ -267,6 +302,14 @@ export const socketHandler = async (io: Server) => {
           let completed = false;
 
           for await (const ev of stream) {
+            // Check if this socket is still the active one for the thread
+            if (activeThreads.get(threadID) !== socket.id) {
+              console.log(
+                `Stopping stream for inactive socket in thread: ${threadID}`
+              );
+              break;
+            }
+
             console.log("Event:", ev);
 
             if (
@@ -295,8 +338,7 @@ export const socketHandler = async (io: Server) => {
             }
 
             if (ev.event === "thread.run.failed") {
-              // Delete latest message
-              throw new Error("Run failed");
+              throw new Error(ev.data.error || "Run failed");
             }
           }
 
@@ -304,7 +346,10 @@ export const socketHandler = async (io: Server) => {
           activeStreams.delete(threadID);
 
           if (!completed) {
-            io.to(threadID).emit("messageError", "Run failed");
+            io.to(threadID).emit(
+              "messageError",
+              "Run failed or was interrupted"
+            );
             return;
           }
 
@@ -349,7 +394,7 @@ export const socketHandler = async (io: Server) => {
           console.error("Error processing message:", error);
           io.to(threadID).emit(
             "messageError",
-            "Something went wrong. Please try again."
+            error.message || "Something went wrong. Please try again."
           );
         }
       }
@@ -453,7 +498,7 @@ export const socketHandler = async (io: Server) => {
             }
 
             if (ev.event === "thread.run.failed") {
-              throw new Error("Run failed");
+              throw new Error(ev.data.error || "Run failed");
             }
           }
 
@@ -504,7 +549,7 @@ export const socketHandler = async (io: Server) => {
           console.error("Error regenerating response:", error);
           io.to(threadID).emit(
             "messageError",
-            "Failed to regenerate response. Please try again."
+            error.message || "Failed to regenerate response. Please try again."
           );
         }
       }
@@ -512,6 +557,12 @@ export const socketHandler = async (io: Server) => {
 
     socket.on("disconnect", () => {
       console.log("Client disconnected");
+      // Remove any active threads for this socket
+      for (const [threadID, socketId] of activeThreads.entries()) {
+        if (socketId === socket.id) {
+          activeThreads.delete(threadID);
+        }
+      }
     });
   });
 };
