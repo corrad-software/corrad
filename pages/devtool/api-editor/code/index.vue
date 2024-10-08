@@ -177,10 +177,7 @@ const saveCode = async () => {
       <rs-tab fill>
         <rs-tab-item title="Editor">
           <div class="flex justify-end gap-2 mb-4">
-            <rs-button class="!p-2" @click="formatCode">
-              <Icon name="simple-icons:prettier" size="20px" class="mr-1" />
-              Format Code</rs-button
-            >
+          
             <rs-button class="!p-2" @click="saveCode">
               <Icon
                 name="material-symbols:save-outline-rounded"

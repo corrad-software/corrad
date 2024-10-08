@@ -65,11 +65,17 @@ const removeParam = (index) => {
 };
 
 const hitAPI = async () => {
-  const res = await useFetch(url.value, {
+  const options = {
     method: method.value,
     initialCache: false,
-    body: JSON.stringify(bodyJson.value),
-  });
+  };
+
+  // Only add body for POST and PUT requests
+  if (method.value === 'POST' || method.value === 'PUT') {
+    options.body = bodyJson.value;
+  }
+
+  const res = await useFetch(url.value, options);
 
   response.value = JSON.stringify(res.data.value, null, 2);
 };
