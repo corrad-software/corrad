@@ -84,10 +84,9 @@ const saveAddAPI = async () => {
       confirmButtonText: "Ok",
       timer: 1000,
     });
+
     setTimeout(() => {
-      nuxtApp.$router.go(
-        `/devtool/api-editor/code?path=/api${data.value.data.path}`
-      );
+      window.location.reload();
     }, 1000);
   }
 };
@@ -112,9 +111,7 @@ const saveEditAPI = async () => {
       timer: 1000,
     });
     setTimeout(() => {
-      nuxtApp.$router.go(
-        `/devtool/api-editor/code?path=/api/${showModalEditForm.value.apiURL}`
-      );
+      window.location.reload();
     }, 1000);
   }
 };

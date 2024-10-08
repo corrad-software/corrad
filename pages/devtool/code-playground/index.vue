@@ -1,11 +1,6 @@
 <script setup>
 import { parse } from "@vue/compiler-sfc";
-import prettier from "prettier/standalone";
-import parserHTML from "prettier/parser-html";
-import parserBabel from "prettier/parser-babel";
-import parserPostCSS from "prettier/parser-postcss";
-import pluginVue from "prettier-plugin-vue";
-import { watchDebounced, useDebounceFn } from "@vueuse/core";
+import { watchDebounced } from "@vueuse/core";
 import {
   RsAlert,
   RsBadge,
@@ -91,12 +86,7 @@ dropdownThemes.value = themes.map((theme) => {
 // watch for changes in the theme
 watch(editorTheme, (theme) => {
   themeStore.setCodeTheme(theme.value);
-  forceRerender();
 });
-
-const forceRerender = () => {
-  componentKey.value += 1;
-};
 
 const compileCode = (newCode) => {
   try {
@@ -175,52 +165,18 @@ watchDebounced(
   { debounce: 300, immediate: true }
 );
 
-const handleKeyDown = (e) => {
-  // Press Shift + Alt + F to format code
-  if (e.shiftKey && e.altKey && e.key === "F") {
-    e.preventDefault();
-    debouncedFormatCode();
-  }
+const handleFormatCode = () => {
+  // Recompile the code after formatting
+  setTimeout(() => compileCode(code.value), 100);
 };
 
 onMounted(() => {
   compileCode(code.value);
-  window.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
   window.removeEventListener("keydown", handleKeyDown);
 });
-
-// Function Format Code
-const formatCode = async (code) => {
-  try {
-    const formattedCode = await prettier.format(code, {
-      parser: "vue",
-      plugins: [parserHTML, parserBabel, parserPostCSS, pluginVue],
-      semi: false,
-      singleQuote: true,
-      trailingComma: "es5",
-    });
-    return formattedCode;
-  } catch (error) {
-    console.error("Formatting error:", error);
-    return code; // Return original code if formatting fails
-  }
-};
-
-const formatCurrentCode = async () => {
-  try {
-    const formattedCode = await formatCode(code.value);
-    code.value = formattedCode;
-
-    setTimeout(() => compileCode(formattedCode), 100);
-  } catch (error) {
-    console.log("Error formatting code:", error);
-  }
-};
-
-const debouncedFormatCode = useDebounceFn(formatCurrentCode, 300);
 </script>
 <template>
   <div class="flex flex-col h-screen bg-gray-900">
@@ -251,25 +207,12 @@ const debouncedFormatCode = useDebounceFn(formatCurrentCode, 300);
       <div
         class="w-full sm:w-1/2 flex flex-col border-b sm:border-b-0 sm:border-r border-gray-900"
       >
-        <div class="bg-gray-800 p-2 flex justify-between items-center">
-          <rs-button
-            @click="formatCurrentCode"
-            class="px-3 py-1 bg-blue-600 text-sm rounded"
-          >
-            <Icon
-              name="vscode-icons:file-type-prettier"
-              class="!w-5 !h-5 mr-2"
-            />
-            Format Code (Shift + Alt + F)
-          </rs-button>
-        </div>
         <div class="flex-grow overflow-hidden">
           <rs-code-mirror
-            :key="componentKey"
             v-model="code"
             mode="javascript"
-            :error="compilationError"
             class="h-full"
+            @format-code="handleFormatCode"
           />
         </div>
       </div>

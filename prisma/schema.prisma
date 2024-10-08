@@ -17,16 +17,17 @@ model audit {
 }
 
 model user {
-  userID           Int        @id @default(autoincrement())
-  userSecretKey    String?    @db.VarChar(255)
-  userUsername     String?    @db.VarChar(255)
-  userPassword     String?    @db.VarChar(255)
-  userFullName     String?    @db.VarChar(255)
-  userEmail        String?    @db.VarChar(255)
-  userPhone        String?    @db.VarChar(255)
-  userStatus       String?    @db.VarChar(255)
-  userCreatedDate  DateTime?  @db.DateTime(0)
-  userModifiedDate DateTime?  @db.DateTime(0)
+  userID           Int         @id @default(autoincrement())
+  userSecretKey    String?     @db.VarChar(255)
+  userUsername     String?     @db.VarChar(255)
+  userPassword     String?     @db.VarChar(255)
+  userFullName     String?     @db.VarChar(255)
+  userEmail        String?     @db.VarChar(255)
+  userPhone        String?     @db.VarChar(255)
+  userStatus       String?     @db.VarChar(255)
+  userCreatedDate  DateTime?   @db.DateTime(0)
+  userModifiedDate DateTime?   @db.DateTime(0)
+  pelanggan        pelanggan[]
   userrole         userrole[]
 }
 
@@ -83,4 +84,20 @@ model survey_list {
   created_at            String? @db.VarChar(255)
   updated_by            String? @db.VarChar(255)
   updated_at            String? @db.VarChar(255)
+}
+
+model pelanggan {
+  pelangganID          Int       @id @default(autoincrement())
+  userID               Int?
+  namaPelanggan        String?   @db.VarChar(255)
+  noKPPelanggan        String?   @db.VarChar(255)
+  alamatPelanggan      String?   @db.VarChar(255)
+  tarikhLahirPelanggan String?   @db.VarChar(255)
+  jantinaPelanggan     String?   @db.VarChar(255)
+  jenisPelanggan       String?   @db.VarChar(255)
+  createdAt            DateTime? @db.DateTime(0)
+  modifiedAt           DateTime? @db.DateTime(0)
+  user                 user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "pelanggan_ibfk_1")
+
+  @@index([userID], map: "userID")
 }
