@@ -74,6 +74,21 @@ export default [
             ]
           }
         }
+      },
+      {
+        "title": "Menu",
+        "path": "/haqeem/user",
+        "icon": "mdi:menu",
+        "child": [
+          {
+            "title": "Sub menu",
+            "path": "/haqeem/user/list",
+            "icon": "icon-park-twotone:more-four",
+            "child": [],
+            "meta": {}
+          }
+        ],
+        "meta": {}
       }
     ],
     "meta": {}
