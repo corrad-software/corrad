@@ -225,11 +225,14 @@ const exportMarkdownToWord = async () => {
       }
     }
 
+    // Reset diagramCount for consistency
+    diagramCount = 0;
+
     // Preprocess markdown to add line breaks around Mermaid diagrams
     let processedMarkdown = markdownContent.value.replace(
       /```mermaid([\s\S]*?)```/g,
-      (match, diagramCode, index) => {
-        return `\n\n[MERMAID_DIAGRAM_${index}]\n\n`;
+      (match, diagramCode) => {
+        return `\n\n[MERMAID_DIAGRAM_${diagramCount++}]\n\n`;
       }
     );
 
@@ -323,11 +326,14 @@ const exportMarkdownToPDF = async () => {
       }
     }
 
+    // Reset diagramCount for consistency
+    diagramCount = 0;
+
     // Preprocess markdown to add line breaks around Mermaid diagrams
     let processedMarkdown = markdownContent.value.replace(
       /```mermaid([\s\S]*?)```/g,
-      (match, diagramCode, index) => {
-        return `\n\n[MERMAID_DIAGRAM_${index}]\n\n`;
+      (match, diagramCode) => {
+        return `\n\n[MERMAID_DIAGRAM_${diagramCount++}]\n\n`;
       }
     );
 
@@ -448,11 +454,8 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <div
-      v-if="!isFullscreen"
-      class="flex flex-col md:flex-row w-full h-[70dvh]"
-    >
-      <div class="flex-1 border-0 bg-white h-[50vh] md:h-auto">
+    <div v-if="!isFullscreen" class="flex w-full h-[70dvh]">
+      <div class="flex-1 border-0 bg-white">
         <client-only>
           <QuillEditor
             v-model:content="markdownContent"
@@ -460,13 +463,10 @@ onMounted(() => {
             :toolbar="toolbar"
             theme="snow"
             @update:content="updateMarkdown"
-            class="h-full"
           />
         </client-only>
       </div>
-      <div
-        class="flex-1 border border-t-0 md:border-t md:border-l-0 bg-[#F3F3F3] p-2 overflow-auto h-[50vh] md:h-auto"
-      >
+      <div class="flex-1 border border-l-0 bg-[#F3F3F3] p-2 overflow-auto">
         <div
           v-if="previewActive"
           :key="isFullscreen"
@@ -523,7 +523,15 @@ onMounted(() => {
 
 <style scoped>
 :deep(.ql-container) {
-  height: calc(100% - 42px) !important; /* Adjust for toolbar height */
+  height: 94.5% !important;
+}
+
+.fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 /*  New styles for markdown content   */
@@ -690,11 +698,5 @@ onMounted(() => {
   display: block;
   overflow-x: auto;
   padding: 1em;
-}
-
-@media (max-width: 768px) {
-  :deep(.ql-container) {
-    height: calc(50vh - 42px) !important; /* Adjust for mobile view */
-  }
 }
 </style>
