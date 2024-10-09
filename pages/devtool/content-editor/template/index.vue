@@ -98,7 +98,9 @@ const searchTemplate = () => {
               <div class="flex items-center mb-4">
                 <p class="text-sm">{{ val.description }}</p>
               </div>
-              <div class="tag h-10 flex justify-start items-center overflow-x-auto gap-x-2">
+              <div
+                class="tag h-10 flex justify-start items-center overflow-x-auto gap-x-2"
+              >
                 <rs-badge v-for="val2 in val.tag">
                   {{ val2 }}
                 </rs-badge>

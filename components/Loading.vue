@@ -44,7 +44,7 @@ const refreshPage = () => {
           <br />
           please click
           <button @click="refreshPage">
-            <span class="text-[#F3586A]">here</span>
+            <span class="text-[#1F2C3A]">here</span>
           </button>
           or hard refresh your browser.
         </div>

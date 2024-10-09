@@ -19,8 +19,8 @@ const { data: template } = await useFetch(
 
 console.log(template.value.data);
 
-const templateComponent = defineAsyncComponent(() =>
-  import(`../../../../../templates/${template.value.data.filename}.vue`)
+const templateComponent = defineAsyncComponent(
+  () => import(`../../../../../templates/${template.value.data.filename}.vue`)
 );
 </script>
 

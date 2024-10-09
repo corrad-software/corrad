@@ -3,12 +3,9 @@ definePageMeta({
   title: "User List",
   middleware: ["auth"],
   requiresAuth: true,
-  keepalive: {
-    exclude: ["rs-table"],
-  },
 });
 
-const { $swal, $router } = useNuxtApp();
+const { $swal } = useNuxtApp();
 
 const userList = ref([]);
 const userRoleList = ref([]);
@@ -191,7 +188,6 @@ const saveUser = async () => {
     });
 
     if (data.value.statusCode === 200) {
-      // console.log("data.value", data.value);
       $swal.fire({
         position: "center",
         icon: "success",
@@ -200,12 +196,8 @@ const saveUser = async () => {
         timer: 1000,
         showConfirmButton: false,
       });
-      // await getUserList();
-      // showModal.value = false;
-
-      setTimeout(() => {
-        $router.go();
-      }, 1000);
+      await getUserList();
+      showModal.value = false;
     } else {
       $swal.fire({
         position: "center",
@@ -230,12 +222,8 @@ const saveUser = async () => {
         timer: 1000,
         showConfirmButton: false,
       });
-      // await getUserList();
-      // showModal.value = false;
-
-      setTimeout(() => {
-        $router.go();
-      }, 1000);
+      await getUserList();
+      showModal.value = false;
     } else {
       $swal.fire({
         position: "center",
@@ -263,11 +251,8 @@ const deleteUser = async () => {
       timer: 1000,
       showConfirmButton: false,
     });
-
-    // Timer to wait timer in swal
-    setTimeout(() => {
-      $router.go();
-    }, 1000);
+    await getUserList();
+    showModalDelete.value = false;
   } else {
     $swal.fire({
       position: "center",

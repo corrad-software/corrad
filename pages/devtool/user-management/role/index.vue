@@ -233,12 +233,8 @@ const saveRole = async () => {
         showConfirmButton: false,
       });
 
-      // showModal.value = false;
-
-      // await getRoleList();
-      setTimeout(() => {
-        $router.go();
-      }, 1000);
+      await getRoleList();
+      showModal.value = false;
     } else {
       $swal.fire({
         icon: "error",
@@ -263,12 +259,8 @@ const saveRole = async () => {
         showConfirmButton: false,
       });
 
-      // showModal.value = false;
-
-      // await getRoleList();
-      setTimeout(() => {
-        $router.go();
-      }, 1000);
+      await getRoleList();
+      showModal.value = false;
     } else {
       $swal.fire({
         icon: "error",
@@ -291,15 +283,13 @@ const deleteRole = async () => {
       position: "center",
       icon: "success",
       title: "Success",
-      text: "User has been deleted",
+      text: "Role has been deleted",
       timer: 1000,
       showConfirmButton: false,
     });
 
-    // Timer to wait timer in swal
-    setTimeout(() => {
-      $router.go();
-    }, 1000);
+    await getRoleList();
+    showModalDelete.value = false;
   } else {
     $swal.fire({
       position: "center",

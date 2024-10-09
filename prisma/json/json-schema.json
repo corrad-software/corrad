@@ -1,0 +1,369 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "audit": {
+      "type": "object",
+      "properties": {
+        "auditID": {
+          "type": "integer"
+        },
+        "auditIP": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auditURL": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auditURLMethod": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auditURLPayload": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auditCreatedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "userID": {
+          "type": "integer"
+        },
+        "userSecretKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userUsername": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userPassword": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userFullName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userEmail": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userPhone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userStatus": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "userCreatedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "userModifiedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "userrole": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/userrole"
+          }
+        }
+      }
+    },
+    "role": {
+      "type": "object",
+      "properties": {
+        "roleID": {
+          "type": "integer"
+        },
+        "roleName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "roleDescription": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "roleStatus": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "roleCreatedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "roleModifiedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "userrole": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/userrole"
+          }
+        }
+      }
+    },
+    "lookup": {
+      "type": "object",
+      "properties": {
+        "lookupID": {
+          "type": "integer"
+        },
+        "lookupOrder": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lookupTitle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lookupRefCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lookupValue": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lookupType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lookupStatus": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lookupCreatedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "lookupModifiedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "userrole": {
+      "type": "object",
+      "properties": {
+        "userRoleID": {
+          "type": "integer"
+        },
+        "userRoleCreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "role": {
+          "$ref": "#/definitions/role"
+        },
+        "user": {
+          "$ref": "#/definitions/user"
+        }
+      }
+    },
+    "survey_list": {
+      "type": "object",
+      "properties": {
+        "data_id": {
+          "type": "integer"
+        },
+        "survey_id": {
+          "type": "string",
+          "default": "0"
+        },
+        "vehicle_number": {
+          "type": "string",
+          "default": "0"
+        },
+        "vehicle_timein": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vehicle_timeout": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "project_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project_eecode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project_parker_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "project_surveyor_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ref_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ref_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vehicle_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "data_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updated_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "test": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "audit": {
+      "$ref": "#/definitions/audit"
+    },
+    "user": {
+      "$ref": "#/definitions/user"
+    },
+    "role": {
+      "$ref": "#/definitions/role"
+    },
+    "lookup": {
+      "$ref": "#/definitions/lookup"
+    },
+    "userrole": {
+      "$ref": "#/definitions/userrole"
+    },
+    "survey_list": {
+      "$ref": "#/definitions/survey_list"
+    }
+  }
+}

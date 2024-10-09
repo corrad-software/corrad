@@ -177,7 +177,6 @@ const saveCode = async () => {
       <rs-tab fill>
         <rs-tab-item title="Editor">
           <div class="flex justify-end gap-2 mb-4">
-          
             <rs-button class="!p-2" @click="saveCode">
               <Icon
                 name="material-symbols:save-outline-rounded"

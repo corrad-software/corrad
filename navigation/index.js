@@ -39,13 +39,13 @@ export default [
         child: [
           {
             title: "User List",
-            path: "/devtool/user-management/user-list",
+            path: "/devtool/user-management/user",
             icon: "",
             child: [],
           },
           {
             title: "Role List",
-            path: "/devtool/user-management/role-list",
+            path: "/devtool/user-management/role",
             icon: "",
             child: [],
           },
@@ -69,6 +69,12 @@ export default [
         title: "API Editor",
         path: "/devtool/api-editor",
         icon: "material-symbols:api-rounded",
+        child: [],
+      },
+      {
+        title: "ORM Editor",
+        path: "/devtool/orm",
+        icon: "mdi:database-plus",
         child: [],
       },
       {

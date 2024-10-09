@@ -218,8 +218,8 @@ const computedData = computed(() => {
 
   let result = dataTable.value.slice();
 
-  // Sort
-  if (currentSort.value !== null) {
+  // Sort (only for advanced tables)
+  if (props.advanced && currentSort.value !== null) {
     result.sort((a, b) => {
       let modifier = 1;
 
@@ -269,11 +269,17 @@ const computedData = computed(() => {
     }));
   }
 
-  // Pagination
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
+  // Pagination (only for advanced tables)
+  if (props.advanced) {
+    const start = (currentPage.value - 1) * pageSize.value;
+    const end = start + pageSize.value;
+    dataLength.value = result.length;
+    return result.slice(start, end);
+  }
+
+  // For basic tables, return all results without pagination
   dataLength.value = result.length;
-  return result.slice(start, end);
+  return result;
 });
 
 const isNumeric = (n) => {
@@ -452,8 +458,8 @@ const computedColumnTitle = computed(() => {
     props.field.length > 0
       ? spacingCharactertoCamelCase(props.field)
       : dataTable.value.length > 0
-      ? Object.keys(dataTable.value[0])
-      : [];
+        ? Object.keys(dataTable.value[0])
+        : [];
 
   if (props.showRowNumbers) {
     titles.unshift("No");
@@ -781,10 +787,10 @@ const computedColumnTitle = computed(() => {
             currentPage == val && options.variant != 'default'
               ? options.variant
               : currentPage == val && options.variant == 'default'
-              ? 'primary'
-              : options.variant == 'default'
-              ? 'primary-outline'
-              : options.variant + '-outline'
+                ? 'primary'
+                : options.variant == 'default'
+                  ? 'primary-outline'
+                  : options.variant + '-outline'
           }`"
           class="!rounded-full !p-1 !w-8 !h-8"
           v-for="(val, index) in pages"

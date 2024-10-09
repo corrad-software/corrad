@@ -88,7 +88,7 @@ watch(editorTheme, (theme) => {
   themeStore.setCodeTheme(theme.value);
 });
 
-const compileCode = (newCode) => {
+const compileCode = async (newCode) => {
   try {
     const { descriptor, errors } = parse(newCode);
     if (errors && errors.length > 0) {
@@ -102,6 +102,15 @@ const compileCode = (newCode) => {
     if (descriptor.template && descriptor.scriptSetup) {
       const template = descriptor.template.content;
       const scriptSetup = descriptor.scriptSetup.content;
+
+      // Dynamically import FormKit components
+      const {
+        FormKit,
+        FormKitSchema,
+        FormKitSchemaNode,
+        FormKitSchemaCondition,
+        FormKitSchemaValidation,
+      } = await import("@formkit/vue");
 
       const component = defineComponent({
         components: {
@@ -121,21 +130,102 @@ const compileCode = (newCode) => {
           RsTabItem,
           RsTable,
           RsWizard,
+          FormKit,
+          FormKitSchema,
+          FormKitSchemaNode,
+          FormKitSchemaCondition,
+          FormKitSchemaValidation,
         },
         template,
         setup() {
+          const setupContext = reactive({});
+
           try {
+            // Extract top-level declarations
+            const declarations =
+              scriptSetup.match(/const\s+(\w+)\s*=\s*([^;]+)/g) || [];
+            declarations.forEach((decl) => {
+              const [, varName, varValue] = decl.match(
+                /const\s+(\w+)\s*=\s*(.+)/
+              );
+              if (
+                varValue.trim().startsWith("'") ||
+                varValue.trim().startsWith('"')
+              ) {
+                // It's a string literal, use it directly
+                setupContext[varName] = varValue.trim().slice(1, -1);
+              } else if (varValue.trim().startsWith("ref(")) {
+                // It's already a ref, use ref
+                setupContext[varName] = ref(null);
+              } else {
+                // For other cases, wrap in ref
+                setupContext[varName] = ref(null);
+              }
+            });
+
             const setupFunction = new Function(
+              "ctx",
               "ref",
-              `${scriptSetup}
-              return { msg, count };`
+              "reactive",
+              "computed",
+              "watch",
+              "onMounted",
+              "onUnmounted",
+              "useFetch",
+              "fetch",
+              "useAsyncData",
+              "useNuxtApp",
+              "useRuntimeConfig",
+              "useRoute",
+              "useRouter",
+              "useState",
+              "FormKit",
+              "FormKitSchema",
+              "FormKitSchemaNode",
+              "FormKitSchemaCondition",
+              "FormKitSchemaValidation",
+              `
+              with (ctx) {
+                ${scriptSetup}
+              }
+              return ctx;
+              `
             );
-            return setupFunction(ref);
+
+            const result = setupFunction(
+              setupContext,
+              ref,
+              reactive,
+              computed,
+              watch,
+              onMounted,
+              onUnmounted,
+              useFetch,
+              fetch,
+              useAsyncData,
+              useNuxtApp,
+              useRuntimeConfig,
+              useRoute,
+              useRouter,
+              useState,
+              FormKit,
+              FormKitSchema,
+              FormKitSchemaNode,
+              FormKitSchemaCondition,
+              FormKitSchemaValidation
+            );
+
+            // Merge the result back into setupContext
+            Object.assign(setupContext, result);
+
+            return setupContext;
           } catch (error) {
+            console.error("Error in setup function:", error);
             compilationError.value = {
-              message: error.message,
+              message: `Error in setup function: ${error.message}`,
               location: { start: 0, end: 0 },
             };
+            // Return an empty object to prevent breaking the component
             return {};
           }
         },
@@ -146,12 +236,16 @@ const compileCode = (newCode) => {
       compilationError.value = null;
     } else {
       compiledCode.value = null;
-      compilationError.value = "Invalid SFC format.";
+      compilationError.value = {
+        message: "Invalid SFC format.",
+        location: { start: 0, end: 0 },
+      };
     }
   } catch (error) {
+    console.error("Compilation error:", error);
     compiledCode.value = null;
     compilationError.value = {
-      message: error.message,
+      message: `Compilation error: ${error.message}`,
       location: { start: 0, end: 0 },
     };
   }
@@ -159,8 +253,8 @@ const compileCode = (newCode) => {
 
 watchDebounced(
   code,
-  (newCode) => {
-    compileCode(newCode);
+  async (newCode) => {
+    await compileCode(newCode);
   },
   { debounce: 300, immediate: true }
 );
@@ -170,12 +264,8 @@ const handleFormatCode = () => {
   setTimeout(() => compileCode(code.value), 100);
 };
 
-onMounted(() => {
-  compileCode(code.value);
-});
-
-onUnmounted(() => {
-  window.removeEventListener("keydown", handleKeyDown);
+onMounted(async () => {
+  await compileCode(code.value);
 });
 </script>
 <template>
