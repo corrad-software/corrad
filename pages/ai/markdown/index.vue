@@ -5,6 +5,7 @@ import DOMPurify from "dompurify";
 import { useDebounceFn } from "@vueuse/core";
 import mermaid from "mermaid";
 import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
 
 definePageMeta({
   title: "Markdown Editor",
@@ -87,6 +88,21 @@ const compiledMarkdown = computed(() => {
         theme: "material-theme-darker",
       });
 
+      if (code.lang === "html") {
+        // Create a blob with the HTML content
+        const blob = new Blob([codeContent], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+
+        return `
+        <div class="html-preview">
+          <div class="html-render">
+             <div class="aspect-ratio-container">
+                <iframe src="${url}" style="width: 100%; height: 500px; border: none;"></iframe>
+              </div>
+          </div>
+        </div>`;
+      }
+
       return `
       <div class="code-block-wrapper">
         <button class="copy-button" data-code-id="${uniqueId}">
@@ -110,7 +126,11 @@ const compiledMarkdown = computed(() => {
   };
 
   const rawHtml = marked(markdownContent.value, { renderer });
-  return DOMPurify.sanitize(rawHtml, { ADD_ATTR: ["data-code-id"] });
+  return rawHtml;
+  // return DOMPurify.sanitize(rawHtml, {
+  //   ADD_ATTR: ["data-code-id", "srcdoc"],
+  //   ADD_TAGS: ["iframe"],
+  // });
 });
 
 const escapeHtml = (unsafe) => {
@@ -166,6 +186,42 @@ const exportMarkdown = () => {
   link.download = "markdown_export.md";
   link.click();
   URL.revokeObjectURL(link.href);
+};
+
+const showExportModal = ref(false);
+const exportType = ref("markdown");
+const selectedTemplate = ref(null);
+const templates = ref([]);
+
+const fetchTemplates = async () => {
+  try {
+    const { data } = await useFetch("/api/ai/document-template/list", {
+      method: "GET",
+      params: { type: exportType.value },
+    });
+    if (data.value.statusCode === 200) {
+      templates.value = data.value.data;
+    }
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+  }
+};
+
+const openExportModal = (type) => {
+  exportType.value = type;
+  showExportModal.value = true;
+  fetchTemplates();
+};
+
+const exportDocument = async () => {
+  if (exportType.value === "markdown") {
+    exportMarkdown();
+  } else if (exportType.value === "docx") {
+    await exportMarkdownToWord();
+  } else if (exportType.value === "pdf") {
+    await exportMarkdownToPDF();
+  }
+  showExportModal.value = false;
 };
 
 const exportMarkdownToWord = async () => {
@@ -228,11 +284,30 @@ const exportMarkdownToWord = async () => {
     // Reset diagramCount for consistency
     diagramCount = 0;
 
-    // Preprocess markdown to add line breaks around Mermaid diagrams
+    // New code to process HTML previews
+    const htmlPreviews = {};
+    const htmlElements = document.querySelectorAll(".html-preview iframe");
+    let htmlCount = 0;
+
+    for (const iframe of htmlElements) {
+      const canvas = await html2canvas(iframe.contentDocument.body);
+      htmlPreviews[htmlCount] = {
+        data: canvas.toDataURL("image/png"),
+        width: canvas.width,
+        height: canvas.height,
+        aspectRatio: canvas.width / canvas.height,
+      };
+      htmlCount++;
+    }
+
+    // Reset htmlCount for consistency
+    htmlCount = 0;
+
+    // Preprocess markdown to add placeholders for HTML previews
     let processedMarkdown = markdownContent.value.replace(
-      /```mermaid([\s\S]*?)```/g,
-      (match, diagramCode) => {
-        return `\n\n[MERMAID_DIAGRAM_${diagramCount++}]\n\n`;
+      /```html([\s\S]*?)```/g,
+      (match, htmlCode) => {
+        return `\n\n[HTML_PREVIEW_${htmlCount++}]\n\n`;
       }
     );
 
@@ -247,6 +322,8 @@ const exportMarkdownToWord = async () => {
       body: JSON.stringify({
         markdownContent: processedMarkdown,
         mermaidDiagrams: mermaidDiagrams,
+        htmlPreviews: htmlPreviews,
+        templateId: selectedTemplate.value,
       }),
     });
 
@@ -348,6 +425,7 @@ const exportMarkdownToPDF = async () => {
       body: JSON.stringify({
         markdownContent: processedMarkdown,
         mermaidDiagrams: mermaidDiagrams,
+        templateId: selectedTemplate.value,
       }),
     });
 
@@ -378,10 +456,18 @@ const overwriteMarkdown = (content) => {
   showModalRepo.value = false;
 };
 
+// Add this function to clean up the created URLs
+const cleanUpBlobUrls = () => {
+  document.querySelectorAll(".html-preview iframe").forEach((iframe) => {
+    URL.revokeObjectURL(iframe.src);
+  });
+};
+
 watch(compiledMarkdown, () => {
   if (previewActive.value) {
     nextTick(() => {
       renderMermaidDiagrams();
+      // cleanUpBlobUrls(); // Clean up old URLs
     });
   }
 });
@@ -399,6 +485,11 @@ onMounted(() => {
   if (savedContent) {
     markdownContent.value = savedContent;
   }
+});
+
+// Don't forget to clean up when the component is destroyed
+onBeforeUnmount(() => {
+  cleanUpBlobUrls();
 });
 </script>
 
@@ -437,13 +528,13 @@ onMounted(() => {
                   Export as Markdown
                 </li>
                 <li
-                  @click="exportMarkdownToWord"
+                  @click="openExportModal('docx')"
                   class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
                 >
                   Export as Word
                 </li>
                 <!-- <li
-                  @click="exportMarkdownToPDF"
+                  @click="openExportModal('pdf')"
                   class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
                 >
                   Export as PDF
@@ -479,7 +570,40 @@ onMounted(() => {
     </div>
     <div v-else class="fixed inset-0 bg-white z-50 overflow-auto p-8">
       <div class="max-w-4xl mx-auto">
-        <div class="flex justify-end mb-4">
+        <div class="flex justify-between mb-4">
+          <VDropdown placement="bottom-end" distance="13" name="language">
+            <rs-button
+              variant="secondary"
+              class="!text-[rgb(var(--text-color))]"
+            >
+              <Icon
+                name="ph:dots-three-outline-vertical-fill"
+                class="!w-5 !h-5"
+              />
+            </rs-button>
+            <template #popper>
+              <ul class="header-dropdown w-full">
+                <li
+                  @click="exportMarkdown"
+                  class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
+                >
+                  Export as Markdown
+                </li>
+                <li
+                  @click="openExportModal('docx')"
+                  class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
+                >
+                  Export as Word
+                </li>
+                <!-- <li
+                  @click="openExportModal('pdf')"
+                  class="flex items-center hover:bg-[rgb(var(--bg-1))] cursor-pointer py-2 px-3"
+                >
+                  Export as PDF
+                </li> -->
+              </ul>
+            </template>
+          </VDropdown>
           <Icon
             name="mdi:close"
             class="w-6 h-6 cursor-pointer hover:text-gray-700"
@@ -517,6 +641,35 @@ onMounted(() => {
         </div>
       </template>
       <template #footer> </template>
+    </rs-modal>
+
+    <rs-modal
+      position="center"
+      size="md"
+      v-model="showExportModal"
+      :title="`Export as ${exportType.toUpperCase()}`"
+    >
+      <template #body>
+        <div class="mb-4">
+          <label class="block mb-2">Select Template (Optional)</label>
+          <select v-model="selectedTemplate" class="w-full p-2 border rounded">
+            <option :value="null">No Template</option>
+            <option
+              v-for="template in templates"
+              :key="template.templateID"
+              :value="template.templateID"
+            >
+              {{ template.templateName }}
+            </option>
+          </select>
+        </div>
+      </template>
+      <template #footer>
+        <rs-button @click="showExportModal = false" variant="secondary"
+          >Cancel</rs-button
+        >
+        <rs-button @click="exportDocument">Export</rs-button>
+      </template>
     </rs-modal>
   </div>
 </template>
@@ -698,5 +851,30 @@ onMounted(() => {
   display: block;
   overflow-x: auto;
   padding: 1em;
+}
+
+.markdown-preview :deep(.html-preview) {
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.markdown-preview :deep(.html-render) {
+  padding: 16px;
+}
+
+.markdown-preview :deep(.aspect-ratio-container) {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+}
+
+.markdown-preview :deep(.aspect-ratio-container iframe) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 </style>

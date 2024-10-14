@@ -28,6 +28,7 @@ model user {
   userCreatedDate    DateTime?            @db.DateTime(0)
   userModifiedDate   DateTime?            @db.DateTime(0)
   chat               chat[]
+  document_template  document_template[]
   project            project[]
   project_permission project_permission[]
   thread             thread[]
@@ -221,4 +222,24 @@ model file {
   fileCreatedDate  DateTime?  @db.DateTime(0)
   fileModifiedDate DateTime?  @db.DateTime(0)
   chatFile         chatFile[]
+}
+
+model document_template {
+  templateID           Int       @id @default(autoincrement())
+  userID               Int?
+  templateName         String?   @db.VarChar(255)
+  templateDescription  String?   @db.VarChar(255)
+  templateType         String?   @db.VarChar(255)
+  headerContent        String?   @db.LongText
+  footerContent        String?   @db.LongText
+  firstPageContent     String?   @db.LongText
+  lastPageContent      String?   @db.LongText
+  bodyContent          String?   @db.LongText
+  templateMetadata     String?   @db.VarChar(255)
+  templateStatus       String?   @db.VarChar(255)
+  templateCreatedDate  DateTime? @db.DateTime(0)
+  templateModifiedDate DateTime? @db.DateTime(0)
+  user                 user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "document_template_ibfk_1")
+
+  @@index([userID], map: "userID")
 }

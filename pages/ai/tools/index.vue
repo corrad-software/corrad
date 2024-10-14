@@ -24,7 +24,19 @@ definePageMeta({
           </div>
         </div>
       </NuxtLink>
-
+      <NuxtLink to="/ai/document-template">
+        <div
+          class="bg-secondary hover:bg-primary hover:text-white transition-all flex flex-col justify-between h-full p-4 rounded gap-4"
+        >
+          <div class="flex flex-col gap-2">
+            <Icon name="ph:file-doc" class="!w-8 !h-8" />
+            <h4 class="font-semibold">Document Template</h4>
+            <p class="text-sm text-gray-500">
+              Create and edit document templates.
+            </p>
+          </div>
+        </div>
+      </NuxtLink>
       <!-- <NuxtLink to="/ai/sfc">
         <div
           class="bg-secondary hover:bg-primary hover:text-white transition-all flex flex-col justify-between h-full p-4 rounded gap-4"

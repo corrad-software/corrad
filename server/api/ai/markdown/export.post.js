@@ -9,25 +9,127 @@ import {
   TableRow,
   TableCell,
   BorderStyle,
+  Header,
+  Footer,
 } from "docx";
 import { marked } from "marked";
 import { JSDOM } from "jsdom";
 import sharp from "sharp";
+import sanitizeHtml from "sanitize-html";
+
+const sanitizeOptions = {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    img: ["src", "alt", "width", "height", "style"],
+  },
+  allowedSchemes: ["data", "http", "https"],
+};
+
+const processImage = async (imgElement) => {
+  try {
+    const imgSrc = imgElement.getAttribute("src");
+    const imageData = imgSrc.startsWith("data:image")
+      ? Buffer.from(imgSrc.split(",")[1], "base64")
+      : Buffer.from(await (await fetch(imgSrc)).arrayBuffer());
+
+    const width = parseInt(imgElement.style.width) || imgElement.width || 200;
+    const height =
+      parseInt(imgElement.style.height) || imgElement.height || 200;
+
+    return new ImageRun({
+      data: imageData,
+      transformation: { width, height },
+    });
+  } catch (error) {
+    console.error("Error processing image:", error);
+    return null;
+  }
+};
+
+const processParagraphContent = async (childNodes, nodeTypes) => {
+  const paragraphChildren = [];
+
+  for (const child of childNodes) {
+    if (child.nodeType === nodeTypes.TEXT_NODE && child.textContent.trim()) {
+      paragraphChildren.push(new TextRun(child.textContent.trim()));
+    } else if (
+      child.nodeType === nodeTypes.ELEMENT_NODE &&
+      child.tagName === "IMG"
+    ) {
+      const imageRun = await processImage(child);
+      if (imageRun) paragraphChildren.push(imageRun);
+    }
+  }
+
+  return paragraphChildren;
+};
+
+const parseHtmlContent = async (htmlContent) => {
+  const cleanHtml = sanitizeHtml(htmlContent, sanitizeOptions);
+  const dom = new JSDOM(cleanHtml);
+  const document = dom.window.document;
+  const nodeTypes = dom.window.Node;
+  const parsedContent = [];
+
+  for (const child of document.body.childNodes) {
+    if (child.nodeType === nodeTypes.TEXT_NODE && child.textContent.trim()) {
+      parsedContent.push(
+        new Paragraph({ children: [new TextRun(child.textContent.trim())] })
+      );
+    } else if (
+      child.nodeType === nodeTypes.ELEMENT_NODE &&
+      child.tagName === "P"
+    ) {
+      const paragraphChildren = await processParagraphContent(
+        child.childNodes,
+        nodeTypes
+      );
+      if (paragraphChildren.length > 0) {
+        parsedContent.push(new Paragraph({ children: paragraphChildren }));
+      }
+    }
+  }
+
+  return parsedContent;
+};
+
+const createHeadersAndFooters = async (template) => {
+  const headers = template?.headerContent
+    ? {
+        default: new Header({
+          children: await parseHtmlContent(template.headerContent),
+        }),
+      }
+    : {};
+  const footers = template?.footerContent
+    ? {
+        default: new Footer({
+          children: await parseHtmlContent(template.footerContent),
+        }),
+      }
+    : {};
+  return { headers, footers };
+};
 
 export default defineEventHandler(async (event) => {
   try {
-    const { markdownContent, mermaidDiagrams } = await readBody(event);
+    const { markdownContent, mermaidDiagrams, htmlPreviews, templateId } =
+      await readBody(event);
 
-    const doc = new Document({
-      sections: [],
-      creator: "Your Application",
-      title: "Markdown Export",
-    });
-    const paragraphs = [];
+    const template = templateId
+      ? await prisma.document_template.findUnique({
+          where: { templateID: parseInt(templateId) },
+        })
+      : null;
 
+    const { headers, footers } = await createHeadersAndFooters(template);
+
+    // Parse markdown content
     const htmlContent = marked(markdownContent);
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
+    const paragraphs = [];
 
     for (const child of document.body.childNodes) {
       if (child.nodeType === dom.window.Node.TEXT_NODE) {
@@ -171,6 +273,10 @@ export default defineEventHandler(async (event) => {
             const mermaidMatch = child.textContent
               .trim()
               .match(/^\[MERMAID_DIAGRAM_(\d+)\]$/);
+            const htmlMatch = child.textContent
+              .trim()
+              .match(/^\[HTML_PREVIEW_(\d+)\]$/);
+
             if (mermaidMatch) {
               const diagramIndex = parseInt(mermaidMatch[1]);
               const diagramKeys = Object.keys(mermaidDiagrams);
@@ -225,6 +331,57 @@ export default defineEventHandler(async (event) => {
                   })
                 );
               }
+            } else if (htmlMatch) {
+              const htmlIndex = parseInt(htmlMatch[1]);
+              const htmlPreviewKeys = Object.keys(htmlPreviews);
+              const actualIndex =
+                htmlPreviewKeys[htmlIndex] || htmlPreviewKeys[0];
+              const htmlPreview = htmlPreviews[actualIndex];
+
+              if (htmlPreview) {
+                const base64Data = htmlPreview.data.split(",")[1];
+                const imageBuffer = Buffer.from(base64Data, "base64");
+
+                // Calculate dimensions to maintain exact aspect ratio
+                const maxWidth = 600; // Maximum width in the document
+                const maxHeight = 800; // Maximum height
+                let width, height;
+
+                if (htmlPreview.aspectRatio > maxWidth / maxHeight) {
+                  width = maxWidth;
+                  height = Math.round(width / htmlPreview.aspectRatio);
+                } else {
+                  height = maxHeight;
+                  width = Math.round(height * htmlPreview.aspectRatio);
+                }
+
+                const pngBuffer = await sharp(imageBuffer)
+                  .resize({
+                    width: width,
+                    height: height,
+                    fit: sharp.fit.contain,
+                    background: { r: 255, g: 255, b: 255, alpha: 1 },
+                  })
+                  .png({ quality: 100 })
+                  .toBuffer();
+
+                const imageRun = new ImageRun({
+                  data: pngBuffer,
+                  transformation: {
+                    width: width,
+                    height: height,
+                  },
+                });
+                paragraphs.push(new Paragraph({ children: [imageRun] }));
+              } else {
+                paragraphs.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun(`[HTML Preview ${htmlIndex} not found]`),
+                    ],
+                  })
+                );
+              }
             } else {
               paragraphs.push(
                 new Paragraph({ children: [new TextRun(child.textContent)] })
@@ -239,7 +396,27 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    doc.addSection({ children: paragraphs });
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: paragraphs,
+          headers,
+          footers,
+        },
+      ],
+      creator: "Your Application",
+      title: "Markdown Export",
+    });
+
+    // Add last page content if template has lastPageContent
+    if (template && template.lastPageContent) {
+      const lastPageSection = {
+        properties: { type: "NEXT_PAGE" },
+        children: await parseHtmlContent(template.lastPageContent),
+      };
+      doc.addSection(lastPageSection);
+    }
 
     const buffer = await Packer.toBuffer(doc);
 
