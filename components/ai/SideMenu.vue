@@ -30,10 +30,17 @@ const { data: getProjects, refresh: refreshProjectList } = await useFetch(
 );
 
 if (getProjects.value.statusCode == 200) {
-  if (!currentProject.value)
-    currentProject.value = getProjects.value.data.defaultProject;
-
   projectList.value = getProjects.value.data.projectOptions;
+
+  // Check if currentProject exists in projectOptions
+  const projectExists = projectList.value.some(
+    (project) => project.value === currentProject.value
+  );
+
+  if (!projectExists || !currentProject.value) {
+    // If currentProject doesn't exist in projectOptions or is not set, use the default project
+    currentProject.value = getProjects.value.data.defaultProject;
+  }
 }
 
 const addNewProject = async () => {
@@ -76,9 +83,11 @@ const { data: threadList, refresh: refreshChatList } = await useFetch(
   }
 );
 
-watch(currentProject, (value) => {
-  // Refresh Page
-  window.location.replace("/ai");
+watch(currentProject, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    // Refresh Page only when the project actually changes
+    window.location.replace("/ai");
+  }
 });
 
 const deleteThread = async (threadID) => {
