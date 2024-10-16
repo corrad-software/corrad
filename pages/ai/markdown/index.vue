@@ -311,6 +311,14 @@ const exportMarkdownToWord = async () => {
       }
     );
 
+    // Preprocess markdown to add line breaks around Mermaid diagrams
+    processedMarkdown = markdownContent.value.replace(
+      /```mermaid([\s\S]*?)```/g,
+      (match, diagramCode, index) => {
+        return `\n\n[MERMAID_DIAGRAM_${index}]\n\n`;
+      }
+    );
+
     // Ensure there are no consecutive blank lines (which might be interpreted as paragraph breaks)
     processedMarkdown = processedMarkdown.replace(/\n{3,}/g, "\n\n");
 

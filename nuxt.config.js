@@ -549,5 +549,13 @@ export default defineNuxtConfig({
         requestSizeLimiter: false,
       },
     },
+    "/api/ai/markdown/**": {
+      security: {
+        requestSizeLimiter: {
+          maxRequestSizeInBytes: 1000000000,
+          maxUploadFileRequestInBytes: 1000000000,
+        },
+      },
+    },
   },
 });
