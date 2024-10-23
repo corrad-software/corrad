@@ -53,18 +53,23 @@ onUnmounted(() => {
         @click="toggleSidebar"
       ></div>
 
-      <!-- Main content -->
-      <main
-        class="flex-1 p-8 overflow-y-auto"
-        :class="{ 'lg:ml-64': isSidebarOpen }"
-      >
-        <slot />
-      </main>
+      <!-- Main content wrapper -->
+      <div class="flex-1 flex justify-center">
+        <main
+          class="w-full max-w-5xl p-8 overflow-y-auto transition-all duration-300"
+          :class="{
+            '': isSidebarOpen,
+            'lg:w-[calc(100%-16rem)]': isSidebarOpen,
+          }"
+        >
+          <slot />
+        </main>
+      </div>
     </div>
   </div>
 </template>
 
-<style>
+<style scoped lang="scss">
 .ai-theme {
   --color-primary: 13, 27, 42;
   --color-secondary: 244, 244, 245;
@@ -134,22 +139,19 @@ onUnmounted(() => {
 }
 
 @media (max-width: 1023px) {
-  .ai-theme main {
-    margin-left: 0 !important;
-  }
-
+  .ai-theme main,
   .ai-theme-dark main {
+    width: 100% !important;
     margin-left: 0 !important;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
 @media (max-width: 640px) {
-  .ai-theme main {
-    padding-top: 4rem; /* To account for the fixed hamburger menu */
-  }
-
+  .ai-theme main,
   .ai-theme-dark main {
-    padding-top: 4rem; /* To account for the fixed hamburger menu */
+    padding-top: 4rem;
   }
 }
 </style>

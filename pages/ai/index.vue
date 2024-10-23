@@ -45,7 +45,7 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
       </h2>
       <div
         v-if="type.assistantList.length > 0"
-        class="grid grid-cols-1 lg:grid-cols-2 gap-4"
+        class="grid grid-cols-1 xl:grid-cols-2 gap-4"
       >
         <FormKit
           v-for="(assistant, index2) in type.assistantList"
