@@ -113,8 +113,17 @@ export const socketHandler = async (io: Server) => {
 
     socket.on(
       "sendMessage",
-      async ({ threadID, assistantID, projectID, user, message }) => {
+      async ({
+        threadID,
+        assistantID,
+        projectID,
+        user,
+        message,
+        selectedPrompt,
+      }) => {
         try {
+          // console.log("Selected Prompt:", selectedPrompt);
+          
           // Check if this socket is the active one for the thread
           if (activeThreads.get(threadID) !== socket.id) {
             console.log(
@@ -252,17 +261,18 @@ export const socketHandler = async (io: Server) => {
 
           console.log("Attachments:", arrayAttachments);
 
+          // Process user's input
           if (message.content) {
             const messageChunks = splitMessageIntoChunks(message.content);
 
             for (let i = 0; i < messageChunks.length; i++) {
               const chunk = messageChunks[i];
 
-              // Create a message in db for each chunk
+              // Create a message in db for user's input
               await prisma?.chat.create({
                 data: {
                   chatMessage: chunk,
-                  chatRole: message.sender,
+                  chatRole: "user",
                   chatType: "text",
                   thread: {
                     connect: {
@@ -283,16 +293,49 @@ export const socketHandler = async (io: Server) => {
                 },
               });
 
-              // Process each chunk
+              // Send user's input to OpenAI
               await openai?.beta.threads.messages.create(threadID, {
-                role: message.sender,
+                role: "user",
                 content: chunk,
-                // Remove attachments for OpenAI API call
-                // attachments: arrayAttachments,
               });
             }
           }
 
+          // Handle selected prompt
+          if (selectedPrompt) {
+            // Create a message in db for the prompt
+            await prisma?.chat.create({
+              data: {
+                chatMessage: selectedPrompt.content,
+                chatRole: "user",
+                chatType: "prompt",
+                thread: {
+                  connect: {
+                    threadOAIID: threadID,
+                  },
+                },
+                user: {
+                  connect: {
+                    userUsername: user.username,
+                  },
+                },
+                project: {
+                  connect: {
+                    projectUniqueID: projectID,
+                  },
+                },
+                chatCreatedDate: DateTime.now().toISO(),
+              },
+            });
+
+            // Send prompt content to OpenAI
+            await openai?.beta.threads.messages.create(threadID, {
+              role: "user",
+              content: selectedPrompt.content,
+            });
+          }
+
+          // Generate response from OpenAI (existing code)
           const stream = await openai?.beta.threads.runs.create(threadID, {
             assistant_id: assistantID,
             stream: true,

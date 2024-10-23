@@ -66,7 +66,7 @@ const deleteAssistant = async (assistantID) => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto mt-12">
+  <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <LayoutsBreadcrumbV2 />
 
     <div class="flex mb-4">

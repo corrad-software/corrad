@@ -27,7 +27,7 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto mt-12">
+  <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <section>
       <h4
         class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 text-center"

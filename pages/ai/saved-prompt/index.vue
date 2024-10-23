@@ -1,12 +1,12 @@
 <script setup>
 definePageMeta({
-  title: "Document Templates",
+  title: "Saved Prompts",
   layout: "ai",
   middleware: ["auth"],
   requiresAuth: true,
   breadcrumb: [
     {
-      name: "Document Templates",
+      name: "Saved Prompts",
       type: "current",
     },
   ],
@@ -14,20 +14,19 @@ definePageMeta({
 
 const { $swal } = useNuxtApp();
 
-const templates = ref([]);
+const prompts = ref([]);
 
-const fetchTemplates = async () => {
-  const { data } = await useFetch("/api/ai/document-template/list", {
+const fetchPrompts = async () => {
+  const { data } = await useFetch("/api/ai/saved-prompt/list", {
     method: "GET",
-    params: { type: "all" },
   });
 
   if (data.value.statusCode === 200) {
-    templates.value = data.value.data;
+    prompts.value = data.value.data;
   }
 };
 
-const deleteTemplate = async (templateID) => {
+const deletePrompt = async (promptID) => {
   try {
     $swal
       .fire({
@@ -42,18 +41,18 @@ const deleteTemplate = async (templateID) => {
       })
       .then(async (result) => {
         if (result.isConfirmed) {
-          const { data } = await useFetch("/api/ai/document-template/delete", {
+          const { data } = await useFetch("/api/ai/saved-prompt/delete", {
             method: "POST",
-            body: { templateID },
+            body: { promptID },
           });
 
           if (data.value.statusCode === 200) {
             $swal.fire({
               title: "Success",
-              text: "Template deleted successfully",
+              text: "Prompt deleted successfully",
               icon: "success",
             });
-            fetchTemplates();
+            fetchPrompts();
           } else {
             $swal.fire({
               title: "Error",
@@ -64,12 +63,12 @@ const deleteTemplate = async (templateID) => {
         }
       });
   } catch (error) {
-    console.error("Error deleting template:", error);
+    console.error("Error deleting prompt:", error);
   }
 };
 
 onMounted(() => {
-  fetchTemplates();
+  fetchPrompts();
 });
 </script>
 
@@ -78,30 +77,30 @@ onMounted(() => {
     <LayoutsBreadcrumbV2 />
 
     <div class="flex mb-4">
-      <nuxt-link to="/ai/document-template/add">
+      <nuxt-link to="/ai/saved-prompt/add">
         <rs-button>
           <Icon name="material-symbols:add" class="!w-5 !h-5 cursor-pointer" />
-          Add Template
+          Add Prompt
         </rs-button>
       </nuxt-link>
     </div>
 
     <div class="grid grid-cols-1 gap-6">
       <div
-        v-if="templates.length > 0"
-        v-for="template in templates"
-        :key="template.templateID"
+        v-if="prompts.length > 0"
+        v-for="prompt in prompts"
+        :key="prompt.promptID"
         class="bg-secondary transition-all flex justify-between items-center p-4 rounded gap-4"
       >
         <div>
-          <h4 class="font-bold">{{ template.templateName }}</h4>
+          <h4 class="font-bold">{{ prompt.promptTitle }}</h4>
           <p class="text-sm text-gray-400">
-            {{ template.templateDescription }}
+            {{ prompt.promptDescription }}
           </p>
-          <p class="text-sm">Type: {{ template.templateType }}</p>
+          <p class="text-sm">Tags: {{ prompt.promptTags }}</p>
         </div>
         <div class="flex-1 flex justify-end gap-3">
-          <NuxtLink :to="`/ai/document-template/edit/${template.templateID}`">
+          <NuxtLink :to="`/ai/saved-prompt/edit/${prompt.promptID}`">
             <rs-button>
               <Icon
                 name="material-symbols:edit-square-outline"
@@ -112,7 +111,7 @@ onMounted(() => {
 
           <rs-button
             variant="danger-outline"
-            @click="deleteTemplate(template.templateID)"
+            @click="deletePrompt(prompt.promptID)"
           >
             <Icon
               name="material-symbols:delete-forever-outline"
@@ -123,7 +122,7 @@ onMounted(() => {
       </div>
       <div v-else>
         <div class="bg-secondary p-4 rounded">
-          <p class="text-center text-gray-400">No templates found</p>
+          <p class="text-center text-gray-400">No prompts found</p>
         </div>
       </div>
     </div>

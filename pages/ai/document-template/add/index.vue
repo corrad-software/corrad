@@ -294,7 +294,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto mt-12">
+  <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <LayoutsBreadcrumbV2 />
 
     <FormKit type="form" v-model="form" @submit="submitForm" :actions="false">

@@ -48,7 +48,7 @@ const submit = async () => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto mt-12">
+  <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <LayoutsBreadcrumbV2 />
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

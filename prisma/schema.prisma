@@ -31,6 +31,7 @@ model user {
   document_template  document_template[]
   project            project[]
   project_permission project_permission[]
+  saved_prompt       saved_prompt[]
   thread             thread[]
   userrole           userrole[]
 }
@@ -240,6 +241,21 @@ model document_template {
   templateCreatedDate  DateTime? @db.DateTime(0)
   templateModifiedDate DateTime? @db.DateTime(0)
   user                 user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "document_template_ibfk_1")
+
+  @@index([userID], map: "userID")
+}
+
+model saved_prompt {
+  promptID           Int       @id @default(autoincrement())
+  userID             Int?
+  promptTitle        String?   @db.VarChar(255)
+  promptContent      String?   @db.LongText
+  promptDescription  String?   @db.VarChar(255)
+  promptTags         String?   @db.VarChar(255)
+  promptStatus       String?   @db.VarChar(255)
+  promptCreatedDate  DateTime? @db.DateTime(0)
+  promptModifiedDate DateTime? @db.DateTime(0)
+  user               user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "saved_prompt_ibfk_1")
 
   @@index([userID], map: "userID")
 }

@@ -300,7 +300,11 @@ const processFile = async (file) => {
 };
 
 const sendMessage = async () => {
-  if (newMessage.value.trim() || fileAttachments.value.length > 0) {
+  if (
+    newMessage.value.trim() ||
+    fileAttachments.value.length > 0 ||
+    selectedPrompt.value
+  ) {
     let message = {
       sender: "user",
       content: newMessage.value.trim(),
@@ -330,11 +334,31 @@ const sendMessage = async () => {
       projectID: projectID.value,
       user: user.value,
       message,
+      selectedPrompt: selectedPrompt.value
+        ? {
+            title: selectedPrompt.value.promptTitle,
+            content: selectedPrompt.value.promptContent,
+          }
+        : null,
     });
 
-    messages.value.push(message);
+    // Add user's message to the conversation
+    if (message.content) {
+      messages.value.push(message);
+    }
+
+    // Add selected prompt to the conversation
+    if (selectedPrompt.value) {
+      messages.value.push({
+        sender: "user",
+        content: selectedPrompt.value.promptContent,
+        type: "prompt",
+      });
+    }
+
     newMessage.value = "";
     fileAttachments.value = [];
+    selectedPrompt.value = null; // Clear the selected prompt after sending
   }
 };
 
@@ -531,6 +555,57 @@ const regenerateResponse = async (index) => {
 const stopStreaming = () => {
   $io.emit("stopStream", threadID);
 };
+
+const showSavedPromptsModal = ref(false);
+const savedPrompts = ref([]);
+const searchQuery = ref("");
+const selectedPrompt = ref(null);
+
+const fetchSavedPrompts = async () => {
+  const { data } = await useFetch("/api/ai/saved-prompt/list", {
+    method: "GET",
+  });
+
+  if (data.value && data.value.statusCode === 200) {
+    savedPrompts.value = data.value.data;
+  }
+};
+
+const filteredPrompts = computed(() => {
+  return savedPrompts.value.filter(
+    (prompt) =>
+      prompt.promptTitle
+        .toLowerCase()
+        .includes(searchQuery.value.toLowerCase()) ||
+      prompt.promptTags.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+const selectPrompt = (prompt) => {
+  selectedPrompt.value = {
+    promptTitle: prompt.promptTitle,
+    promptContent: prompt.promptContent,
+  };
+
+  showSavedPromptsModal.value = false;
+};
+
+const clearSelectedPrompt = () => {
+  selectedPrompt.value = null;
+  newMessage.value = "";
+};
+
+const openSavedPromptsModal = () => {
+  showSavedPromptsModal.value = true;
+};
+
+const closeSavedPromptsModal = () => {
+  showSavedPromptsModal.value = false;
+};
+
+onMounted(() => {
+  fetchSavedPrompts();
+});
 </script>
 
 <template>
@@ -549,12 +624,6 @@ const stopStreaming = () => {
         />
         {{ verify.data.assistantName }}
       </rs-button>
-      <!-- <rs-button>
-        <Icon
-          name="material-symbols:ios-share-rounded"
-          class="!w-5 !h-5 cursor-pointer"
-        />
-      </rs-button> -->
     </div>
 
     <!-- Scrollable conversation area -->
@@ -621,7 +690,13 @@ const stopStreaming = () => {
                   </span>
                 </div>
               </div>
-              <p v-if="message.content" class="whitespace-pre-wrap">
+              <p v-if="message.type === 'prompt'" class="text-sm italic mt-1">
+                (Prompt: {{ message.content }})
+              </p>
+              <p
+                v-if="message.content && message.type !== 'prompt'"
+                class="whitespace-pre-wrap"
+              >
                 {{ message.content }}
               </p>
             </span>
@@ -732,8 +807,52 @@ const stopStreaming = () => {
       </rs-badge>
     </div>
 
+    <!-- RsModal for Saved Prompts -->
+    <RsModal
+      v-model="showSavedPromptsModal"
+      title="Saved Prompts"
+      size="lg"
+      position="center"
+      :hide-footer="true"
+    >
+      <template #body>
+        <div class="mb-4">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search prompts..."
+            class="w-full p-2 border rounded"
+          />
+        </div>
+        <NuxtScrollbar style="max-height: 60vh">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              v-for="prompt in filteredPrompts"
+              :key="prompt.promptID"
+              @click="
+                selectPrompt(prompt);
+                closeSavedPromptsModal();
+              "
+              class="p-2 border rounded cursor-pointer hover:bg-gray-100"
+              :class="{
+                'bg-blue-100':
+                  selectedPrompt && selectedPrompt.promptID === prompt.promptID,
+              }"
+            >
+              <h5 class="font-bold">{{ prompt.promptTitle }}</h5>
+              <p class="text-xs text-gray-600">{{ prompt.promptTags }}</p>
+            </div>
+          </div>
+        </NuxtScrollbar>
+      </template>
+    </RsModal>
     <!-- Fixed input area at the bottom -->
-    <FormKit type="form" :actions="false" @submit="sendMessage">
+    <FormKit
+      type="form"
+      @submit="sendMessage"
+      :actions="false"
+      #default="{ value }"
+    >
       <div class="relative bg-secondary rounded-lg pr-">
         <FormKit
           v-model="newMessage"
@@ -751,9 +870,14 @@ const stopStreaming = () => {
         />
         <div class="absolute bottom-2 right-2 flex items-center space-x-2">
           <Icon
+            @click="openSavedPromptsModal"
+            name="mdi:bookmark-outline"
+            class="!w-6 !h-6 text-primary cursor-pointer hover:text-primary/60 transition-colors"
+          />
+          <Icon
             @click="chooseFile"
             name="mdi:plus-circle-outline"
-            class="!w-6 !h-6 text-primary cursor-pointer"
+            class="!w-6 !h-6 text-primary cursor-pointer hover:text-primary/60 transition-colors"
           />
           <FormKit
             @change="handleFileChange"
@@ -773,12 +897,28 @@ const stopStreaming = () => {
           >
             <Icon name="ph:stop-fill" class="!w-3 !h-3" />
           </rs-button>
-          <rs-button v-else btn-type="submit" class="!rounded-full">
+          <rs-button
+            v-else
+            btn-type="submit"
+            class="!rounded-full hover:bg-primary/60 transition-colors"
+          >
             <Icon name="mdi:send" class="!w-3 !h-3" />
           </rs-button>
         </div>
       </div>
     </FormKit>
+
+    <!-- Display selected prompt -->
+    <div v-if="selectedPrompt" class="flex justify-end mt-2">
+      <rs-badge variant="primary" class="w-fit flex items-center">
+        <span class="mr-2">{{ selectedPrompt.promptTitle }}</span>
+        <Icon
+          @click="clearSelectedPrompt"
+          name="ph:x-light"
+          class="!w-4 !h-4 hover:bg-[#858f7d] rounded-full cursor-pointer"
+        />
+      </rs-badge>
+    </div>
 
     <Transition
       enter-active-class="transition ease-out duration-200"
@@ -819,7 +959,7 @@ const stopStreaming = () => {
     </div>
   </div>
   <div v-else>
-    <div class="max-w-7xl mx-auto mt-12">
+    <div class="max-w-7xl mx-auto mt-5 md:mt-12">
       <section>
         <h4
           class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 text-center"

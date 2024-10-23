@@ -1,12 +1,16 @@
 <script setup>
-const isSidebarOpen = ref(true);
+const isSidebarOpen = ref(false);
+const isMobile = ref(false);
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
 const handleResize = () => {
-  isSidebarOpen.value = window.innerWidth >= 1024;
+  isMobile.value = window.innerWidth < 1024;
+  if (!isMobile.value) {
+    isSidebarOpen.value = true;
+  }
 };
 
 onMounted(() => {
@@ -26,7 +30,11 @@ onUnmounted(() => {
     >
       <rs-button
         @click="toggleSidebar"
-        class="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-md bg-[rgb(var(--bg-2))]"
+        :class="[
+          'lg:hidden fixed z-30 transition-all duration-300',
+          isSidebarOpen ? 'top-4 left-4 p-2 rounded-md' : 'top-4 left-4 p-2',
+          'bg-[rgb(var(--color-primary))] text-white',
+        ]"
       >
         <Icon
           :name="
@@ -38,8 +46,18 @@ onUnmounted(() => {
 
       <aiSideMenu :isOpen="isSidebarOpen" />
 
+      <!-- Dark overlay -->
+      <div
+        v-if="isSidebarOpen && isMobile"
+        class="fixed inset-0 bg-black bg-opacity-50 z-20"
+        @click="toggleSidebar"
+      ></div>
+
       <!-- Main content -->
-      <main class="flex-1 p-8 overflow-y-auto">
+      <main
+        class="flex-1 p-8 overflow-y-auto"
+        :class="{ 'lg:ml-64': isSidebarOpen }"
+      >
         <slot />
       </main>
     </div>

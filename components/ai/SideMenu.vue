@@ -179,7 +179,7 @@ onUnmounted(() => {
 <template>
   <aside
     v-show="isOpen"
-    class="fixed inset-y-0 left-0 z-10 w-64 bg-[rgb(var(--bg-2))] p-4 border-r border-[rgb(var(--border-color))] flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-30 w-60 md:w-64 bg-[rgb(var(--bg-2))] p-4 border-r border-[rgb(var(--border-color))] flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0"
     :class="{ '-translate-x-full': !isOpen }"
   >
     <nuxt-link to="/ai" class="flex justify-center items-center mb-4">
@@ -235,13 +235,16 @@ onUnmounted(() => {
       </ul>
     </NuxtScrollbar>
     <section class="flex-auto flex flex-col justify-end">
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-1 gap-3">
         <nuxt-link to="/ai">
           <rs-button
             variant="secondary"
             class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
           >
-            <Icon name="material-symbols:globe-asia" class="!w-6 !h-6 mb-1" />
+            <Icon
+              name="material-symbols:globe-asia"
+              class="!w-5 !h-5 md:!w-6 md:!h-6 mb-1"
+            />
             Explore
           </rs-button>
         </nuxt-link>
@@ -250,7 +253,7 @@ onUnmounted(() => {
             variant="secondary"
             class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
           >
-            <Icon name="ph:hammer" class="!w-6 !h-6 mb-1" />
+            <Icon name="ph:hammer" class="!w-5 !h-5 md:!w-6 md:!h-6 mb-1" />
             Tools
           </rs-button>
         </nuxt-link>
@@ -261,7 +264,7 @@ onUnmounted(() => {
           >
             <Icon
               name="material-symbols:folder-open-outline"
-              class="!w-6 !h-6 mr-2"
+              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
             />
             Repository
           </rs-button>
@@ -271,7 +274,10 @@ onUnmounted(() => {
             variant="secondary"
             class="w-full !justify-start !text-[rgb(var(--text-color))]"
           >
-            <Icon name="mdi:robot-excited-outline" class="!w-6 !h-6 mr-2" />
+            <Icon
+              name="mdi:robot-excited-outline"
+              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
+            />
             Assistant
           </rs-button>
         </nuxt-link>
@@ -281,9 +287,9 @@ onUnmounted(() => {
           <rs-button class="w-full !justify-start pr-3">
             <Icon
               name="material-symbols:settings-outline-rounded"
-              class="!w-6 !h-6 mr-2"
+              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
             />
-            {{ hasPermission() ? "Settings" : "Project Settings" }}
+            {{ hasPermission() ? "Settings" : "Settings" }}
           </rs-button>
         </nuxt-link>
         <div class="grid grid-cols-2">
@@ -292,10 +298,10 @@ onUnmounted(() => {
             variant="secondary"
             class="!text-[rgb(var(--text-color))]"
           >
-            <Icon name="ph:sun-duotone" class="!w-6 !h-6" />
+            <Icon name="ph:sun-duotone" class="!w-5 !h-5 md:!w-6 md:!h-6" />
           </rs-button>
           <rs-button variant="secondary" class="!text-[rgb(var(--text-color))]">
-            <Icon name="ph:question-mark" class="!w-6 !h-6" />
+            <Icon name="ph:question-mark" class="!w-5 !h-5 md:!w-6 md:!h-6" />
           </rs-button>
         </div>
       </div>

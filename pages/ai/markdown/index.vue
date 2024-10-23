@@ -502,7 +502,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto mt-12">
+  <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <LayoutsBreadcrumbV2 />
 
     <div class="bg-secondary rounded-t-md border border-b-0">
