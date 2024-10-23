@@ -235,7 +235,7 @@ onUnmounted(() => {
       </ul>
     </NuxtScrollbar>
     <section class="flex-auto flex flex-col justify-end">
-      <div class="grid grid-cols-2 md:grid-cols-1 gap-3">
+      <div class="grid grid-cols-2 gap-3">
         <nuxt-link to="/ai">
           <rs-button
             variant="secondary"
