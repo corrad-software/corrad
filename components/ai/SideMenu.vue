@@ -235,8 +235,8 @@ onUnmounted(() => {
       </ul>
     </NuxtScrollbar>
     <section class="flex-auto flex flex-col justify-end">
-      <div class="grid grid-cols-2 gap-3">
-        <nuxt-link to="/ai">
+      <div class="grid grid-cols-4 gap-3">
+        <nuxt-link class="col-span-2" to="/ai">
           <rs-button
             variant="secondary"
             class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
@@ -248,7 +248,7 @@ onUnmounted(() => {
             Explore
           </rs-button>
         </nuxt-link>
-        <nuxt-link to="/ai/tools">
+        <nuxt-link class="col-span-2" to="/ai/tools">
           <rs-button
             variant="secondary"
             class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
@@ -257,7 +257,7 @@ onUnmounted(() => {
             Tools
           </rs-button>
         </nuxt-link>
-        <nuxt-link to="/ai/repository" class="col-span-2">
+        <nuxt-link to="/ai/repository" class="col-span-4">
           <rs-button
             variant="secondary"
             class="w-full !justify-start !text-[rgb(var(--text-color))]"
@@ -269,7 +269,7 @@ onUnmounted(() => {
             Repository
           </rs-button>
         </nuxt-link>
-        <nuxt-link v-if="hasPermission()" to="/ai/assistant" class="col-span-2">
+        <nuxt-link v-if="hasPermission()" to="/ai/assistant" class="col-span-4">
           <rs-button
             variant="secondary"
             class="w-full !justify-start !text-[rgb(var(--text-color))]"
@@ -282,6 +282,7 @@ onUnmounted(() => {
           </rs-button>
         </nuxt-link>
         <nuxt-link
+          class="md:col-span-3"
           :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
         >
           <rs-button class="w-full !justify-start pr-3">
@@ -292,7 +293,12 @@ onUnmounted(() => {
             {{ hasPermission() ? "Settings" : "Settings" }}
           </rs-button>
         </nuxt-link>
-        <div class="grid grid-cols-2">
+        <nuxt-link to="/ai/user-guide">
+          <rs-button class="w-full">
+            <Icon name="ph:question-mark" class="!w-5 !h-5 md:!w-6 md:!h-6" />
+          </rs-button>
+        </nuxt-link>
+        <!-- <div class="grid grid-cols-1">
           <rs-button
             @click="toggleTheme"
             variant="secondary"
@@ -303,7 +309,7 @@ onUnmounted(() => {
           <rs-button variant="secondary" class="!text-[rgb(var(--text-color))]">
             <Icon name="ph:question-mark" class="!w-5 !h-5 md:!w-6 md:!h-6" />
           </rs-button>
-        </div>
+        </div> -->
       </div>
     </section>
 

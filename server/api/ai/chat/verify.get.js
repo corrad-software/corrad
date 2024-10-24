@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
       },
       select: {
         threadID: true,
+        collectionName: true,
         assistant: {
           select: {
             assistantOAIID: true,
@@ -76,6 +77,7 @@ export default defineEventHandler(async (event) => {
         assistantID: thread?.assistant?.assistantOAIID || null,
         assistantName: thread?.assistant?.assistantName || null,
         assistantImg: thread?.assistant?.assistantImg || null,
+        collectionName: thread?.collectionName || null,
       },
     };
   } catch (error) {

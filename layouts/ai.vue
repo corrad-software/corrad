@@ -56,10 +56,10 @@ onUnmounted(() => {
       <!-- Main content wrapper -->
       <div class="flex-1 flex justify-center">
         <main
-          class="w-full max-w-5xl p-8 overflow-y-auto transition-all duration-300"
+          class="w-full max-w-7xl p-8 overflow-y-auto transition-all duration-300"
           :class="{
             '': isSidebarOpen,
-            'lg:w-[calc(100%-16rem)]': isSidebarOpen,
+            'lg:w-[calc(100%-1rem)]': isSidebarOpen,
           }"
         >
           <slot />

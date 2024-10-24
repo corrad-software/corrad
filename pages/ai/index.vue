@@ -74,7 +74,9 @@ const { data: assistants } = await useFetch("/api/ai/dashboard/assistants", {
             />
             <div>
               <h4 class="text-left font-bold">{{ assistant.assistantName }}</h4>
-              <p class="text-left text-sm text-gray-400">
+              <p
+                class="text-left text-sm text-gray-400 line-clamp-2 min-h-[40px]"
+              >
                 {{ assistant.assistantDescription }}
               </p>
             </div>

@@ -4,7 +4,7 @@ const main = async () => {
   try {
     // Check if openAI API key is not null
     const openaiAPIKey = await getConfiguration("OPENAI_API_KEY");
-    console.log("API Key", openaiAPIKey);
+    // console.log("API Key", openaiAPIKey);
     if (!openaiAPIKey) {
       return {
         statusCode: 400,
@@ -14,7 +14,7 @@ const main = async () => {
 
     // Check if openAI Project ID is not null
     const openaiProjectID = await getConfiguration("OPENAI_PROJECT_ID");
-    console.log("Project ID", openaiProjectID);
+    // console.log("Project ID", openaiProjectID);
     if (!openaiProjectID) {
       return {
         statusCode: 400,
@@ -24,7 +24,7 @@ const main = async () => {
 
     // Get ASSISTANT_MODEL
     const openaiAssistantModel = await getConfiguration("ASSISTANT_MODEL");
-    console.log("Assistant Model", openaiAssistantModel);
+    // console.log("Assistant Model", openaiAssistantModel);
     if (!openaiAssistantModel) {
       return {
         statusCode: 400,
@@ -50,7 +50,7 @@ const main = async () => {
 
     try {
       await openai.models.list();
-      console.log("==== API KEY VALID =====");
+      // console.log("==== API KEY VALID =====");
       return {
         statusCode: 200,
         message: "Success",

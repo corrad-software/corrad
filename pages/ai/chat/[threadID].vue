@@ -1,9 +1,11 @@
 <script setup>
+// Imports
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import CryptoJS from "crypto-js";
 import Tesseract from "tesseract.js";
 
+// Page Meta
 definePageMeta({
   title: "AI",
   description: "AI page",
@@ -12,14 +14,14 @@ definePageMeta({
   requiresAuth: true,
 });
 
+// Composables and Refs
 const { $swal, $io, $shiki } = useNuxtApp();
 const projectID = useCookie("currentProject");
 const threadID = useRoute().params.threadID;
 const assistantID = ref("");
 const user = useCookie("user");
 
-const CHUNK_SIZE = 1024 * 1024;
-
+// Initial Checks and Verifications
 if (!threadID) {
   $swal.fire({
     icon: "error",
@@ -31,6 +33,31 @@ if (!threadID) {
     navigateTo("/ai");
   }, 3000);
 }
+
+// Reactive Data
+const messages = ref([]);
+const newMessage = ref("");
+const copiedIndex = ref(null);
+const isTyping = ref(false);
+const currentStreamedMessage = ref("");
+const isStreaming = ref(false);
+const fileAttachments = ref([]);
+const isReconnecting = ref(false);
+const isAutoScrolling = ref(true);
+const lastScrollTop = ref(0);
+const isUserScrolling = ref(false);
+const isOCRProcessing = ref(false);
+const ocrProgress = ref(0);
+const showSavedPromptsModal = ref(false);
+const savedPrompts = ref([]);
+const searchQuery = ref("");
+const selectedPrompt = ref(null);
+const relevantDocuments = ref([]);
+const showDocumentSidebar = ref(false);
+const availableCollections = ref([]);
+const currentCollectionName = ref("");
+const isProcessing = ref(false);
+const showHelpPanel = ref(false);
 
 const { data: verify } = await useFetch("/api/ai/chat/verify", {
   method: "GET",
@@ -53,17 +80,8 @@ if (verify.value.statusCode !== 200) {
   }, 3000);
 } else {
   assistantID.value = verify.value.data.assistantID;
+  currentCollectionName.value = verify.value.data.collectionName || "";
 }
-
-const messages = ref([]);
-const newMessage = ref("");
-const copiedIndex = ref(null);
-const isTyping = ref(false);
-const currentStreamedMessage = ref("");
-
-const isStreaming = ref(false);
-
-const fileAttachments = ref([]);
 
 const { data: history } = await useFetch("/api/ai/chat/history", {
   method: "GET",
@@ -78,48 +96,22 @@ if (history.value.statusCode === 200) {
   messages.value = history.value.data;
 }
 
-const isReconnecting = ref(false);
+// Computed Properties
+const filteredPrompts = computed(() => {
+  return savedPrompts.value.filter(
+    (prompt) =>
+      prompt.promptTitle
+        .toLowerCase()
+        .includes(searchQuery.value.toLowerCase()) ||
+      prompt.promptTags.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
 
-const isAutoScrolling = ref(true);
-const lastScrollTop = ref(0);
-const isUserScrolling = ref(false);
+const sidebarClasses = computed(() => {
+  return showDocumentSidebar.value ? "w-1/4" : "w-0";
+});
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    const messageContainer = document.querySelector(".message-container");
-    if (messageContainer && isAutoScrolling.value) {
-      messageContainer.scrollTop = messageContainer.scrollHeight;
-    }
-  });
-};
-
-const handleScroll = () => {
-  const messageContainer = document.querySelector(".message-container");
-  if (messageContainer) {
-    const { scrollTop, scrollHeight, clientHeight } = messageContainer;
-    const isScrolledToBottom = scrollHeight - scrollTop === clientHeight;
-
-    if (isScrolledToBottom) {
-      isAutoScrolling.value = true;
-      isUserScrolling.value = false;
-    } else if (scrollTop < lastScrollTop.value) {
-      isAutoScrolling.value = false;
-      isUserScrolling.value = true;
-    }
-
-    lastScrollTop.value = scrollTop;
-  }
-};
-
-const handleScrollStart = () => {
-  isUserScrolling.value = true;
-};
-
-const handleScrollEnd = () => {
-  isUserScrolling.value = false;
-};
-
-// Socket.io setup
+// Lifecycle Hooks
 onMounted(() => {
   $io.emit("joinRoom", threadID);
 
@@ -185,6 +177,9 @@ onMounted(() => {
     });
   });
 
+  fetchSavedPrompts();
+  fetchAvailableCollections();
+
   const messageContainer = document.querySelector(".message-container");
   if (messageContainer) {
     messageContainer.addEventListener("scroll", handleScroll);
@@ -218,6 +213,7 @@ onUnmounted(() => {
   stopStreaming();
 });
 
+// Watchers
 watch(
   () => messages.value,
   () => {
@@ -228,8 +224,64 @@ watch(
   { deep: true }
 );
 
-const isOCRProcessing = ref(false);
-const ocrProgress = ref(0);
+watch(
+  () => currentCollectionName.value,
+  async (newVal, oldVal) => {
+    if (oldVal !== newVal) {
+      await changeCollection(newVal);
+    }
+  }
+);
+
+// Methods
+const fetchAvailableCollections = async () => {
+  try {
+    const { data } = await useFetch("/api/ai/chat/collection/list", {
+      method: "GET",
+    });
+
+    if (data.value.statusCode === 200) {
+      availableCollections.value = data.value.data;
+    }
+  } catch (error) {
+    console.error("Error fetching available collections:", error);
+  }
+};
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    const messageContainer = document.querySelector(".message-container");
+    if (messageContainer && isAutoScrolling.value) {
+      messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+  });
+};
+
+const handleScroll = () => {
+  const messageContainer = document.querySelector(".message-container");
+  if (messageContainer) {
+    const { scrollTop, scrollHeight, clientHeight } = messageContainer;
+    const isScrolledToBottom = scrollHeight - scrollTop === clientHeight;
+
+    if (isScrolledToBottom) {
+      isAutoScrolling.value = true;
+      isUserScrolling.value = false;
+    } else if (scrollTop < lastScrollTop.value) {
+      isAutoScrolling.value = false;
+      isUserScrolling.value = true;
+    }
+
+    lastScrollTop.value = scrollTop;
+  }
+};
+
+const handleScrollStart = () => {
+  isUserScrolling.value = true;
+};
+
+const handleScrollEnd = () => {
+  isUserScrolling.value = false;
+};
 
 const processFile = async (file) => {
   const timestamp = Date.now();
@@ -238,7 +290,6 @@ const processFile = async (file) => {
     .substr(0, 16);
   const fileExtension = file.name.split(".").pop().toLowerCase();
   const newFileName = `${timestamp}-${fileId}.${fileExtension}`;
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
   // Check if the file is an image
   const isImage = ["jpg", "jpeg", "png", "gif"].includes(fileExtension);
@@ -263,39 +314,43 @@ const processFile = async (file) => {
 
     return { type: "image", text };
   } else {
-    // Handle non-image files
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
-      const end = Math.min(file.size, start + CHUNK_SIZE);
-      const chunk = file.slice(start, end);
-      const chunkBase64 = await fileToBase64(chunk);
+    // Handle non-image files (document upload and embedding)
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("projectID", projectID.value);
 
-      await new Promise((resolve) => {
-        $io.emit(
-          "fileChunk",
-          {
-            fileId,
-            fileName: newFileName,
-            chunkIndex: i,
-            totalChunks,
-            chunk: chunkBase64,
-          },
-          resolve
-        );
+    try {
+      const { data } = await useFetch("/api/ai/document/upload-and-embed", {
+        method: "POST",
+        body: formData,
       });
-    }
 
-    return {
-      type: "file",
-      file: {
-        fileId,
-        name: newFileName,
-        originalName: file.name,
-        type: file.type,
-        url: `/uploads/${newFileName}`,
-        openAIFileId: null,
-      },
-    };
+      if (data.value.statusCode === 200) {
+        await fetchAvailableCollections();
+
+        currentCollectionName.value = data.value.data.collectionName;
+
+        return {
+          type: "document",
+          file: {
+            fileId: data.value.data.itemID,
+            name: data.value.data.itemName,
+            originalName: file.name,
+            type: file.name.split(".").pop().toLowerCase(),
+          },
+        };
+      } else {
+        throw new Error(data.value.message);
+      }
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      $swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to upload and embed document",
+      });
+      return null;
+    }
   }
 };
 
@@ -305,6 +360,8 @@ const sendMessage = async () => {
     fileAttachments.value.length > 0 ||
     selectedPrompt.value
   ) {
+    isProcessing.value = true; // Set the processing flag
+
     let message = {
       sender: "user",
       content: newMessage.value.trim(),
@@ -317,8 +374,9 @@ const sendMessage = async () => {
         const result = await processFile(file);
         if (result.type === "image") {
           message.content += `\n\nImage content (OCR result): ${result.text}\n\nPlease note that this text was extracted from an image using OCR technology. The accuracy may vary depending on the image quality and complexity. Consider this context when interpreting the content.`;
-        } else {
+        } else if (result && result.type === "document") {
           message.files.push(result.file);
+          message.content += `\n\nUploaded document: ${result.file.name}`;
         }
       }
 
@@ -326,6 +384,18 @@ const sendMessage = async () => {
         message.type = "file";
       }
     }
+
+    // Search for relevant documents
+    if (currentCollectionName.value) {
+      await searchDocuments(newMessage.value.trim());
+    }
+
+    // Prepare document context (not shown in chat)
+    const documentContext = relevantDocuments.value
+      .map(
+        (doc) => `Document: ${doc.metadata.filename}\nContent: ${doc.content}`
+      )
+      .join("\n\n");
 
     isStreaming.value = true;
     $io.emit("sendMessage", {
@@ -340,6 +410,7 @@ const sendMessage = async () => {
             content: selectedPrompt.value.promptContent,
           }
         : null,
+      documentContext, // Pass document context separately
     });
 
     // Add user's message to the conversation
@@ -359,17 +430,18 @@ const sendMessage = async () => {
     newMessage.value = "";
     fileAttachments.value = [];
     selectedPrompt.value = null; // Clear the selected prompt after sending
+    isProcessing.value = false; // Reset the processing flag
   }
 };
 
-const downloadFile = (fileUrl, fileName) => {
-  const link = document.createElement("a");
-  link.href = fileUrl;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+// const downloadFile = (fileUrl, fileName) => {
+//   const link = document.createElement("a");
+//   link.href = fileUrl;
+//   link.download = fileName;
+//   document.body.appendChild(link);
+//   link.click();
+//   document.body.removeChild(link);
+// };
 
 const copyToClipboard = (text, index) => {
   navigator.clipboard
@@ -496,8 +568,7 @@ const markdownToEditor = (content) => {
     });
 };
 
-/* FILE FUNCTIONS */
-
+// File Functions
 const chooseFile = () => {
   document.getElementById("attachments").click();
 };
@@ -513,14 +584,14 @@ const removeFile = (index) => {
   fileAttachments.value.splice(index, 1);
 };
 
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(",")[1]);
-    reader.onerror = (error) => reject(error);
-  });
-};
+// const fileToBase64 = (file) => {
+//   return new Promise((resolve, reject) => {
+//     const reader = new FileReader();
+//     reader.readAsDataURL(file);
+//     reader.onload = () => resolve(reader.result.split(",")[1]);
+//     reader.onerror = (error) => reject(error);
+//   });
+// };
 
 const regenerateResponse = async (index) => {
   try {
@@ -556,11 +627,7 @@ const stopStreaming = () => {
   $io.emit("stopStream", threadID);
 };
 
-const showSavedPromptsModal = ref(false);
-const savedPrompts = ref([]);
-const searchQuery = ref("");
-const selectedPrompt = ref(null);
-
+// Saved Prompts Functions
 const fetchSavedPrompts = async () => {
   const { data } = await useFetch("/api/ai/saved-prompt/list", {
     method: "GET",
@@ -570,16 +637,6 @@ const fetchSavedPrompts = async () => {
     savedPrompts.value = data.value.data;
   }
 };
-
-const filteredPrompts = computed(() => {
-  return savedPrompts.value.filter(
-    (prompt) =>
-      prompt.promptTitle
-        .toLowerCase()
-        .includes(searchQuery.value.toLowerCase()) ||
-      prompt.promptTags.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
 
 const selectPrompt = (prompt) => {
   selectedPrompt.value = {
@@ -603,9 +660,56 @@ const closeSavedPromptsModal = () => {
   showSavedPromptsModal.value = false;
 };
 
-onMounted(() => {
-  fetchSavedPrompts();
-});
+// New method to search documents
+const searchDocuments = async (query) => {
+  try {
+    const { data } = await useFetch("/api/ai/document/search", {
+      method: "POST",
+      body: {
+        query,
+        collectionName: currentCollectionName.value,
+      },
+    });
+
+    if (data.value.statusCode === 200) {
+      relevantDocuments.value = data.value.data;
+    } else {
+      console.error("Error searching documents:", data.value.message);
+    }
+  } catch (error) {
+    console.error("Error searching documents:", error);
+  }
+};
+
+const changeCollection = async (newCollectionName) => {
+  try {
+    const { data } = await useFetch("/api/ai/chat/collection/update", {
+      method: "POST",
+      body: {
+        threadID: threadID,
+        collectionName: newCollectionName,
+      },
+    });
+
+    if (data.value.statusCode === 200) {
+      currentCollectionName.value = newCollectionName;
+      // $swal.fire({
+      //   icon: "success",
+      //   title: "Collection Changed",
+      //   text: `Successfully changed to collection: ${newCollectionName}`,
+      // });
+    } else {
+      throw new Error(data.value.message);
+    }
+  } catch (error) {
+    console.error("Error changing collection:", error);
+    $swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to change collection",
+    });
+  }
+};
 </script>
 
 <template>
@@ -624,6 +728,11 @@ onMounted(() => {
         />
         {{ verify.data.assistantName }}
       </rs-button>
+      <Icon
+        @click="showHelpPanel = true"
+        name="mdi:help-circle-outline"
+        class="!w-6 !h-6 cursor-pointer text-primary"
+      />
     </div>
 
     <!-- Scrollable conversation area -->
@@ -672,7 +781,7 @@ onMounted(() => {
               ></div>
             </span>
             <span v-else>
-              <div
+              <!-- <div
                 v-if="message.files && message.files.length > 0"
                 class="rounded-md p-2 text-xs mb-2"
               >
@@ -682,14 +791,11 @@ onMounted(() => {
                   class="flex items-center justify-end"
                 >
                   <Icon name="ph:file-light" class="mr-1 !w-4 !h-4"></Icon>
-                  <span
-                    class="text-sm cursor-pointer underline"
-                    @click="downloadFile(file.url, file.originalName)"
-                  >
-                    {{ file.originalName }}
+                  <span class="text-sm cursor-pointer underline">
+                    {{ file.originalName }} 
                   </span>
                 </div>
-              </div>
+              </div> -->
               <p v-if="message.type === 'prompt'" class="text-sm italic mt-1">
                 (Prompt: {{ message.content }})
               </p>
@@ -718,7 +824,7 @@ onMounted(() => {
           <div
             v-if="!message.error"
             :class="[
-              'flex justify-start mt-2 relative gap-4',
+              'flex justify-start mt-2 relative gap-2 md:gap-4',
               message.sender === 'user' ? 'justify-end' : '',
             ]"
           >
@@ -727,7 +833,7 @@ onMounted(() => {
               class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
             >
               <Icon name="mdi:content-copy" class="w-4 h-4 mr-1" />
-              Copy
+              <span class="hidden md:block"> Copy </span>
             </button>
             <div
               v-if="copiedIndex === index"
@@ -747,7 +853,7 @@ onMounted(() => {
                 name="material-symbols:markdown-paste-rounded"
                 class="w-4 h-4 mr-1"
               />
-              Send to editor
+              <span class="hidden md:block"> Send to editor </span>
             </button>
             <button
               v-if="
@@ -759,8 +865,14 @@ onMounted(() => {
               class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
             >
               <Icon name="mdi:refresh" class="w-4 h-4 mr-1" />
-              Regenerate
+              <span class="hidden md:block"> Regenerate </span>
             </button>
+          </div>
+          <div
+            v-if="message.type === 'info'"
+            class="bg-gray-100 text-gray-600 p-2 rounded text-sm italic"
+          >
+            {{ message.content }}
           </div>
         </div>
       </NuxtScrollbar>
@@ -778,9 +890,12 @@ onMounted(() => {
       </button>
     </div>
 
-    <div v-if="isTyping" class="flex items-end overflow-y-auto px-4 py-2">
+    <div
+      v-if="isTyping"
+      class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
+    >
       <div class="flex items-center">
-        <span class="text-sm text-gray-400">Assistant is typing...</span>
+        <span class="text-sm text-gray-400">Assistant is typing</span>
         <div class="animate-bounce text-gray-400 mx-1">.</div>
         <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
           .
@@ -853,22 +968,37 @@ onMounted(() => {
       :actions="false"
       #default="{ value }"
     >
-      <div class="relative bg-secondary rounded-lg pr-">
+      <div class="relative bg-secondary rounded-lg">
         <FormKit
           v-model="newMessage"
           type="textarea"
           placeholder="Type here... (Shift + Enter for new line)"
           :classes="{
-            outer: 'mb-0',
+            outer: `mb-0 rounded-lg border-l-0 duration-150 ${
+              isProcessing ? 'border-l-4 border-primary animate-pulse' : ''
+            }`,
             inner: 'border-none',
             input:
-              'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none pr-14 md:pr-20',
+              'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none pr-5 md:pr-20 !text-primary',
           }"
           @keydown.enter.prevent="handleEnter"
           auto-height
           :max-auto-height="250"
         />
         <div class="absolute bottom-2 right-2 flex items-center space-x-2">
+          <div class="relative">
+            <span
+              class="absolute top-[-4px] right-[-4px] text-xs text-white bg-info rounded-full px-1"
+            >
+              {{ relevantDocuments.length }}
+            </span>
+            <Icon
+              @click="showDocumentSidebar = !showDocumentSidebar"
+              name="mdi:file-document-outline"
+              class="!w-6 !h-6 text-primary cursor-pointer hover:text-primary/60 transition-colors"
+            />
+          </div>
+
           <Icon
             @click="openSavedPromptsModal"
             name="mdi:bookmark-outline"
@@ -886,9 +1016,12 @@ onMounted(() => {
             :classes="{
               outer: 'hidden',
             }"
-            accept="image/*"
+            accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msword, application/vnd.oasis.opendocument.text, application/rtf, application/pdf, text/html, text/plain, application/epub+zip, text/markdown, text/csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, image/*"
             multiple
           ></FormKit>
+          <!-- <div v-if="isProcessing" class="mr-2">
+            <div class="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+          </div> -->
           <rs-button
             v-if="isStreaming"
             @click="stopStreaming"
@@ -957,6 +1090,174 @@ onMounted(() => {
     <div v-if="isReconnecting" class="text-yellow-500 mb-2">
       Reconnected. Previous response was interrupted.
     </div>
+
+    <!-- Document sidebar -->
+    <div
+      class="fixed top-0 right-0 h-full"
+      :class="[
+        'bg-secondary transition-all duration-300 overflow-hidden',
+        sidebarClasses,
+      ]"
+    >
+      <div class="p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Relevant Documents Collection</h3>
+          <button
+            @click="showDocumentSidebar = !showDocumentSidebar"
+            class="text-primary"
+          >
+            <Icon
+              :name="
+                showDocumentSidebar ? 'mdi:chevron-right' : 'mdi:chevron-left'
+              "
+              class="w-6 h-6"
+            />
+          </button>
+        </div>
+        <div class="mb-4">
+          <FormKit
+            type="select"
+            label="Collection"
+            v-model="currentCollectionName"
+            :options="availableCollections"
+          />
+        </div>
+        <div v-if="relevantDocuments.length > 0">
+          <div
+            v-for="doc in relevantDocuments"
+            :key="doc.documentID"
+            class="mb-4 p-2 bg-gray-100 rounded border border-gray-200 bg-primary/10"
+          >
+            <h4 class="font-semibold">{{ doc.metadata.filename }}</h4>
+            <p class="text-sm text-gray-600">
+              {{ doc.content.substring(0, 50) }}...
+            </p>
+            <!-- <button class="text-sm mt-2">View Full Document</button> -->
+          </div>
+        </div>
+        <div v-else class="text-gray-500">No document references found.</div>
+      </div>
+    </div>
+    <!-- Add this near the end of your template -->
+    <RsModal
+      v-model="showHelpPanel"
+      title="Chat Features Help"
+      size="lg"
+      position="center"
+    >
+      <template #body>
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Basic Chat Functions</h3>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <Icon name="mdi:send" class="mr-2 text-primary w-6 h-6" />
+                <div>
+                  <span class="font-medium">Send message:</span>
+                  <p class="text-sm text-gray-600">
+                    Type your message and click the send button or press Enter
+                    to send. Use Shift + Enter for a new line.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <Icon name="ph:stop-fill" class="mr-2 text-danger w-6 h-6" />
+                <div>
+                  <span class="font-medium">Stop streaming:</span>
+                  <p class="text-sm text-gray-600">
+                    Click this button to immediately halt the AI's current
+                    response if it's too long or not relevant.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Enhanced Features</h3>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <Icon
+                  name="mdi:file-document-outline"
+                  class="mr-2 text-primary w-6 h-6"
+                />
+                <div>
+                  <span class="font-medium">View relevant documents:</span>
+                  <p class="text-sm text-gray-600">
+                    Access context-related files that the AI uses to provide
+                    more accurate and relevant responses. Click the document
+                    icon to open the sidebar.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <Icon
+                  name="mdi:bookmark-outline"
+                  class="mr-2 text-primary w-6 h-6"
+                />
+                <div>
+                  <span class="font-medium">Use saved prompts:</span>
+                  <p class="text-sm text-gray-600">
+                    Quick access to pre-defined messages or questions. Click the
+                    bookmark icon to view and select from your saved prompts.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <Icon
+                  name="mdi:plus-circle-outline"
+                  class="mr-2 text-primary w-6 h-6"
+                />
+                <div>
+                  <span class="font-medium">Attach files:</span>
+                  <p class="text-sm text-gray-600">
+                    Upload images or documents for processing. The AI can
+                    analyze images using OCR or reference uploaded documents in
+                    its responses.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Tips and Tricks</h3>
+            <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <li>Use clear, specific language for better AI understanding.</li>
+              <li>
+                Experiment with different prompts to get varied responses.
+              </li>
+              <li>
+                Utilize the document sidebar to see what context the AI is
+                using.
+              </li>
+              <li>
+                Save frequently used prompts for quick access in future
+                conversations.
+              </li>
+              <li>
+                When uploading images, ensure they are clear for better OCR
+                results.
+              </li>
+            </ul>
+          </div>
+
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <h3 class="text-lg font-semibold mb-2 text-blue-700">
+              Need More Help?
+            </h3>
+            <p class="text-sm text-blue-600">
+              If you have any questions or need further assistance, don't
+              hesitate to contact our support team or refer to the comprehensive
+              user guide.
+            </p>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <rs-button @click="showHelpPanel = false">Close</rs-button>
+      </template>
+    </RsModal>
   </div>
   <div v-else>
     <div class="max-w-7xl mx-auto mt-5 md:mt-12">
@@ -1089,6 +1390,14 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
+.markdown-preview :deep(ul) {
+  list-style-type: disc;
+}
+
+.markdown-preview :deep(ol) {
+  list-style-type: decimal;
+}
+
 .markdown-preview :deep(li) {
   margin-bottom: 0.25em;
 }
@@ -1160,5 +1469,29 @@ onMounted(() => {
 
 .message-container {
   scroll-behavior: smooth;
+}
+
+.help-panel {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.help-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 20px;
+  cursor: pointer;
 }
 </style>

@@ -52,6 +52,8 @@
     "@vueuse/nuxt": "^9.5.0",
     "apexcharts": "^3.36.0",
     "chart.js": "^3.9.1",
+    "chromadb": "^1.9.2",
+    "chromadb-default-embed": "^2.13.2",
     "codemirror": "^6.0.1",
     "cross-env": "^7.0.3",
     "crypto-js": "^4.1.1",

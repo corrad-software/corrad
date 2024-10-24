@@ -5,6 +5,12 @@ export default defineNuxtConfig({
       secretAccess: process.env.NUXT_ACCESS_TOKEN_SECRET,
       secretRefresh: process.env.NUXT_REFRESH_TOKEN_SECRET,
     },
+    chromadb: {
+      url: process.env.CHROMADB_URL,
+    },
+    apacheTika: {
+      url: process.env.APACHE_TIKA_URL,
+    },
   },
   plugins: ["~/plugins/socket.client"],
   nitro: {

@@ -28,6 +28,7 @@ model user {
   userCreatedDate    DateTime?            @db.DateTime(0)
   userModifiedDate   DateTime?            @db.DateTime(0)
   chat               chat[]
+  collection_item    collection_item[]
   document_template  document_template[]
   project            project[]
   project_permission project_permission[]
@@ -136,6 +137,7 @@ model project {
   projectCreatedDate                                                 DateTime?            @db.DateTime(0)
   projectModifiedDate                                                DateTime?            @db.DateTime(0)
   chat                                                               chat[]
+  collection_item                                                    collection_item[]
   user                                                               user?                @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_2")
   lookup                                                             lookup?              @relation(fields: [projectType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_3")
   lookup_project_projectViewTypeTolookup                             lookup?              @relation("project_projectViewTypeTolookup", fields: [projectViewType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_4")
@@ -152,6 +154,7 @@ model thread {
   threadID           Int        @id @default(autoincrement())
   userID             Int?
   assistantID        Int?
+  collectionName     String?    @db.VarChar(255)
   threadTitle        String?    @db.VarChar(255)
   threadOAIID        String?    @unique(map: "threadOAIID") @db.VarChar(255)
   threadStatus       Int?
@@ -257,5 +260,22 @@ model saved_prompt {
   promptModifiedDate DateTime? @db.DateTime(0)
   user               user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "saved_prompt_ibfk_1")
 
+  @@index([userID], map: "userID")
+}
+
+model collection_item {
+  itemID             Int       @id @default(autoincrement())
+  userID             Int?
+  projectID          Int?
+  itemUniqueID       String?   @db.VarChar(255)
+  itemCollectionName String?   @db.VarChar(255)
+  itemName           String?   @db.VarChar(255)
+  itemType           String?   @db.VarChar(255)
+  itemCreatedDate    DateTime? @db.DateTime(0)
+  itemModifiedDate   DateTime? @db.DateTime(0)
+  user               user?     @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "collection_item_ibfk_1")
+  project            project?  @relation(fields: [projectID], references: [projectID], onDelete: NoAction, onUpdate: NoAction, map: "collection_item_ibfk_2")
+
+  @@index([projectID], map: "projectID")
   @@index([userID], map: "userID")
 }
