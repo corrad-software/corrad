@@ -75,9 +75,9 @@
                 </select>
               </td>
               <td class="p-2 text-center">{{ item.gap }}</td>
-              <td class="p-2 text-center"><img src="/icons/edit.png" alt="Edit" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/idp.png" alt="IDP" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/save.png" alt="Save" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Edit" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="IDP" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Save" class="w-6 h-6 mx-auto" /></td>
             </tr>
           </tbody>
         </table>
@@ -115,9 +115,9 @@
                 </select>
               </td>
               <td class="p-2 text-center">{{ item.gap }}</td>
-              <td class="p-2 text-center"><img src="/icons/edit.png" alt="Edit" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/idp.png" alt="IDP" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/save.png" alt="Save" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Edit" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="IDP" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Save" class="w-6 h-6 mx-auto" /></td>
             </tr>
           </tbody>
         </table>
@@ -155,9 +155,9 @@
                 </select>
               </td>
               <td class="p-2 text-center">{{ item.gap }}</td>
-              <td class="p-2 text-center"><img src="/icons/edit.png" alt="Edit" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/idp.png" alt="IDP" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/save.png" alt="Save" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Edit" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="IDP" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Save" class="w-6 h-6 mx-auto" /></td>
             </tr>
           </tbody>
         </table>
@@ -195,9 +195,9 @@
                 </select>
               </td>
               <td class="p-2 text-center">{{ item.gap }}</td>
-              <td class="p-2 text-center"><img src="/icons/edit.png" alt="Edit" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/idp.png" alt="IDP" class="w-6 h-6 mx-auto" /></td>
-              <td class="p-2 text-center"><img src="/icons/save.png" alt="Save" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Edit" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="IDP" class="w-6 h-6 mx-auto" /></td>
+              <td class="p-2 text-center"><img src="#" alt="Save" class="w-6 h-6 mx-auto" /></td>
             </tr>
           </tbody>
         </table>
