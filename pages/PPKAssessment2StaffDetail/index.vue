@@ -14,7 +14,7 @@
         <p><strong>Session:</strong> 2024 Staff Job Performance Review</p>
       </div>
       <div class="flex justify-center">
-        <img src="/images/zarina.jpg" alt="Staff Photo" class="w-32 h-32 rounded-full" />
+        <img src="#" alt="Staff Photo" class="w-32 h-32 rounded-full" />
       </div>
       <div class="bg-blue-100 p-4 rounded">
         <h2 class="font-semibold">Scoring</h2>
