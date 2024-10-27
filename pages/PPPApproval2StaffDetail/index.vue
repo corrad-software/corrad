@@ -117,7 +117,7 @@ const staff = ref({
   department: 'Pengkomputeran',
   session: '2024 Staff Job Performance Review',
   status: 'Active',
-  photo: '/images/hapini.jpg'
+  photo: '#'
 })
 
 const assignmentSummary = ref({

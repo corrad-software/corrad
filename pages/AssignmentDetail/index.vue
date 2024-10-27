@@ -129,7 +129,7 @@ const formData = ref({
   designation: 'Tutor (Tanpa Skim)',
   department: 'Ekonomi, Kewangan dan Perbankan',
   session: '2024 Staff Job Performance Review',
-  profilePicture: '/path/to/image.jpg', // Placeholder for profile picture
+  profilePicture: '#', // Placeholder for profile picture
   assignmentId: 49,
   jobPurpose: 'Job Purpose (Tujuan Perwujudan Jawatan)',
   jobPurposeDetail: 'job purpose',

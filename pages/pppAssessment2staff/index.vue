@@ -74,13 +74,13 @@ const searchQuery = ref('')
 
 // Sample Data - Staff Information
 const staffList = ref([
-  { staffNo: 6222, fullName: 'Siti Ruqaiyah binti Shafie', email: 'siti.ruqaiyah.shafie@uum.edu.my', designation: 'Guru Bahasa (DG41)', department: 'Bahasa, Tamadun dan Falsafah', assignmentId: 'A/24-8/0003', photo: '/images/siti.jpg' },
-  { staffNo: 5894, fullName: 'Hapini bin Awang', email: 'hapini.awang@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0004', photo: '/images/hapini.jpg' },
-  { staffNo: 1043, fullName: 'Mohd Tarmizi B Musa', email: 'tarmizi@uum.edu.my', designation: 'Pensyarah Universiti (DS52)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0010', photo: '/images/tarmizi.jpg' },
-  { staffNo: 5663, fullName: 'Mohd Aliff bin Mohd Nawi', email: 'aliffnawi@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pendidikan', assignmentId: 'A/24-8/0011', photo: '/images/aliff.jpg' },
-  { staffNo: 1737, fullName: 'Md. Zawawi bin Abu Bakar', email: 'zawawi@uum.edu.my', designation: 'Pensyarah Universiti (DS54)', department: 'Psikologi Gunaan, Dasar dan Kerja Sosial', assignmentId: 'A/24-9/0013', photo: '/images/zawawi.jpg' },
-  { staffNo: 1972, fullName: 'Jafni Azhan Bin Ibrahim', email: 'jafni@uum.edu.my', designation: 'Pensyarah Universiti (DS54)', department: 'Pengurusan Teknologi dan Logistik', assignmentId: 'A/24-9/0016', photo: '/images/jafni.jpg' },
-  { staffNo: 5832, fullName: 'Annuar Aswan bin Mohd Noor', email: 'a.aswan.mohd@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengurusan Perniagaan', assignmentId: 'A/24-9/0018', photo: '/images/annuar.jpg' }
+  { staffNo: 6222, fullName: 'Siti Ruqaiyah binti Shafie', email: 'siti.ruqaiyah.shafie@uum.edu.my', designation: 'Guru Bahasa (DG41)', department: 'Bahasa, Tamadun dan Falsafah', assignmentId: 'A/24-8/0003', photo: '#' },
+  { staffNo: 5894, fullName: 'Hapini bin Awang', email: 'hapini.awang@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0004', photo: '#' },
+  { staffNo: 1043, fullName: 'Mohd Tarmizi B Musa', email: 'tarmizi@uum.edu.my', designation: 'Pensyarah Universiti (DS52)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0010', photo: '#' },
+  { staffNo: 5663, fullName: 'Mohd Aliff bin Mohd Nawi', email: 'aliffnawi@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pendidikan', assignmentId: 'A/24-8/0011', photo: '#' },
+  { staffNo: 1737, fullName: 'Md. Zawawi bin Abu Bakar', email: 'zawawi@uum.edu.my', designation: 'Pensyarah Universiti (DS54)', department: 'Psikologi Gunaan, Dasar dan Kerja Sosial', assignmentId: 'A/24-9/0013', photo: '#' },
+  { staffNo: 1972, fullName: 'Jafni Azhan Bin Ibrahim', email: 'jafni@uum.edu.my', designation: 'Pensyarah Universiti (DS54)', department: 'Pengurusan Teknologi dan Logistik', assignmentId: 'A/24-9/0016', photo: '#' },
+  { staffNo: 5832, fullName: 'Annuar Aswan bin Mohd Noor', email: 'a.aswan.mohd@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengurusan Perniagaan', assignmentId: 'A/24-9/0018', photo: '#' }
 ])
 
 // Pagination Variables

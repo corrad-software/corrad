@@ -74,12 +74,12 @@ const searchQuery = ref('')
 
 // Sample Data - Staff Information
 const staffList = ref([
-  { staffNo: 5894, fullName: 'Hapini bin Awang', email: 'hapini.awang@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0004', photo: '/images/hapini.jpg' },
-  { staffNo: 1043, fullName: 'Mohd Tarmizi B Musa', email: 'tarmizi@uum.edu.my', designation: 'Pensyarah Universiti (DS52)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0010', photo: '/images/tarmizi.jpg' },
-  { staffNo: 1737, fullName: 'Md. Zawawi bin Abu Bakar', email: 'zawawi@uum.edu.my', designation: 'Pensyarah Universiti (DS54)', department: 'Psikologi Gunaan, Dasar dan Kerja Sosial', assignmentId: 'A/24-9/0013', photo: '/images/zawawi.jpg' },
-  { staffNo: 4749, fullName: 'Yeoh Khar Kheng', email: 'kharkheng@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengurusan Perniagaan', assignmentId: 'A/24-9/0021', photo: '/images/yeoh.jpg' },
-  { staffNo: 5494, fullName: 'Adzrool Idzwan bin Ismail', email: 'adzrool@uum.edu.my', designation: 'Pensyarah Universiti (DS53)', department: 'Pengurusan Industri Kreatif dan Seni Persembahan', assignmentId: 'A/24-9/0025', photo: '/images/idzwan.jpg' },
-  { staffNo: 5674, fullName: 'Robiatul Adawiah binti Edrus', email: 'robiatul@uum.edu.my', designation: 'Tutor (Tanpa Skim)', department: 'Ekonomi, Kewangan dan Perbankan', assignmentId: 'A/24-10/0049', photo: '/images/robiatul.jpg' },
+  { staffNo: 5894, fullName: 'Hapini bin Awang', email: 'hapini.awang@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0004', photo: '#' },
+  { staffNo: 1043, fullName: 'Mohd Tarmizi B Musa', email: 'tarmizi@uum.edu.my', designation: 'Pensyarah Universiti (DS52)', department: 'Pengkomputeran', assignmentId: 'A/24-8/0010', photo: '#' },
+  { staffNo: 1737, fullName: 'Md. Zawawi bin Abu Bakar', email: 'zawawi@uum.edu.my', designation: 'Pensyarah Universiti (DS54)', department: 'Psikologi Gunaan, Dasar dan Kerja Sosial', assignmentId: 'A/24-9/0013', photo: '#' },
+  { staffNo: 4749, fullName: 'Yeoh Khar Kheng', email: 'kharkheng@uum.edu.my', designation: 'Pensyarah Universiti (DS51)', department: 'Pengurusan Perniagaan', assignmentId: 'A/24-9/0021', photo: '#' },
+  { staffNo: 5494, fullName: 'Adzrool Idzwan bin Ismail', email: 'adzrool@uum.edu.my', designation: 'Pensyarah Universiti (DS53)', department: 'Pengurusan Industri Kreatif dan Seni Persembahan', assignmentId: 'A/24-9/0025', photo: '#' },
+  { staffNo: 5674, fullName: 'Robiatul Adawiah binti Edrus', email: 'robiatul@uum.edu.my', designation: 'Tutor (Tanpa Skim)', department: 'Ekonomi, Kewangan dan Perbankan', assignmentId: 'A/24-10/0049', photo: '#' },
 ])
 
 // Pagination Variables
