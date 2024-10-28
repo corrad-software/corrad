@@ -257,18 +257,6 @@ onUnmounted(() => {
             Tools
           </rs-button>
         </nuxt-link>
-        <nuxt-link to="/ai/repository" class="col-span-4">
-          <rs-button
-            variant="secondary"
-            class="w-full !justify-start !text-[rgb(var(--text-color))]"
-          >
-            <Icon
-              name="material-symbols:folder-open-outline"
-              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
-            />
-            Repository
-          </rs-button>
-        </nuxt-link>
         <nuxt-link v-if="hasPermission()" to="/ai/assistant" class="col-span-4">
           <rs-button
             variant="secondary"
@@ -282,7 +270,7 @@ onUnmounted(() => {
           </rs-button>
         </nuxt-link>
         <nuxt-link
-          class="md:col-span-3"
+          class="md:col-span-2"
           :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
         >
           <rs-button class="w-full !justify-start pr-3">
@@ -293,11 +281,17 @@ onUnmounted(() => {
             {{ hasPermission() ? "Settings" : "Settings" }}
           </rs-button>
         </nuxt-link>
+        <nuxt-link to="/ai/release-notes">
+          <rs-button variant="secondary" class="w-full !text-primary">
+            <Icon name="ph:book-duotone" class="!w-5 !h-5 md:!w-6 md:!h-6" />
+          </rs-button>
+        </nuxt-link>
         <nuxt-link to="/ai/user-guide">
-          <rs-button class="w-full">
+          <rs-button variant="secondary" class="w-full !text-primary">
             <Icon name="ph:question-mark" class="!w-5 !h-5 md:!w-6 md:!h-6" />
           </rs-button>
         </nuxt-link>
+
         <!-- <div class="grid grid-cols-1">
           <rs-button
             @click="toggleTheme"
@@ -305,9 +299,6 @@ onUnmounted(() => {
             class="!text-[rgb(var(--text-color))]"
           >
             <Icon name="ph:sun-duotone" class="!w-5 !h-5 md:!w-6 md:!h-6" />
-          </rs-button>
-          <rs-button variant="secondary" class="!text-[rgb(var(--text-color))]">
-            <Icon name="ph:question-mark" class="!w-5 !h-5 md:!w-6 md:!h-6" />
           </rs-button>
         </div> -->
       </div>

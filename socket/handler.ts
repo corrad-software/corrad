@@ -245,6 +245,111 @@ export const socketHandler = async (io: Server) => {
           console.log("Message created:", createMessageResponse);
 
           io.to(threadID).emit("messageClear");
+
+          try {
+            // Emit event to show loading state
+            io.to(threadID).emit("generatingQuestions");
+
+            const completion = await openai.chat.completions.create({
+              model: "gpt-4o-2024-08-06",
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are a helpful assistant that generates relevant follow-up questions based on the conversation context. Generate questions that help users explore the topic further or clarify previous points.",
+                },
+                {
+                  role: "user",
+                  content: `Previous conversation:\nUser: ${message.content}\nAssistant: ${lastMessage.content[0].text.value}\n\nGenerate related follow-up questions.`,
+                },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "related_questions_response",
+                  schema: {
+                    type: "object",
+                    properties: {
+                      questions: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            question: {
+                              type: "string",
+                              description: "The follow-up question text",
+                            },
+                            category: {
+                              type: "string",
+                              description:
+                                "Category of the question (e.g., clarification, exploration, technical, practical)",
+                            },
+                            relevance: {
+                              type: "string",
+                              enum: ["high", "medium", "low"],
+                              description:
+                                "How relevant the question is to the current context",
+                            },
+                            reasoning: {
+                              type: "string",
+                              description:
+                                "Brief explanation of why this question is relevant",
+                            },
+                          },
+                          required: [
+                            "question",
+                            "category",
+                            "relevance",
+                            "reasoning",
+                          ],
+                          additionalProperties: false,
+                        },
+                      },
+                    },
+                    required: ["questions"],
+                    additionalProperties: false,
+                  },
+                  strict: true,
+                },
+              },
+            });
+
+            if (completion.choices[0].finish_reason === "length") {
+              console.error("Response was truncated due to length limits");
+              return;
+            }
+
+            const response = completion.choices[0].message;
+
+            if (response.refusal) {
+              console.log(
+                "Model refused to generate questions:",
+                response.refusal
+              );
+              return;
+            }
+
+            if (!response.content) {
+              throw new Error("No response content received");
+            }
+
+            // Parse the JSON response
+            const parsedResponse = JSON.parse(response.content);
+            console.log("Parsed response:", parsedResponse);
+
+            // Sort questions by relevance
+            const sortedQuestions = parsedResponse.questions.sort((a, b) => {
+              const relevanceOrder = { high: 3, medium: 2, low: 1 };
+              return relevanceOrder[b.relevance] - relevanceOrder[a.relevance];
+            });
+
+            // Emit the structured questions to the client
+            io.to(threadID).emit("relatedQuestions", sortedQuestions);
+          } catch (error) {
+            // Clear loading state on error
+            io.to(threadID).emit("generatingQuestions", false);
+            console.error("Error generating related questions:", error);
+          }
         } catch (error) {
           activeStreams.delete(threadID);
 

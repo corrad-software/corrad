@@ -59,6 +59,29 @@ const currentCollectionName = ref("");
 const isProcessing = ref(false);
 const showHelpPanel = ref(false);
 
+// Add new refs for related questions
+const relatedQuestions = ref([]);
+const selectedCategory = ref("all");
+
+// Add new ref for loading state
+const isGeneratingQuestions = ref(false);
+
+// Computed property for filtered questions
+const filteredQuestions = computed(() => {
+  if (selectedCategory.value === "all") {
+    return relatedQuestions.value;
+  }
+  return relatedQuestions.value.filter(
+    (q) => q.category === selectedCategory.value
+  );
+});
+
+// Computed property for unique categories
+const questionCategories = computed(() => {
+  const categories = new Set(relatedQuestions.value.map((q) => q.category));
+  return ["all", ...Array.from(categories)];
+});
+
 const { data: verify } = await useFetch("/api/ai/chat/verify", {
   method: "GET",
   params: {
@@ -177,6 +200,18 @@ onMounted(() => {
     });
   });
 
+  $io.on("generatingQuestions", () => {
+    isGeneratingQuestions.value = true;
+    scrollToBottom();
+  });
+
+  $io.on("relatedQuestions", (questions) => {
+    isGeneratingQuestions.value = false;
+    relatedQuestions.value = questions;
+    selectedCategory.value = "all";
+    scrollToBottom();
+  });
+
   fetchSavedPrompts();
   fetchAvailableCollections();
 
@@ -200,6 +235,8 @@ onUnmounted(() => {
   $io.off("messageClear");
   $io.off("messageError");
   $io.off("error");
+  $io.off("generatingQuestions");
+  $io.off("relatedQuestions");
 
   const messageContainer = document.querySelector(".message-container");
   if (messageContainer) {
@@ -360,6 +397,8 @@ const sendMessage = async () => {
     fileAttachments.value.length > 0 ||
     selectedPrompt.value
   ) {
+    showDocumentSidebar.value = false;
+    relatedQuestions.value = [];
     isProcessing.value = true; // Set the processing flag
 
     let message = {
@@ -573,10 +612,18 @@ const chooseFile = () => {
   document.getElementById("attachments").click();
 };
 
+// const handleFileChange = (event) => {
+//   const files = event.target.files;
+//   if (files.length > 0) {
+//     fileAttachments.value = [...fileAttachments.value, ...Array.from(files)];
+//   }
+// };
+
 const handleFileChange = (event) => {
   const files = event.target.files;
   if (files.length > 0) {
-    fileAttachments.value = [...fileAttachments.value, ...Array.from(files)];
+    // Only take the first file
+    fileAttachments.value = [files[0]];
   }
 };
 
@@ -710,6 +757,12 @@ const changeCollection = async (newCollectionName) => {
     });
   }
 };
+
+// Method to handle question selection
+const selectRelatedQuestion = (questionObj) => {
+  newMessage.value = questionObj.question;
+  sendMessage();
+};
 </script>
 
 <template>
@@ -718,13 +771,10 @@ const changeCollection = async (newCollectionName) => {
     class="flex flex-col h-[88dvh] md:h-[94dvh] max-w-7xl mx-auto"
   >
     <div class="absolute top-4 right-4 flex items-center justify-end">
-      <rs-button
-        variant="secondary"
-        class="!text-[rgb(var(--text-color))] mr-4 cursor-default"
-      >
+      <rs-button variant="primary" class="!text-secondary mr-4 cursor-default">
         <Icon
           name="mdi:robot-excited-outline"
-          class="!w-6 !h-6 cursor-pointer text-primary mr-2"
+          class="!w-6 !h-6 cursor-pointer text-secondary mr-2"
         />
         {{ verify.data.assistantName }}
       </rs-button>
@@ -737,7 +787,30 @@ const changeCollection = async (newCollectionName) => {
 
     <!-- Scrollable conversation area -->
     <div class="flex-1 p-4 mt-12 space-y-6 relative">
+      <!-- Empty state placeholder -->
+      <div
+        v-if="messages.length === 0"
+        class="absolute top-0 left-0 w-full flex flex-col items-center justify-center text-center min-h-[50dvh] md:min-h-[80dvh]"
+      >
+        <div class="flex flex-col items-center space-y-4 px-4 md:px-0">
+          <Icon
+            name="fluent:brain-circuit-20-regular"
+            class="w-12 h-12 md:w-16 md:h-16 text-primary/50"
+          />
+          <div class="text-center">
+            <h3 class="text-lg md:text-xl font-medium text-gray-500 mb-2">
+              Chat with {{ verify.data.assistantName }}
+            </h3>
+            <p class="text-xs md:text-sm text-gray-400">
+              Start a conversation by typing a message below
+            </p>
+          </div>
+        </div>
+      </div>
+
       <NuxtScrollbar style="max-height: 80dvh" class="message-container pr-5">
+        <!-- Modified empty state placeholder -->
+
         <div
           v-for="(message, index) in messages"
           :key="index"
@@ -781,21 +854,6 @@ const changeCollection = async (newCollectionName) => {
               ></div>
             </span>
             <span v-else>
-              <!-- <div
-                v-if="message.files && message.files.length > 0"
-                class="rounded-md p-2 text-xs mb-2"
-              >
-                <div
-                  v-for="(file, fileIndex) in message.files"
-                  :key="fileIndex"
-                  class="flex items-center justify-end"
-                >
-                  <Icon name="ph:file-light" class="mr-1 !w-4 !h-4"></Icon>
-                  <span class="text-sm cursor-pointer underline">
-                    {{ file.originalName }} 
-                  </span>
-                </div>
-              </div> -->
               <p v-if="message.type === 'prompt'" class="text-sm italic mt-1">
                 (Prompt: {{ message.content }})
               </p>
@@ -874,6 +932,98 @@ const changeCollection = async (newCollectionName) => {
           >
             {{ message.content }}
           </div>
+
+          <!-- Add related questions after assistant messages -->
+          <div
+            v-if="
+              message.sender === 'assistant' &&
+              index === messages.length - 1 &&
+              (relatedQuestions.length > 0 || isGeneratingQuestions) &&
+              !isTyping
+            "
+            class="related-questions-container px-4 mb-4 mt-4"
+          >
+            <!-- Loading state -->
+            <div
+              v-if="isGeneratingQuestions"
+              class="flex items-center space-x-2"
+            >
+              <span class="text-sm text-gray-400"
+                >Generating related questions</span
+              >
+              <div class="flex space-x-1">
+                <div class="animate-bounce text-gray-400 mx-1">.</div>
+                <div
+                  class="animate-bounce text-gray-400 mx-1 animation-delay-200"
+                >
+                  .
+                </div>
+                <div
+                  class="animate-bounce text-gray-400 mx-1 animation-delay-400"
+                >
+                  .
+                </div>
+              </div>
+            </div>
+
+            <!-- Questions display (when loaded) -->
+            <div v-else-if="relatedQuestions.length > 0">
+              <div class="w-full mb-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-500"
+                    >Related Questions:</span
+                  >
+                  <div class="flex gap-2">
+                    <button
+                      v-for="category in questionCategories"
+                      :key="category"
+                      @click="selectedCategory = category"
+                      class="text-xs px-2 py-1 rounded-full transition-colors duration-200"
+                      :class="[
+                        selectedCategory === category
+                          ? 'bg-primary text-white'
+                          : 'bg-secondary hover:bg-primary/20',
+                      ]"
+                    >
+                      {{ category.charAt(0).toUpperCase() + category.slice(1) }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="(question, index) in filteredQuestions"
+                  :key="index"
+                  @click="selectRelatedQuestion(question)"
+                  class="related-question-button group relative"
+                >
+                  <div
+                    class="flex items-center gap-2 text-sm px-3 py-2 rounded-full bg-secondary hover:bg-primary hover:text-white transition-colors duration-200 text-left"
+                  >
+                    <span>{{ question.question }}</span>
+                    <span
+                      class="relevance-indicator"
+                      :class="{
+                        'bg-green-500': question.relevance === 'high',
+                        'bg-yellow-500': question.relevance === 'medium',
+                        'bg-gray-500': question.relevance === 'low',
+                      }"
+                    ></span>
+                  </div>
+                  <!-- Tooltip with reasoning -->
+                  <!-- <div
+                    class="opacity-0 group-hover:opacity-100 absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs p-2 rounded transition-opacity duration-200 max-w-xs"
+                  >
+                    <div class="font-semibold mb-1">
+                      {{ question.category }}
+                    </div>
+                    <div class="text-gray-300">{{ question.reasoning }}</div>
+                  </div> -->
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </NuxtScrollbar>
 
@@ -904,22 +1054,6 @@ const changeCollection = async (newCollectionName) => {
           .
         </div>
       </div>
-    </div>
-
-    <div v-if="fileAttachments.length > 0" class="text-[#a6a39a] mb-2">
-      <rs-badge
-        v-for="(file, index) in fileAttachments"
-        :key="index"
-        class="mr-2 mb-2"
-      >
-        <Icon name="ph:file-light" class="mr-1 !w-4 !h-4"></Icon>
-        {{ file.name }}
-        <Icon
-          @click="removeFile(index)"
-          name="ph:x-light"
-          class="ml-1 !w-4 !h-4 hover:bg-[#858f7d] rounded-full cursor-pointer"
-        ></Icon>
-      </rs-badge>
     </div>
 
     <!-- RsModal for Saved Prompts -->
@@ -972,7 +1106,7 @@ const changeCollection = async (newCollectionName) => {
         <FormKit
           v-model="newMessage"
           type="textarea"
-          placeholder="Type here... (Shift + Enter for new line)"
+          placeholder="Start typing..."
           :classes="{
             outer: `mb-0 rounded-lg border-l-0 duration-150 ${
               isProcessing ? 'border-l-4 border-primary animate-pulse' : ''
@@ -1017,7 +1151,6 @@ const changeCollection = async (newCollectionName) => {
               outer: 'hidden',
             }"
             accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msword, application/vnd.oasis.opendocument.text, application/rtf, application/pdf, text/html, text/plain, application/epub+zip, text/markdown, text/csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, image/*"
-            multiple
           ></FormKit>
           <!-- <div v-if="isProcessing" class="mr-2">
             <div class="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
@@ -1041,15 +1174,52 @@ const changeCollection = async (newCollectionName) => {
       </div>
     </FormKit>
 
-    <!-- Display selected prompt -->
-    <div v-if="selectedPrompt" class="flex justify-end mt-2">
-      <rs-badge variant="primary" class="w-fit flex items-center">
-        <span class="mr-2">{{ selectedPrompt.promptTitle }}</span>
+    <!-- Display file attachments -->
+    <div
+      v-if="fileAttachments.length > 0"
+      class="flex flex-wrap gap-2 mt-3 p-3 bg-secondary/50 backdrop-blur-sm rounded-xl border border-secondary/20 transition-all duration-300 ease-in-out"
+    >
+      <div class="flex items-center gap-2 w-full">
         <Icon
-          @click="clearSelectedPrompt"
-          name="ph:x-light"
-          class="!w-4 !h-4 hover:bg-[#858f7d] rounded-full cursor-pointer"
+          name="material-symbols:attach-file"
+          class="text-primary w-4 h-4"
         />
+        <span class="text-sm font-medium text-primary">Attached Files</span>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <rs-badge
+          v-for="(file, index) in fileAttachments"
+          :key="index"
+          class="group flex items-center gap-2 px-3 py-1.5 cursor-default"
+        >
+          <Icon name="ph:file-light" class="w-4 h-4" />
+          <span class="text-sm truncate max-w-[200px]">{{ file.name }}</span>
+          <button @click="removeFile(index)" class="hover:text-red-500">
+            <Icon name="ph:x-light" class="w-4 h-4" />
+          </button>
+        </rs-badge>
+      </div>
+    </div>
+
+    <!-- Display selected prompt -->
+    <div
+      v-if="selectedPrompt"
+      class="flex flex-wrap gap-2 mt-3 p-3 bg-secondary/50 backdrop-blur-sm rounded-xl border border-secondary/20 transition-all duration-300 ease-in-out"
+    >
+      <div class="flex items-center gap-2 w-full">
+        <Icon name="material-symbols:bookmark" class="text-primary w-4 h-4" />
+        <span class="text-sm font-medium text-primary">Selected Prompt</span>
+      </div>
+
+      <rs-badge
+        variant="info"
+        class="group flex items-center gap-2 px-3 py-1.5 cursor-default"
+      >
+        <span class="text-sm">{{ selectedPrompt.promptTitle }}</span>
+        <button @click="clearSelectedPrompt" class="hover:text-red-500">
+          <Icon name="ph:x-light" class="w-4 h-4" />
+        </button>
       </rs-badge>
     </div>
 
@@ -1493,5 +1663,71 @@ const changeCollection = async (newCollectionName) => {
   padding: 10px 15px;
   border-radius: 20px;
   cursor: pointer;
+}
+
+/* Add to existing styles */
+.related-questions-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(var(--bg-secondary), 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(var(--bg-secondary), 0.2);
+  transition: all 0.3s ease-in-out;
+}
+
+.relevance-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-left: 0.5rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.related-question-button:hover .relevance-indicator {
+  background-color: white !important;
+}
+
+/* Add smooth scrolling */
+.message-container {
+  scroll-behavior: smooth;
+}
+
+/* @keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+} */
+
+/* Update tooltip styles */
+.related-question-button .tooltip {
+  width: max-content;
+  max-width: 250px;
+  z-index: 50;
 }
 </style>

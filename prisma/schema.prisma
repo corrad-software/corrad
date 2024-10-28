@@ -279,3 +279,10 @@ model collection_item {
   @@index([projectID], map: "projectID")
   @@index([userID], map: "userID")
 }
+
+model documentation {
+  documentationID           Int       @id @default(autoincrement())
+  documentationContent      String?   @db.LongText
+  documentationCreatedDate  DateTime? @db.DateTime(0)
+  documentationModifiedDate DateTime? @db.DateTime(0)
+}

@@ -2,19 +2,34 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 
-// Page Meta
 definePageMeta({
-  title: "User Guide",
-  description: "User Guide",
+  title: "Edit Documentation",
   layout: "ai",
   middleware: ["auth"],
   requiresAuth: true,
+  breadcrumb: [
+    {
+      name: "User Guide",
+      path: "/ai/user-guide",
+    },
+    {
+      name: "Edit",
+      type: "current",
+    },
+  ],
 });
 
-// State
-const documentation = ref(null);
-const loading = ref(true);
-const error = ref(null);
+const route = useRoute();
+const router = useRouter();
+const { $swal } = useNuxtApp();
+
+const documentationId = route.params.id;
+
+const form = ref({
+  documentationContent: "",
+});
+
+const preview = ref(false);
 
 // Markdown renderer setup
 const renderMarkdown = (content) => {
@@ -23,69 +38,96 @@ const renderMarkdown = (content) => {
   return DOMPurify.sanitize(rawHtml);
 };
 
-// Fetch documentation
 const fetchDocumentation = async () => {
-  try {
-    loading.value = true;
-    const { data: response } = await useFetch("/api/ai/documentation/get", {
-      query: {
-        documentationID: 1,
-      },
-    });
+  const { data } = await useFetch(`/api/ai/documentation/${documentationId}`, {
+    method: "GET",
+  });
 
-    if (response.value?.statusCode === 200) {
-      documentation.value = response.value.data;
-    } else {
-      error.value = response.value?.message || "Failed to fetch documentation";
-    }
-  } catch (err) {
-    error.value = "An error occurred while fetching the documentation";
-    console.error(err);
-  } finally {
-    loading.value = false;
+  if (data.value && data.value.statusCode === 200) {
+    form.value = data.value.data;
+  } else {
+    $swal.fire({
+      title: "Error",
+      text: "Failed to fetch documentation data",
+      icon: "error",
+    });
   }
 };
 
-// Fetch data on component mount
+const submitForm = async (formData) => {
+  try {
+    const { data } = await useFetch(
+      `/api/ai/documentation/${documentationId}`,
+      {
+        method: "PUT",
+        body: formData,
+      }
+    );
+
+    if (data.value && data.value.statusCode === 200) {
+      $swal.fire({
+        title: "Success",
+        text: "Documentation updated successfully",
+        icon: "success",
+      });
+      router.push("/ai/user-guide");
+    } else {
+      $swal.fire({
+        title: "Error",
+        text:
+          data.value?.message ||
+          "An error occurred while updating the documentation",
+        icon: "error",
+      });
+    }
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    $swal.fire({
+      title: "Error",
+      text: "An error occurred while updating the documentation",
+      icon: "error",
+    });
+  }
+};
+
 onMounted(() => {
   fetchDocumentation();
 });
 </script>
 
 <template>
-  <div class="flex flex-col h-[88dvh] md:h-[94dvh] max-w-7xl mx-auto">
+  <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <LayoutsBreadcrumbV2 />
 
-    <NuxtScrollbar style="max-height: 80dvh" class="pr-5">
-      <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center py-8">
-        <div
-          class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"
-        ></div>
-      </div>
+    <div class="mb-4 flex justify-start">
+      <rs-button @click="preview = !preview" type="button">
+        {{ preview ? "Edit Mode" : "Preview Mode" }}
+      </rs-button>
+    </div>
 
-      <!-- Error State -->
-      <div
-        v-else-if="error"
-        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-        role="alert"
-      >
-        <strong class="font-bold">Error!</strong>
-        <span class="block sm:inline"> {{ error }}</span>
-      </div>
+    <div v-if="!preview">
+      <FormKit type="form" v-model="form" @submit="submitForm" :actions="false">
+        <FormKit
+          type="textarea"
+          name="documentationContent"
+          label="Documentation Content (Markdown)"
+          validation="required"
+          :rows="20"
+        />
 
-      <!-- Documentation Content -->
-      <div
-        v-else-if="documentation"
-        class="markdown-preview space-y-6"
-        v-html="renderMarkdown(documentation.documentationContent)"
-      ></div>
+        <FormKit
+          type="submit"
+          label="Update Documentation"
+          input-class="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+        />
+      </FormKit>
+    </div>
 
-      <!-- No Content State -->
-      <div v-else class="text-center py-8 text-gray-500">
-        No documentation content available.
+    <div v-else>
+      <div class="markdown-preview space-y-4 border rounded-lg p-4">
+        <div v-html="renderMarkdown(form.documentationContent)"></div>
       </div>
-    </NuxtScrollbar>
+    </div>
   </div>
 </template>
 

@@ -14,6 +14,10 @@ definePageMeta({
   requiresAuth: true,
   breadcrumb: [
     {
+      name: "Tools",
+      path: "/ai/tools",
+    },
+    {
       name: "Markdown",
       path: "current",
     },

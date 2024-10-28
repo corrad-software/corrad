@@ -6,6 +6,10 @@ definePageMeta({
   requiresAuth: true,
   breadcrumb: [
     {
+      name: "Tools",
+      path: "/ai/tools",
+    },
+    {
       name: "Saved Prompts",
       type: "current",
     },

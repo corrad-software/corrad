@@ -4,8 +4,8 @@ import DOMPurify from "dompurify";
 
 // Page Meta
 definePageMeta({
-  title: "User Guide",
-  description: "User Guide",
+  title: "Release Notes",
+  description: "Release Notes",
   layout: "ai",
   middleware: ["auth"],
   requiresAuth: true,
@@ -29,7 +29,7 @@ const fetchDocumentation = async () => {
     loading.value = true;
     const { data: response } = await useFetch("/api/ai/documentation/get", {
       query: {
-        documentationID: 1,
+        documentationID: 2,
       },
     });
 
