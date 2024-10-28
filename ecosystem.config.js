@@ -3,7 +3,7 @@
 module.exports = {
   apps: [
     {
-      name: "UUM",
+      name: "CBTM",
       port: "3000",
       exec_mode: "cluster",
       instances: "max",

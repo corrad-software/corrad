@@ -72,7 +72,7 @@ const login = async () => {
         </div>
         <h3 class="mb-4">Login</h3>
         <p class="text-slate-500 mb-6">
-          Welcome to UUM. Please login to continue.
+          Welcome to CBTM. Please login to continue.
         </p>
         <div class="grid grid-cols-2">
           <FormKit

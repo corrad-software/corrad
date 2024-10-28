@@ -23,14 +23,14 @@ export default defineNuxtConfig({
     pageTransition: { name: "page", mode: "out-in" },
   },
   head: {
-    title: "UUM",
+    title: "CBTM",
     meta: [
       { charset: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       {
         hid: "description",
         name: "description",
-        content: "UUM",
+        content: "CBTM",
       },
     ],
     link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
@@ -60,8 +60,8 @@ export default defineNuxtConfig({
       type: "module",
     },
     manifest: {
-      name: "UUM",
-      short_name: "UUM",
+      name: "CBTM",
+      short_name: "CBTM",
       theme_color: "#202D3B",
       background_color: "#FAFAFA",
       display: "standalone",
