@@ -88,7 +88,7 @@ watch(
         v-if="modelValue"
         @click.self="overlayClose ? closeModal() : ''"
         class="modal"
-        style="z-index: 1000"
+        style="z-index: 9999"
         :class="{
           'modal-top': position == 'top',
           'modal-center': position == 'center',

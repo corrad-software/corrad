@@ -40,4 +40,4 @@ npm run preview
 ```
 
 Checkout the [deployment documentation](https://v3.nuxtjs.org/guide/deploy/presets) for more information.
-# corrad
+# CORRAD AI

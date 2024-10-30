@@ -1,6 +1,6 @@
 <script setup>
 useHead({
-  title: "corrad | Innovative solutions for captivating content",
+  title: "CORRAD AI | Innovative solutions for captivating content",
   description: "Home page",
   htmlAttrs: {
     lang: "en",
