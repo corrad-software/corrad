@@ -26,16 +26,14 @@ export default defineEventHandler(async (event) => {
       throw new Error("Assistant not found");
     }
 
-    // Init utils openai
-    const { statusCode, message, data } = await initOpenAI();
-    if (statusCode !== 200) {
-      return {
-        statusCode: statusCode,
-        message: message,
-      };
+    // Initialize AI providers
+    const openAIResponse = await initAI("openai");
+    if (openAIResponse.statusCode !== 200) {
+      console.error("Error initializing OpenAI:", openAIResponse.message);
+      throw new Error("Failed to initialize OpenAI");
     }
 
-    const openai = data.openai;
+    const openai = openAIResponse.data?.provider.getClient();
 
     // Create thread empty
     const openAIThread = await openai.beta.threads.create();
@@ -46,7 +44,7 @@ export default defineEventHandler(async (event) => {
 
     const addThread = await prisma.thread.create({
       data: {
-        threadOAIID: openAIThread.id,
+        threadProviderID: openAIThread.id,
         threadCreatedDate: DateTime.now().toISO(),
         assistant: {
           connect: {

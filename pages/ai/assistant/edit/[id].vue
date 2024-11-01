@@ -56,7 +56,7 @@ if (data.value.statusCode == 200) {
   form.name = data.value.data.assistantName;
   form.type = data.value.data.assistantType;
   form.description = data.value.data.assistantDescription;
-  form.openaiAssistantID = data.value.data.assistantOAIID;
+  form.openaiAssistantID = data.value.data.assistantProviderID;
   form.status = data.value.data.assistantStatus;
   form.verified = data.value.data.assistantVerified;
 } else {
@@ -108,7 +108,7 @@ const submitForm = async () => {
         assistantName: form.name,
         assistantDescription: form.description,
         assistantType: form.type,
-        assistantOAIID: form.openaiAssistantID,
+        assistantProviderID: form.openaiAssistantID,
         assistantStatus: form.status,
         assistantVerified: form.verified,
       },

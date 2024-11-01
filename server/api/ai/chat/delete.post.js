@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
     const deleteThread = await prisma.thread.update({
       where: {
-        threadOAIID: threadID,
+        threadProviderID: threadID,
       },
       data: {
         lookup: {

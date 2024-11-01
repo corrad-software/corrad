@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
         assistantID: true,
         assistantImg: true,
         assistantName: true,
-        assistantOAIID: true,
+        assistantProviderID: true,
         assistantDescription: true,
         assistantStatus: true,
         assistantVerified: true,

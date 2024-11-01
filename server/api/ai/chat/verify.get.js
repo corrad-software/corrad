@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     }
     const thread = await prisma.thread.findUnique({
       where: {
-        threadOAIID: threadID,
+        threadProviderID: threadID,
         NOT: {
           lookup: {
             lookupID: 4,
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
         collectionName: true,
         assistant: {
           select: {
-            assistantOAIID: true,
+            assistantProviderID: true,
             assistantName: true,
             assistantImg: true,
           },
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
       statusCode: 200,
       message: "Success",
       data: {
-        assistantID: thread?.assistant?.assistantOAIID || null,
+        assistantID: thread?.assistant?.assistantProviderID || null,
         assistantName: thread?.assistant?.assistantName || null,
         assistantImg: thread?.assistant?.assistantImg || null,
         collectionName: thread?.collectionName || null,

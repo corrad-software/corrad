@@ -9,14 +9,14 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Init utils openai
-    const { statusCode, data } = await initOpenAI();
-    if (statusCode !== 200) {
-      console.log("Error initializing OpenAI:");
+    // Initialize AI providers
+    const openAIResponse = await initAI("openai");
+    if (openAIResponse.statusCode !== 200) {
+      console.error("Error initializing OpenAI:", openAIResponse.message);
       throw new Error("Failed to initialize OpenAI");
     }
 
-    const openai = data?.openai;
+    const openai = openAIResponse.data?.provider.getClient();
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",

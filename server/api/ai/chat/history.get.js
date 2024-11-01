@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
     const thread = await prisma.thread.findUnique({
       where: {
-        threadOAIID: threadID,
+        threadProviderID: threadID,
         NOT: {
           lookup: {
             lookupID: 4,
@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
         projectID: project.projectID,
       },
       select: {
-        chatOAIMessageID: true,
+        chatProviderMessageID: true,
         chatMessage: true,
         chatRole: true,
         chatType: true,
@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
             file: {
               select: {
                 fileName: true,
-                fileOAIID: true,
+                fileProviderID: true,
                 fileType: true,
                 fileOriginalName: true,
                 fileURL: true,
@@ -85,7 +85,7 @@ export default defineEventHandler(async (event) => {
 
     const remapHistory = history.map((item) => {
       return {
-        chatOAIMessageID: item.chatOAIMessageID,
+        chatProviderMessageID: item.chatProviderMessageID,
         content: item.chatMessage,
         sender: item.chatRole,
         type: item.chatType,

@@ -5,14 +5,14 @@ const activeStreams = new Map();
 const activeThreads = new Map();
 
 export const socketHandler = async (io: Server) => {
-  // Init utils openai
-  const { statusCode, data } = await initOpenAI();
-  if (statusCode !== 200) {
-    console.log("Error initializing OpenAI:");
+  // Initialize AI providers
+  const openAIResponse = await initAI('openai');
+  if (openAIResponse.statusCode !== 200) {
+    console.error("Error initializing OpenAI:", openAIResponse.message);
     throw new Error("Failed to initialize OpenAI");
   }
 
-  const openai = data?.openai;
+  const openai = openAIResponse.data?.provider.getClient();
 
   io.on("connection", async (socket) => {
     console.log("New client connected");
@@ -97,7 +97,7 @@ export const socketHandler = async (io: Server) => {
                 chatType: "text",
                 thread: {
                   connect: {
-                    threadOAIID: threadID,
+                    threadProviderID: threadID,
                   },
                 },
                 user: {
@@ -125,7 +125,7 @@ export const socketHandler = async (io: Server) => {
                 chatType: "prompt",
                 thread: {
                   connect: {
-                    threadOAIID: threadID,
+                    threadProviderID: threadID,
                   },
                 },
                 user: {
@@ -227,10 +227,10 @@ export const socketHandler = async (io: Server) => {
               chatMessage: lastMessage.content[0].text.value,
               chatRole: "assistant",
               chatType: "text",
-              chatOAIMessageID: lastMessage.id,
+              chatProviderMessageID: lastMessage.id,
               thread: {
                 connect: {
-                  threadOAIID: threadID,
+                  threadProviderID: threadID,
                 },
               },
               project: {
@@ -405,9 +405,9 @@ export const socketHandler = async (io: Server) => {
           // Delete the previous assistant message from the database
           await prisma?.chat.deleteMany({
             where: {
-              chatOAIMessageID: assistantMessageId,
+              chatProviderMessageID: assistantMessageId,
               thread: {
-                threadOAIID: threadID,
+                threadProviderID: threadID,
               },
               project: {
                 projectUniqueID: projectID,
@@ -487,10 +487,10 @@ export const socketHandler = async (io: Server) => {
               chatMessage: lastMessage.content[0].text.value,
               chatRole: "assistant",
               chatType: "text",
-              chatOAIMessageID: lastMessage.id,
+              chatProviderMessageID: lastMessage.id,
               thread: {
                 connect: {
-                  threadOAIID: threadID,
+                  threadProviderID: threadID,
                 },
               },
               project: {

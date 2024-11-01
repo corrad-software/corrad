@@ -655,7 +655,7 @@ const regenerateResponse = async (index) => {
       projectID: projectID.value,
       user: user.value,
       message: userMessage,
-      assistantMessageId: assistantMessage.chatOAIMessageID,
+      assistantMessageId: assistantMessage.chatProviderMessageID,
     });
 
     // Start streaming new response

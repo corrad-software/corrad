@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
 
     // Update the collection name in the thread table
     const updatedThread = await prisma.thread.update({
-      where: { threadOAIID: threadID },
+      where: { threadProviderID: threadID },
       data: { collectionName },
     });
 

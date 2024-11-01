@@ -78,7 +78,7 @@ const submitForm = async () => {
         assistantName: form.name,
         assistantDescription: form.description,
         assistantType: form.type,
-        assistantOAIID: form.openaiAssistantID,
+        assistantProviderID: form.openaiAssistantID,
         assistantStatus: form.status,
         assistantVerified: form.verified,
       },

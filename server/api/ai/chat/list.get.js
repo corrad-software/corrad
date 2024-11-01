@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
         thread: {
           select: {
             threadTitle: true,
-            threadOAIID: true,
+            threadProviderID: true,
             assistant: {
               select: {
                 assistantName: true,
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
         threadTitle: item.thread.threadTitle
           ? item.thread.threadTitle
           : item.chatMessage,
-        threadID: item.thread.threadOAIID,
+        threadID: item.thread.threadProviderID,
         assistantName: item.thread.assistant.assistantName,
         assistantImg: item.thread.assistant.assistantImg,
       };

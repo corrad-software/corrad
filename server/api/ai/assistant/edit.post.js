@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
       assistantName,
       assistantDescription,
       assistantType,
-      assistantOAIID,
+      assistantProviderID,
       assistantStatus,
       assistantVerified,
     } = await readBody(event);
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     if (
       !assistantID ||
       !assistantName ||
-      !assistantOAIID ||
+      !assistantProviderID ||
       !assistantStatus ||
       !assistantType
     ) {
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
         assistantName: assistantName,
         assistantDescription: assistantDescription || undefined,
         assistantImg: assistantImg || undefined,
-        assistantOAIID: assistantOAIID,
+        assistantProviderID: assistantProviderID,
         assistantStatus: assistantStatus,
         assistantVerified: assistantVerified ? true : false,
         assistantCreatedDate: DateTime.now(),

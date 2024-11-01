@@ -20,16 +20,14 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Init utils openai
-    const { statusCode, message, data } = await initOpenAI();
-    if (statusCode !== 200) {
-      return {
-        statusCode: statusCode,
-        message: message,
-      };
+    // Initialize AI providers
+    const openAIResponse = await initAI("openai");
+    if (openAIResponse.statusCode !== 200) {
+      console.error("Error initializing OpenAI:", openAIResponse.message);
+      throw new Error("Failed to initialize OpenAI");
     }
 
-    const openai = data.openai;
+    const openai = openAIResponse.data?.provider.getClient();
 
     const verifyAssistant = await openai.beta.assistants.list();
 
@@ -43,9 +41,8 @@ export default defineEventHandler(async (event) => {
 
     // Search form id to match with openaiAssistantID
     const assistant = verifyAssistant.data.find(
-      (assistant) => assistant.id === openaiAssistantID
+      (assistant) => assistant?.id === openaiAssistantID
     );
-    console.log("Exist Assistant", assistant.id);
 
     if (!assistant) {
       return {
