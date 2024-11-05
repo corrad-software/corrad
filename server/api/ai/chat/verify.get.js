@@ -28,12 +28,19 @@ export default defineEventHandler(async (event) => {
       },
       select: {
         threadID: true,
+        threadSourceType: true,
         collectionName: true,
         assistant: {
           select: {
             assistantProviderID: true,
             assistantName: true,
             assistantImg: true,
+          },
+        },
+        guide_chat: {
+          select: {
+            guideChatID: true,
+            guideChatName: true,
           },
         },
       },
@@ -70,13 +77,27 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    let assistantID = null;
+    let assistantName = null;
+    let assistantImg = null;
+
+    if (thread.threadSourceType === "ASSISTANT") {
+      assistantID = thread?.assistant?.assistantProviderID;
+      assistantName = thread?.assistant?.assistantName;
+      assistantImg = thread?.assistant?.assistantImg;
+    } else if (thread.threadSourceType === "GUIDE_CHAT") {
+      assistantID = thread?.guide_chat?.guideChatID;
+      assistantName = thread?.guide_chat?.guideChatName;
+      assistantImg = null;
+    }
+
     return {
       statusCode: 200,
       message: "Success",
       data: {
-        assistantID: thread?.assistant?.assistantProviderID || null,
-        assistantName: thread?.assistant?.assistantName || null,
-        assistantImg: thread?.assistant?.assistantImg || null,
+        assistantID,
+        assistantName,
+        assistantImg,
         collectionName: thread?.collectionName || null,
       },
     };

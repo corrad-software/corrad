@@ -23,15 +23,18 @@ export default defineEventHandler(async (event) => {
 
     const newPrompt = await prisma.saved_prompt.create({
       data: {
-        userID: userID,
         promptTitle: promptTitle,
         promptContent: promptContent,
         promptDescription: promptDescription || "",
         promptTags: promptTags || "",
         promptStatus: "ACTIVE",
-        isAIGenerated: "false",
         promptCreatedDate: DateTime.now().toJSDate(),
         promptModifiedDate: DateTime.now().toJSDate(),
+        user: {
+          connect: {
+            userID: userID,
+          },
+        },
       },
     });
 

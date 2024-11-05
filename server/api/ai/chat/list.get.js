@@ -49,11 +49,18 @@ export default defineEventHandler(async (event) => {
           select: {
             threadTitle: true,
             threadProviderID: true,
+            threadSourceType: true,
             assistant: {
               select: {
                 assistantName: true,
                 assistantImg: true,
                 assistantID: true,
+              },
+            },
+            guide_chat: {
+              select: {
+                guideChatID: true,
+                guideChatName: true,
               },
             },
           },
@@ -75,8 +82,14 @@ export default defineEventHandler(async (event) => {
           ? item.thread.threadTitle
           : item.chatMessage,
         threadID: item.thread.threadProviderID,
-        assistantName: item.thread.assistant.assistantName,
-        assistantImg: item.thread.assistant.assistantImg,
+        assistantName:
+          item.thread.threadSourceType === "ASSISTANT"
+            ? item.thread.assistant.assistantName
+            : item.thread.guide_chat.guideChatName,
+        assistantImg:
+          item.thread.threadSourceType === "ASSISTANT"
+            ? item.thread.assistant.assistantImg
+            : null,
       };
     });
 

@@ -269,6 +269,18 @@ onUnmounted(() => {
             Assistant
           </rs-button>
         </nuxt-link>
+        <nuxt-link v-if="hasPermission()" to="/ai/guide-chat" class="col-span-4">
+          <rs-button
+            variant="secondary"
+            class="w-full !justify-start !text-[rgb(var(--text-color))]"
+          >
+            <Icon
+              name="material-symbols:chat-outline"
+              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
+            />
+            Guided AI
+          </rs-button>
+        </nuxt-link>
         <nuxt-link
           class="md:col-span-2"
           :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"

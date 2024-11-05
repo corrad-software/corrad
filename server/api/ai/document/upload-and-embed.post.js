@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
     if (!allowedExtensions.includes(fileExtension)) {
       return {
         statusCode: 400,
-        message: "Unsupported file format",
+        message: "Unsupported file format. Supported formats: " + allowedExtensions.join(", "),
       };
     }
 

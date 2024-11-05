@@ -1,20 +1,21 @@
 async function getLookupList(code) {
   try {
-    const getLookup = await prisma.lookup.findFirst({
-      where: {
-        lookupCode: code,
-      },
-      select: {
-        lookupID: true,
-      },
-    });
+    // const getLookup = await prisma.lookup.findFirst({
+    //   where: {
+    //     lookupRefCode: code,
+    //   },
+    //   select: {
+    //     lookupID: true,
+    //   },
+    // });
+    // console.log("getLookup", getLookup);
 
-    if (!getLookup) return false;
+    // if (!getLookup) return false;
 
     // Get Child for that lookup
     const lookupData = await prisma.lookup.findMany({
       where: {
-        lookupRefCode: getLookup.lookupID.toString(),
+        lookupRefCode: code,
         lookupStatus: "ACTIVE",
       },
       select: {

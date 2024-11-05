@@ -8,18 +8,19 @@ datasource db {
 }
 
 model assistant {
-  assistantID           Int       @id @default(autoincrement())
-  assistantProviderID   String?   @db.VarChar(255)
-  assistantImg          String?   @db.VarChar(255)
-  assistantName         String?   @db.VarChar(255)
-  assistantDescription  String?   @db.VarChar(255)
-  assistantType         Int?
-  assistantStatus       String?   @db.VarChar(255)
-  assistantVerified     Boolean?  @db.Bit(1)
-  assistantCreatedDate  DateTime? @db.DateTime(0)
-  assistantModifiedDate DateTime? @db.DateTime(0)
-  lookup                lookup?   @relation(fields: [assistantType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "assistant_ibfk_1")
-  thread                thread[]
+  assistantID               Int       @id @default(autoincrement())
+  assistantProviderID       String?   @db.VarChar(255)
+  assistantImg              String?   @db.VarChar(255)
+  assistantName             String?   @db.VarChar(255)
+  assistantDescription      String?   @db.VarChar(255)
+  assistantType             Int?
+  assistantStatus           String?   @db.VarChar(255)
+  assistantVerified         Boolean?  @db.Bit(1)
+  assistantGenerateQuestion Boolean?  @default(dbgenerated("b'1'")) @db.Bit(1)
+  assistantCreatedDate      DateTime? @db.DateTime(0)
+  assistantModifiedDate     DateTime? @db.DateTime(0)
+  lookup                    lookup?   @relation(fields: [assistantType], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "assistant_ibfk_1")
+  thread                    thread[]
 
   @@index([assistantType], map: "assistantType")
 }
@@ -38,7 +39,6 @@ model chat {
   userID                Int?
   threadID              Int?
   projectID             Int?
-  chatSessionID         String?    @db.VarChar(255)
   chatProviderMessageID String?    @unique(map: "chatOAIMessageID") @db.VarChar(255)
   chatType              String?    @db.VarChar(255)
   chatRole              String?    @db.VarChar(255)
@@ -136,16 +136,18 @@ model file {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model guide_chat {
-  guideChatID           Int       @id @default(autoincrement())
-  guideChatModel        Int?
-  guideChatName         String?   @db.VarChar(255)
-  guideChatDescription  String?   @db.VarChar(255)
-  guideChatType         String?   @db.VarChar(255)
-  guideChatContext      String?   @db.LongText
-  guideChatStatus       String?   @db.VarChar(255)
-  guideChatCreatedDate  DateTime? @db.DateTime(0)
-  guideChatModifiedDate DateTime? @db.DateTime(0)
-  lookup                lookup?   @relation(fields: [guideChatModel], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "guide_chat_ibfk_1")
+  guideChatID               Int       @id @default(autoincrement())
+  guideChatModel            Int?
+  guideChatName             String?   @db.VarChar(255)
+  guideChatDescription      String?   @db.VarChar(255)
+  guideChatType             String?   @db.VarChar(255)
+  guideChatContext          String?   @db.LongText
+  guideChatStatus           String?   @db.VarChar(255)
+  guideChatGenerateQuestion Boolean?  @default(dbgenerated("b'0'")) @db.Bit(1)
+  guideChatCreatedDate      DateTime? @db.DateTime(0)
+  guideChatModifiedDate     DateTime? @db.DateTime(0)
+  lookup                    lookup?   @relation(fields: [guideChatModel], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "guide_chat_ibfk_1")
+  thread                    thread[]
 
   @@index([guideChatModel], map: "guideChatModel")
 }
@@ -165,6 +167,7 @@ model lookup {
   project_project_projectTypeTolookup     project[]    @relation("project_projectTypeTolookup")
   project_project_projectViewTypeTolookup project[]    @relation("project_projectViewTypeTolookup")
   thread                                  thread[]
+  thread_thread_providerIDTolookup        thread[]     @relation("thread_providerIDTolookup")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -255,23 +258,30 @@ model saved_prompt {
 }
 
 model thread {
-  threadID           Int        @id @default(autoincrement())
-  userID             Int?
-  assistantID        Int?
-  collectionName     String?    @db.VarChar(255)
-  threadTitle        String?    @db.VarChar(255)
-  threadProviderID   String?    @unique(map: "threadOAIID") @db.VarChar(255)
-  threadStatus       Int?
-  threadCreatedDate  DateTime?  @db.DateTime(0)
-  threadModifiedDate DateTime?  @db.DateTime(0)
-  chat               chat[]
-  assistant          assistant? @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
-  user               user?      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_2")
-  lookup             lookup?    @relation(fields: [threadStatus], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_3")
+  threadID                         Int         @id @default(autoincrement())
+  userID                           Int?
+  assistantID                      Int?
+  guideChatID                      Int?
+  providerID                       Int?
+  collectionName                   String?     @db.VarChar(255)
+  threadTitle                      String?     @db.VarChar(255)
+  threadProviderID                 String?     @unique(map: "threadOAIID") @db.VarChar(255)
+  threadSourceType                 String?     @db.VarChar(255)
+  threadStatus                     Int?
+  threadCreatedDate                DateTime?   @db.DateTime(0)
+  threadModifiedDate               DateTime?   @db.DateTime(0)
+  chat                             chat[]
+  assistant                        assistant?  @relation(fields: [assistantID], references: [assistantID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_1")
+  user                             user?       @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_2")
+  lookup                           lookup?     @relation(fields: [threadStatus], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_3")
+  lookup_thread_providerIDTolookup lookup?     @relation("thread_providerIDTolookup", fields: [providerID], references: [lookupID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_4")
+  guide_chat                       guide_chat? @relation(fields: [guideChatID], references: [guideChatID], onDelete: NoAction, onUpdate: NoAction, map: "thread_ibfk_5")
 
   @@index([assistantID], map: "assistantID")
   @@index([threadStatus], map: "threadStatus")
   @@index([userID], map: "userID")
+  @@index([guideChatID], map: "guideChatID")
+  @@index([providerID], map: "providerID")
 }
 
 model user {

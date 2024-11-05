@@ -57,6 +57,8 @@ const showDocumentSidebar = ref(false);
 const availableCollections = ref([]);
 const currentCollectionName = ref("");
 const isProcessing = ref(false);
+const isUploadingDocument = ref(false);
+const isSearchingDocuments = ref(false);
 const showHelpPanel = ref(false);
 
 // Add new refs for related questions
@@ -190,6 +192,7 @@ onMounted(() => {
 
   $io.on("streamStopped", () => {
     isStreaming.value = false;
+    isTyping.value = false;
   });
 
   $io.on("error", (errorMessage) => {
@@ -209,6 +212,7 @@ onMounted(() => {
     isGeneratingQuestions.value = false;
     relatedQuestions.value = questions;
     selectedCategory.value = "all";
+
     scrollToBottom();
   });
 
@@ -357,6 +361,7 @@ const processFile = async (file) => {
     formData.append("projectID", projectID.value);
 
     try {
+      isUploadingDocument.value = true;
       const { data } = await useFetch("/api/ai/document/upload-and-embed", {
         method: "POST",
         body: formData,
@@ -377,7 +382,11 @@ const processFile = async (file) => {
           },
         };
       } else {
-        throw new Error(data.value.message);
+        $swal.fire({
+          icon: "error",
+          title: "Error",
+          text: data.value.message,
+        });
       }
     } catch (error) {
       console.error("Error uploading document:", error);
@@ -387,6 +396,8 @@ const processFile = async (file) => {
         text: "Failed to upload and embed document",
       });
       return null;
+    } finally {
+      isUploadingDocument.value = false;
     }
   }
 };
@@ -415,7 +426,9 @@ const sendMessage = async () => {
           message.content += `\n\nImage content (OCR result): ${result.text}\n\nPlease note that this text was extracted from an image using OCR technology. The accuracy may vary depending on the image quality and complexity. Consider this context when interpreting the content.`;
         } else if (result && result.type === "document") {
           message.files.push(result.file);
-          message.content += `\n\nUploaded document: ${result.file.name}`;
+          message.content = message.content
+            ? `${message.content}\n\nUploaded document: ${result.file.name}`
+            : `Uploaded document: ${result.file.name}`;
         }
       }
 
@@ -710,6 +723,7 @@ const closeSavedPromptsModal = () => {
 // New method to search documents
 const searchDocuments = async (query) => {
   try {
+    isSearchingDocuments.value = true;
     const { data } = await useFetch("/api/ai/document/search", {
       method: "POST",
       body: {
@@ -725,6 +739,8 @@ const searchDocuments = async (query) => {
     }
   } catch (error) {
     console.error("Error searching documents:", error);
+  } finally {
+    isSearchingDocuments.value = false;
   }
 };
 
@@ -817,7 +833,7 @@ const selectRelatedQuestion = (questionObj) => {
           class="flex flex-col mb-4 md:mb-0"
         >
           <div
-            class="flex items-center mb-1"
+            class="flex items-center mb-1 mt-2"
             :class="message.sender === 'user' ? 'justify-end' : ''"
           >
             <span class="text-sm text-gray-400">
@@ -944,8 +960,9 @@ const selectRelatedQuestion = (questionObj) => {
             class="related-questions-container px-4 mb-4 mt-4"
           >
             <!-- Loading state -->
+
             <div
-              v-if="isGeneratingQuestions"
+              v-if="isGeneratingQuestions && relatedQuestions.length === 0"
               class="flex items-center space-x-2"
             >
               <span class="text-sm text-gray-400"
@@ -1046,6 +1063,38 @@ const selectRelatedQuestion = (questionObj) => {
     >
       <div class="flex items-center">
         <span class="text-sm text-gray-400">Assistant is typing</span>
+        <div class="animate-bounce text-gray-400 mx-1">.</div>
+        <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
+          .
+        </div>
+        <div class="animate-bounce text-gray-400 mx-1 animation-delay-400">
+          .
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="isUploadingDocument"
+      class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
+    >
+      <div class="flex items-center">
+        <span class="text-sm text-gray-400">Uploading document</span>
+        <div class="animate-bounce text-gray-400 mx-1">.</div>
+        <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
+          .
+        </div>
+        <div class="animate-bounce text-gray-400 mx-1 animation-delay-400">
+          .
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="isSearchingDocuments"
+      class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
+    >
+      <div class="flex items-center">
+        <span class="text-sm text-gray-400">Analysing document</span>
         <div class="animate-bounce text-gray-400 mx-1">.</div>
         <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
           .
