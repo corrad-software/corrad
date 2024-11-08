@@ -4,7 +4,20 @@ import { DateTime } from "luxon";
 const activeStreams = new Map();
 const activeThreads = new Map();
 
+// At the top of your file, add these options
+const socketOptions = {
+  reconnection: true, // Enable reconnection
+  reconnectionAttempts: 5, // Maximum number of reconnection attempts
+  reconnectionDelay: 1000, // Initial delay between reconnections (1 second)
+  reconnectionDelayMax: 5000, // Maximum delay between reconnections (5 seconds)
+  timeout: 20000, // Connection timeout
+  autoConnect: true, // Automatically connect on creation
+};
+
 export const socketHandler = async (io: Server) => {
+  // Configure Socket.IO options directly on the io instance
+  Object.assign(io, socketOptions);
+
   // Initialize AI providers
   const openAIResponse = await initAI("openai");
   if (openAIResponse.statusCode !== 200) {
@@ -122,6 +135,8 @@ export const socketHandler = async (io: Server) => {
               });
             }
           }
+
+          io.to(threadID).emit("messageClear");
         } catch (error) {
           console.error("Error in message handling:", error);
           io.to(threadID).emit(
@@ -258,6 +273,22 @@ export const socketHandler = async (io: Server) => {
           activeThreads.delete(threadID);
         }
       }
+    });
+
+    socket.on("reconnect", (attemptNumber) => {
+      console.log(`Client reconnected after ${attemptNumber} attempts`);
+    });
+
+    socket.on("reconnect_attempt", (attemptNumber) => {
+      console.log(`Reconnection attempt #${attemptNumber}`);
+    });
+
+    socket.on("reconnect_error", (error) => {
+      console.error("Reconnection error:", error);
+    });
+
+    socket.on("reconnect_failed", () => {
+      console.error("Failed to reconnect after all attempts");
     });
   });
 };
@@ -398,10 +429,8 @@ async function handleOpenAIAssistant({
 
       if (ev.event === "thread.message.delta" && ev.data.delta?.content) {
         for (const content of ev.data.delta.content) {
-          if (content.type === "text") {
-            fullResponse += content.text.value;
-            io.to(threadID).emit("messageChunk", content.text.value);
-          }
+          fullResponse += content.text.value;
+          io.to(threadID).emit("messageChunk", content.text.value);
         }
       }
 
@@ -435,6 +464,24 @@ async function handleOpenAIAssistant({
 
     io.to(threadID).emit("messageEnd");
 
+    const messageCount = await prisma?.chat.count({
+      where: {
+        thread: {
+          threadProviderID: threadID,
+        },
+      },
+    });
+
+    if (messageCount === 1) {
+      await generateThreadTitle(
+        openai,
+        message.content,
+        lastMessage.content[0].text.value,
+        io,
+        threadID
+      );
+    }
+
     await prisma?.chat.create({
       data: {
         chatMessage: lastMessage.content[0].text.value,
@@ -462,7 +509,7 @@ async function handleOpenAIAssistant({
 
     // console.log("Message created:", createMessageResponse);
 
-    io.to(threadID).emit("messageClear");
+    // io.to(threadID).emit("messageClear");
 
     if (
       lastMessage?.content[0]?.text?.value &&
@@ -633,7 +680,7 @@ async function handleOpenAIChat({
       io.to(threadID).emit("streamStopped");
     } else {
       io.to(threadID).emit("messageEnd");
-      io.to(threadID).emit("messageClear");
+      // io.to(threadID).emit("messageClear");
     }
 
     if (fullResponse && threadDetails?.guide_chat?.guideChatGenerateQuestion) {
@@ -807,8 +854,10 @@ async function handleClaudeChat({
       io.to(threadID).emit("streamStopped");
     } else {
       io.to(threadID).emit("messageEnd");
-      io.to(threadID).emit("messageClear");
+      // io.to(threadID).emit("messageClear");
     }
+
+    // Check if this is the first message in the thread
 
     if (fullResponse && threadDetails?.guide_chat?.guideChatGenerateQuestion) {
       // Initialize OpenAI for question generation
@@ -933,5 +982,71 @@ async function generateRelatedQuestions(
   } finally {
     // Clear loading state
     io.to(threadID).emit("generatingQuestions", false);
+  }
+}
+
+async function generateThreadTitle(
+  openai,
+  message,
+  assistantResponse,
+  io,
+  threadID
+) {
+  try {
+    // Emit event to show loading state
+    io.to(threadID).emit("generatingTitle");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Generate a concise, descriptive title (maximum 50 characters) for this conversation based on the initial exchange. The title should capture the main topic or purpose of the discussion.",
+        },
+        {
+          role: "user",
+          content: `Initial message: ${message}\nAssistant's response: ${assistantResponse}\n\nGenerate a short, relevant title for this conversation.`,
+        },
+      ],
+      max_tokens: 50,
+      temperature: 0.7,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "thread_title_response",
+          schema: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "The generated title for the conversation",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const title = JSON.parse(completion.choices[0].message.content).title;
+
+    // Update the thread title in the database
+    await prisma?.thread.update({
+      where: {
+        threadProviderID: threadID,
+      },
+      data: {
+        threadTitle: title,
+      },
+    });
+
+    // Emit the generated title to the client
+    io.to(threadID).emit("threadTitleGenerated", title);
+  } catch (error) {
+    console.error("Error generating thread title:", error);
+    io.to(threadID).emit("threadTitleError", "Failed to generate title");
+  } finally {
+    // Clear loading state
+    io.to(threadID).emit("generatingTitle", false);
   }
 }

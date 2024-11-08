@@ -7,7 +7,6 @@ useHead({
   },
 });
 
-const nuxtApp = useNuxtApp();
 const loading = ref(true);
 
 onMounted(() => {

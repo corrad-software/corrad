@@ -1,9 +1,17 @@
 <script setup>
 const isSidebarOpen = ref(false);
+const isSidebarMinimized = ref(true);
 const isMobile = ref(false);
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+const toggleSidebarMinimize = () => {
+  isSidebarMinimized.value = !isSidebarMinimized.value;
+  if (process.client) {
+    localStorage.setItem("sidebarMinimized", isSidebarMinimized.value);
+  }
 };
 
 const handleResize = () => {
@@ -14,6 +22,13 @@ const handleResize = () => {
 };
 
 onMounted(() => {
+  const savedMinimizeState = localStorage.getItem("sidebarMinimized");
+  if (savedMinimizeState !== null) {
+    isSidebarMinimized.value = savedMinimizeState === "true";
+  } else {
+    localStorage.setItem("sidebarMinimized", "true");
+  }
+
   handleResize();
   window.addEventListener("resize", handleResize);
 });
@@ -26,7 +41,7 @@ onUnmounted(() => {
 <template>
   <div class="ai-theme">
     <div
-      class="flex h-screen bg-[rgb(var(--bg-1))] text-[rgb(var(--text-color))]"
+      class="flex flex-col md:flex-row h-screen bg-[rgb(var(--bg-1))] text-[rgb(var(--text-color))]"
     >
       <rs-button
         @click="toggleSidebar"
@@ -44,7 +59,11 @@ onUnmounted(() => {
         />
       </rs-button>
 
-      <aiSideMenu :isOpen="isSidebarOpen" />
+      <aiSideMenu
+        :isOpen="isSidebarOpen"
+        :isMinimized="isSidebarMinimized"
+        @toggle-minimize="toggleSidebarMinimize"
+      />
 
       <!-- Dark overlay -->
       <div
@@ -54,12 +73,12 @@ onUnmounted(() => {
       ></div>
 
       <!-- Main content wrapper -->
-      <div class="flex-1 flex justify-center">
+      <div class="relative flex-1 flex justify-center">
         <main
           class="w-full max-w-7xl p-8 overflow-y-auto transition-all duration-300"
           :class="{
             '': isSidebarOpen,
-            'lg:w-[calc(100%-1rem)]': isSidebarOpen,
+            'lg:ml-20': isSidebarMinimized,
           }"
         >
           <slot />

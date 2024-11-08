@@ -67,6 +67,9 @@ export default defineEventHandler(async (event) => {
         },
       },
       distinct: ["threadID"],
+      orderBy: {
+        chatCreatedDate: "desc",
+      },
     });
 
     if (!list) {

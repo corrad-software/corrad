@@ -1,14 +1,22 @@
 <script setup>
 import { useUserStore } from "~/stores/user";
 import logoLightSrc from "~/assets/img/logo/logo-word-black-ai.svg";
+import logoOnlySrc from "~/assets/img/logo/logo.svg";
 import logoDarkSrc from "~/assets/img/logo/logo-word-white-ai.svg";
+import defaultAvatar from "~/assets/img/avatar/bot.png";
 
 defineProps({
   isOpen: {
     type: Boolean,
     default: true,
   },
+  isMinimized: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const emit = defineEmits(["toggle-minimize"]);
 
 const { $swal } = useNuxtApp();
 const userStore = useUserStore();
@@ -21,6 +29,18 @@ const form = reactive({
 
 const projectList = ref([]);
 const logoSrc = ref(logoLightSrc);
+const urlThreadId = ref("");
+
+const isDesktop = ref(true);
+
+const handleResize = () => {
+  isDesktop.value = window.innerWidth >= 1024; // lg breakpoint
+
+  // If on mobile, ensure sidebar is not minimized
+  if (!isDesktop.value) {
+    emit("toggle-minimize", false);
+  }
+};
 
 const { data: getProjects, refresh: refreshProjectList } = await useFetch(
   "/api/ai/project/list",
@@ -165,42 +185,92 @@ const setInitialTheme = () => {
   }
 };
 
+const updateURLThreadId = (url) => {
+  // console.log(url);
+
+  if (url.includes("/ai/chat/")) {
+    urlThreadId.value = url.split("/").pop();
+  } else {
+    urlThreadId.value = "";
+  }
+};
+
 // Call setInitialTheme on component mount
 onMounted(() => {
   setInitialTheme();
+  handleResize(); // Call on mount to set initial state
+  window.addEventListener("resize", handleResize);
+
+  let getURL = window.location.href;
+  if (getURL.includes("/ai/chat/")) {
+    urlThreadId.value = getURL.split("/").pop();
+  }
+
   emitter.on("refreshChatList", refreshChatList);
+  emitter.on("updateURLThreadId", updateURLThreadId);
 });
 
 onUnmounted(() => {
+  window.removeEventListener("resize", handleResize);
   emitter.off("refreshChatList", refreshChatList);
+  emitter.off("updateURLThreadId", updateURLThreadId);
 });
 </script>
 
 <template>
   <aside
     v-show="isOpen"
-    class="fixed inset-y-0 left-0 z-30 w-60 md:w-64 bg-[rgb(var(--bg-2))] p-4 border-r border-[rgb(var(--border-color))] flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0"
-    :class="{ '-translate-x-full': !isOpen }"
+    class="fixed inset-y-0 left-0 z-30 bg-[rgb(var(--bg-2))] p-4 border-r border-[rgb(var(--border-color))] flex flex-col lg:relative lg:translate-x-0 transition-all duration-300 ease-in-out"
+    :class="[
+      { '-translate-x-full': !isOpen },
+      isMinimized && isDesktop ? 'w-20' : 'w-64 md:w-72',
+    ]"
   >
-    <nuxt-link to="/ai" class="flex justify-center items-center mb-4">
-      <img id="logo" class="h-10 block" :src="logoSrc" alt="Logo" />
-    </nuxt-link>
-    <div class="flex gap-2">
-      <FormKit
-        v-if="projectList.length > 0"
-        v-model="currentProject"
-        type="select"
-        :options="projectList"
-        :classes="{
-          outer: 'flex-1',
-          input: 'bg-primary text-white',
-        }"
-        :key="projectList"
+    <button
+      @click="emit('toggle-minimize')"
+      class="absolute -right-4 top-6 hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--bg-2))] border border-[rgb(var(--border-color))] cursor-pointer hover:bg-[rgb(var(--color-hover))] shadow-sm transition-all duration-200"
+    >
+      <Icon
+        :name="
+          isMinimized && isDesktop
+            ? 'material-symbols:keyboard-double-arrow-right-rounded'
+            : 'material-symbols:keyboard-double-arrow-left-rounded'
+        "
+        class="w-5 h-5 text-[rgb(var(--text-color))]"
       />
+    </button>
 
-      <rs-button @click="showModalAddProject = !showModalAddProject">
-        <Icon name="material-symbols:add" />
-      </rs-button>
+    <nuxt-link to="/ai" class="flex justify-center items-center mb-4">
+      <img
+        id="logo"
+        class="h-10 block"
+        :class="{ 'w-8 h-8 object-contain': isMinimized && isDesktop }"
+        :src="isMinimized && isDesktop ? logoOnlySrc : logoSrc"
+        alt="Logo"
+      />
+    </nuxt-link>
+
+    <div
+      v-if="!(isMinimized && isDesktop)"
+      class="transition-opacity duration-300 ease-in-out"
+    >
+      <div class="flex gap-2">
+        <FormKit
+          v-if="projectList.length > 0"
+          v-model="currentProject"
+          type="select"
+          :options="projectList"
+          :classes="{
+            outer: 'flex-1',
+            input: 'bg-primary text-white',
+          }"
+          :key="projectList"
+        />
+
+        <rs-button @click="showModalAddProject = !showModalAddProject">
+          <Icon name="material-symbols:add" />
+        </rs-button>
+      </div>
     </div>
 
     <NuxtScrollbar
@@ -208,111 +278,133 @@ onUnmounted(() => {
     >
       <ul class="flex flex-col gap-3">
         <li
-          v-if="threadList.statusCode == 200 && threadList.data.length > 0"
           v-for="(thread, index) in threadList.data"
           :key="index"
-          class="bg-secondary rounded-lg"
+          class="bg-secondary rounded-lg hover:bg-primary/10"
+          :class="{ '!bg-primary text-white': urlThreadId == thread.threadID }"
         >
           <div class="flex items-center">
             <div
-              class="flex-1 pr-2 overflow-hidden cursor-pointer p-3"
+              class="flex-1 flex items-center pr-2 overflow-hidden cursor-pointer p-2 pl-3"
               @click="navigateTo('/ai/chat/' + thread.threadID)"
             >
-              <p class="w-full line-clamp-1 leading-loose">
+              <img
+                :src="thread.assistantImg ? thread.assistantImg : defaultAvatar"
+                class="w-5 h-5 rounded-full transition-all duration-300"
+                :class="{ 'mr-2': !(isMinimized && isDesktop) }"
+              />
+              <p
+                v-if="!(isMinimized && isDesktop)"
+                class="w-full line-clamp-1 leading-loose whitespace-nowrap transition-all duration-300 ease-in-out"
+              >
                 {{ thread.threadTitle }}
               </p>
-              <span class="font-semibold text-xs">
-                - {{ thread.assistantName }}
-              </span>
             </div>
             <Icon
+              v-if="!(isMinimized && isDesktop)"
               @click="deleteThread(thread.threadID)"
               name="ph:x-circle-duotone"
-              class="!w-5 !h-5 hover:text-red-500 mr-3 cursor-pointer"
+              class="!w-5 !h-5 hover:text-red-500 mr-3 cursor-pointer transition-opacity duration-300"
             />
           </div>
         </li>
       </ul>
     </NuxtScrollbar>
-    <section class="flex-auto flex flex-col justify-end">
-      <div class="grid grid-cols-4 gap-3">
-        <nuxt-link class="col-span-2" to="/ai">
-          <rs-button
-            variant="secondary"
-            class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
-          >
-            <Icon
-              name="material-symbols:globe-asia"
-              class="!w-5 !h-5 md:!w-6 md:!h-6 mb-1"
-            />
-            Explore
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link class="col-span-2" to="/ai/tools">
-          <rs-button
-            variant="secondary"
-            class="w-full !text-[rgb(var(--text-color))] flex-col !items-start !justify-start text-base"
-          >
-            <Icon name="ph:hammer" class="!w-5 !h-5 md:!w-6 md:!h-6 mb-1" />
-            Tools
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link v-if="hasPermission()" to="/ai/assistant" class="col-span-4">
-          <rs-button
-            variant="secondary"
-            class="w-full !justify-start !text-[rgb(var(--text-color))]"
-          >
-            <Icon
-              name="mdi:robot-excited-outline"
-              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
-            />
-            Assistant
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link v-if="hasPermission()" to="/ai/guide-chat" class="col-span-4">
-          <rs-button
-            variant="secondary"
-            class="w-full !justify-start !text-[rgb(var(--text-color))]"
-          >
-            <Icon
-              name="material-symbols:chat-outline"
-              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
-            />
-            Guided AI
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link
-          class="md:col-span-2"
-          :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
-        >
-          <rs-button class="w-full !justify-start pr-3">
-            <Icon
-              name="material-symbols:settings-outline-rounded"
-              class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2"
-            />
-            {{ hasPermission() ? "Settings" : "Settings" }}
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link to="/ai/release-notes">
-          <rs-button variant="secondary" class="w-full !text-primary">
-            <Icon name="ph:book-duotone" class="!w-5 !h-5 md:!w-6 md:!h-6" />
-          </rs-button>
-        </nuxt-link>
-        <nuxt-link to="/ai/user-guide">
-          <rs-button variant="secondary" class="w-full !text-primary">
-            <Icon name="ph:question-mark" class="!w-5 !h-5 md:!w-6 md:!h-6" />
-          </rs-button>
-        </nuxt-link>
 
-        <!-- <div class="grid grid-cols-1">
-          <rs-button
-            @click="toggleTheme"
-            variant="secondary"
-            class="!text-[rgb(var(--text-color))]"
+    <section class="flex-auto flex flex-col justify-end">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <template v-if="!(isMinimized && isDesktop)">
+          <nuxt-link to="/ai/release-notes" class="md:col-span-4">
+            <rs-button
+              variant="secondary"
+              class="w-full !justify-start !text-[rgb(var(--text-color))] transition-all duration-300 overflow-hidden"
+            >
+              <div class="flex items-center min-w-0">
+                <Icon
+                  name="ph:book-duotone"
+                  class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2 flex-shrink-0 transition-all duration-300"
+                />
+                <span
+                  class="transition-opacity duration-300 truncate whitespace-nowrap"
+                  >Release Notes</span
+                >
+              </div>
+            </rs-button>
+          </nuxt-link>
+          <nuxt-link to="/ai/user-guide" class="md:col-span-4">
+            <rs-button
+              variant="secondary"
+              class="w-full !justify-start !text-[rgb(var(--text-color))] transition-all duration-300 overflow-hidden"
+            >
+              <div class="flex items-center min-w-0">
+                <Icon
+                  name="ph:question-mark"
+                  class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2 flex-shrink-0 transition-all duration-300"
+                />
+                <span
+                  class="transition-opacity duration-300 truncate whitespace-nowrap"
+                  >User Guide</span
+                >
+              </div>
+            </rs-button>
+          </nuxt-link>
+          <nuxt-link
+            class="md:col-span-4"
+            :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
           >
-            <Icon name="ph:sun-duotone" class="!w-5 !h-5 md:!w-6 md:!h-6" />
-          </rs-button>
-        </div> -->
+            <rs-button
+              class="w-full !justify-start pr-3 transition-all duration-300 overflow-hidden"
+            >
+              <div class="flex items-center min-w-0">
+                <Icon
+                  name="material-symbols:settings-outline-rounded"
+                  class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2 flex-shrink-0 transition-all duration-300"
+                />
+                <span
+                  class="transition-opacity duration-300 truncate whitespace-nowrap"
+                  >Settings</span
+                >
+              </div>
+            </rs-button>
+          </nuxt-link>
+        </template>
+        <template v-else>
+          <nuxt-link to="/ai/release-notes" class="col-span-4">
+            <rs-button
+              variant="secondary"
+              class="w-full !justify-center transition-all duration-300"
+            >
+              <Icon
+                name="ph:book-duotone"
+                class="!w-5 !h-5 !text-[rgb(var(--text-color))] transition-all duration-300"
+              />
+            </rs-button>
+          </nuxt-link>
+          <nuxt-link to="/ai/user-guide" class="col-span-4">
+            <rs-button
+              variant="secondary"
+              class="w-full !justify-center transition-all duration-300"
+            >
+              <Icon
+                name="ph:question-mark"
+                class="!w-5 !h-5 !text-[rgb(var(--text-color))] transition-all duration-300"
+              />
+            </rs-button>
+          </nuxt-link>
+          <nuxt-link
+            class="col-span-4"
+            :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
+          >
+            <rs-button
+              class="w-full !justify-center transition-all duration-300"
+            >
+              <Icon
+                name="material-symbols:settings-outline-rounded"
+                class="!w-5 !h-5 transition-all duration-300"
+              />
+            </rs-button>
+          </nuxt-link>
+        </template>
       </div>
     </section>
 

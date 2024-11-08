@@ -1,7 +1,6 @@
 <script setup>
 import { useWindowSize } from "vue-window-size";
 import { marked } from "marked";
-import DOMPurify from "dompurify";
 import { useDebounceFn } from "@vueuse/core";
 import mermaid from "mermaid";
 import { saveAs } from "file-saver";
@@ -24,8 +23,6 @@ definePageMeta({
   ],
 });
 
-const { width } = useWindowSize();
-const windowWidth = ref(width);
 const { $shiki } = useNuxtApp();
 
 const toolbar = [
@@ -41,11 +38,16 @@ const markdownContent = ref(
   "# Welcome to the Markdown Editor\n\nStart typing your markdown here..."
 );
 const previewActive = ref(true);
-
 const isFullscreen = ref(false);
-
 const showModalRepo = ref(false);
+const showExportModal = ref(false);
+const exportType = ref("markdown");
+const selectedTemplate = ref(null);
+const templates = ref([]);
 const repoList = ref([]);
+
+// Initialize mermaid
+mermaid.initialize({ startOnLoad: true });
 
 const openModal = async () => {
   try {
@@ -71,9 +73,6 @@ const toggleFullscreen = () => {
     renderMermaidDiagrams();
   });
 };
-
-// Initialize mermaid
-mermaid.initialize({ startOnLoad: true });
 
 const compiledMarkdown = computed(() => {
   const renderer = new marked.Renderer();
@@ -131,10 +130,6 @@ const compiledMarkdown = computed(() => {
 
   const rawHtml = marked(markdownContent.value, { renderer });
   return rawHtml;
-  // return DOMPurify.sanitize(rawHtml, {
-  //   ADD_ATTR: ["data-code-id", "srcdoc"],
-  //   ADD_TAGS: ["iframe"],
-  // });
 });
 
 const escapeHtml = (unsafe) => {
@@ -191,11 +186,6 @@ const exportMarkdown = () => {
   link.click();
   URL.revokeObjectURL(link.href);
 };
-
-const showExportModal = ref(false);
-const exportType = ref("markdown");
-const selectedTemplate = ref(null);
-const templates = ref([]);
 
 const fetchTemplates = async () => {
   try {
@@ -285,9 +275,6 @@ const exportMarkdownToWord = async () => {
       }
     }
 
-    // Reset diagramCount for consistency
-    diagramCount = 0;
-
     // New code to process HTML previews
     const htmlPreviews = {};
     const htmlElements = document.querySelectorAll(".html-preview iframe");
@@ -315,11 +302,14 @@ const exportMarkdownToWord = async () => {
       }
     );
 
+    // Reset diagramCount for consistency
+    diagramCount = 0;
+
     // Preprocess markdown to add line breaks around Mermaid diagrams
     processedMarkdown = markdownContent.value.replace(
       /```mermaid([\s\S]*?)```/g,
-      (match, diagramCode, index) => {
-        return `\n\n[MERMAID_DIAGRAM_${index}]\n\n`;
+      (match, diagramCode) => {
+        return `\n\n[MERMAID_DIAGRAM_${diagramCount++}]\n\n`;
       }
     );
 

@@ -136,6 +136,9 @@ const sidebarClasses = computed(() => {
   return showDocumentSidebar.value ? "w-1/4" : "w-0";
 });
 
+// Add new refs for animation
+const showHeader = ref(false);
+
 // Lifecycle Hooks
 onMounted(() => {
   $io.emit("joinRoom", threadID);
@@ -216,6 +219,8 @@ onMounted(() => {
     scrollToBottom();
   });
 
+  emitter.emit("updateURLThreadId", window.location.href);
+
   fetchSavedPrompts();
   fetchAvailableCollections();
 
@@ -229,6 +234,11 @@ onMounted(() => {
   }
 
   scrollToBottom();
+
+  // Add animation timing
+  setTimeout(() => {
+    showHeader.value = true;
+  }, 500); // Delay to allow initial loading animation to play
 });
 
 onUnmounted(() => {
@@ -241,6 +251,7 @@ onUnmounted(() => {
   $io.off("error");
   $io.off("generatingQuestions");
   $io.off("relatedQuestions");
+  emitter.emit("updateURLThreadId", "");
 
   const messageContainer = document.querySelector(".message-container");
   if (messageContainer) {
@@ -786,20 +797,35 @@ const selectRelatedQuestion = (questionObj) => {
     v-if="verify?.statusCode === 200"
     class="flex flex-col h-[88dvh] md:h-[94dvh] max-w-7xl mx-auto"
   >
-    <div class="absolute top-4 right-4 flex items-center justify-end">
-      <rs-button variant="primary" class="!text-secondary mr-4 cursor-default">
+    <!-- Modify the header section with transitions -->
+    <Transition
+      enter-active-class="transition-all duration-500 ease-out"
+      enter-from-class="opacity-0 -translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-300 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-4"
+    >
+      <div
+        v-if="showHeader"
+        class="absolute top-2 left-16 right-4 md:left-8 flex items-center justify-between z-10 bg-[rgb(var(--bg-1))] py-2"
+      >
+        <div class="flex items-center">
+          <rs-button variant="primary" class="!text-secondary cursor-default">
+            <Icon
+              name="mdi:robot-excited-outline"
+              class="!w-6 !h-6 cursor-pointer text-secondary mr-2"
+            />
+            {{ verify.data.assistantName }}
+          </rs-button>
+        </div>
         <Icon
-          name="mdi:robot-excited-outline"
-          class="!w-6 !h-6 cursor-pointer text-secondary mr-2"
+          @click="showHelpPanel = true"
+          name="mdi:help-circle-outline"
+          class="!w-6 !h-6 cursor-pointer text-primary"
         />
-        {{ verify.data.assistantName }}
-      </rs-button>
-      <Icon
-        @click="showHelpPanel = true"
-        name="mdi:help-circle-outline"
-        class="!w-6 !h-6 cursor-pointer text-primary"
-      />
-    </div>
+      </div>
+    </Transition>
 
     <!-- Scrollable conversation area -->
     <div class="flex-1 p-4 mt-12 space-y-6 relative">
@@ -826,7 +852,6 @@ const selectRelatedQuestion = (questionObj) => {
 
       <NuxtScrollbar style="max-height: 80dvh" class="message-container pr-5">
         <!-- Modified empty state placeholder -->
-
         <div
           v-for="(message, index) in messages"
           :key="index"
@@ -1151,7 +1176,7 @@ const selectRelatedQuestion = (questionObj) => {
       :actions="false"
       #default="{ value }"
     >
-      <div class="relative bg-secondary rounded-lg">
+      <div class="relative bg-secondary rounded-lg mb-4 md:mb-0">
         <FormKit
           v-model="newMessage"
           type="textarea"
@@ -1162,7 +1187,7 @@ const selectRelatedQuestion = (questionObj) => {
             }`,
             inner: 'border-none',
             input:
-              'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none pr-5 md:pr-20 !text-primary',
+              'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none pr-[140px] !text-primary',
           }"
           @keydown.enter.prevent="handleEnter"
           auto-height
@@ -1778,5 +1803,11 @@ const selectRelatedQuestion = (questionObj) => {
   width: max-content;
   max-width: 250px;
   z-index: 50;
+}
+
+/* Add these styles for smoother fixed positioning */
+.fixed {
+  backdrop-filter: blur(8px);
+  background-color: rgba(var(--bg-1), 0.8);
 }
 </style>

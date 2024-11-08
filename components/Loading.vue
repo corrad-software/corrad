@@ -12,7 +12,10 @@ const refreshPage = () => {
 </script>
 
 <template>
-  <div class="rs-loading bg-white absolute z-50 top-0 left-0 w-full h-full">
+  <div
+    class="rs-loading bg-white absolute top-0 left-0 w-full h-full"
+    style="z-index: 1000000"
+  >
     <div class="flex justify-center text-center items-center h-screen">
       <div>
         <div class="flex justify-center items-center">
