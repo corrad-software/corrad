@@ -277,7 +277,7 @@ onUnmounted(() => {
     </div>
 
     <NuxtScrollbar
-      class="flex flex-col justify-between max-h-[86dvh] md:max-h-[93dvh] overflow-y-auto mb-4"
+      class="flex flex-col justify-between max-h-[86dvh] md:max-h-[93dvh] overflow-y-auto pb-4"
     >
       <ul class="flex flex-col gap-4">
         <li
