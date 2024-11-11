@@ -86,7 +86,16 @@ const deleteGuideChat = async (guideChatID) => {
         class="bg-secondary transition-all flex justify-between items-center p-4 rounded gap-4"
       >
         <div>
-          <h4 class="font-bold">{{ guideChat.guideChatName }}</h4>
+          <h4 class="font-bold flex items-center gap-2">
+            {{ guideChat.guideChatName }}
+            <span
+              class="w-2 h-2 rounded-full animate-pulse"
+              :class="{
+                'bg-green-500': guideChat.guideChatStatus === 'ACTIVE',
+                'bg-red-500': guideChat.guideChatStatus === 'INACTIVE',
+              }"
+            ></span>
+          </h4>
           <p class="text-sm text-gray-400">
             {{ guideChat.guideChatDescription }}
           </p>

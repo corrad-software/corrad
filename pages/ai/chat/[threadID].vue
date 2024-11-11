@@ -239,6 +239,61 @@ onMounted(() => {
   setTimeout(() => {
     showHeader.value = true;
   }, 500); // Delay to allow initial loading animation to play
+
+  $io.on("connectionError", (message) => {
+    $swal.fire({
+      icon: "warning",
+      title: "Connection Error",
+      text: message,
+      showConfirmButton: false,
+      timer: 2000,
+    });
+  });
+
+  $io.on("reconnecting", (attemptNumber) => {
+    // Show reconnecting status
+    isReconnecting.value = true;
+  });
+
+  $io.on("reconnected", (message) => {
+    isReconnecting.value = false;
+    $swal.fire({
+      icon: "success",
+      title: "Reconnected",
+      text: message,
+      showConfirmButton: false,
+      timer: 1500,
+    });
+  });
+
+  $io.on("reconnectionFailed", (message) => {
+    isReconnecting.value = false;
+    $swal
+      .fire({
+        icon: "error",
+        title: "Connection Failed",
+        text: message,
+        showConfirmButton: true,
+        confirmButtonText: "Reload Page",
+      })
+      .then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+  });
+
+  $io.on("roomJoined", (threadID) => {
+    console.log(`Successfully joined room: ${threadID}`);
+  });
+
+  $io.on("roomJoinError", (message) => {
+    $swal.fire({
+      icon: "error",
+      title: "Error",
+      text: message,
+    });
+  });
 });
 
 onUnmounted(() => {
@@ -263,6 +318,11 @@ onUnmounted(() => {
   }
 
   stopStreaming();
+
+  // Clear memory
+  messages.value = [];
+  currentStreamedMessage.value = "";
+  relevantDocuments.value = [];
 });
 
 // Watchers
@@ -565,7 +625,7 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, "&#039;");
 };
 
-const renderMarkdown = (content) => {
+const renderMarkdown = (content, isStreaming = false) => {
   const renderer = new marked.Renderer();
 
   renderer.code = (code, language) => {
@@ -599,7 +659,9 @@ const renderMarkdown = (content) => {
   };
 
   const rawHtml = marked(content, { renderer });
-  return DOMPurify.sanitize(rawHtml, { ADD_ATTR: ["data-code-id"] });
+  return DOMPurify.sanitize(rawHtml, {
+    ADD_ATTR: ["data-code-id", "class"], // Allow class attribute
+  });
 };
 
 const handleCopyClick = (event) => {
@@ -854,7 +916,6 @@ const selectRelatedQuestion = (questionObj) => {
         <!-- Modified empty state placeholder -->
         <div
           v-for="(message, index) in messages"
-          :key="index"
           class="flex flex-col mb-4 md:mb-0"
         >
           <div
@@ -867,7 +928,7 @@ const selectRelatedQuestion = (questionObj) => {
           </div>
           <div
             :class="[
-              'max-w-full rounded-2xl p-4 break-words',
+              'max-w-full rounded-2xl p-4 break-words transition-all duration-200 ease-in-out',
               message.sender === 'user'
                 ? 'bg-primary text-white ml-auto'
                 : 'bg-secondary !text-[rgb(var(--text-color))]',
@@ -882,7 +943,14 @@ const selectRelatedQuestion = (questionObj) => {
             >
               <div
                 class="markdown-preview"
-                v-html="renderMarkdown(message.content)"
+                v-html="
+                  renderMarkdown(
+                    message.content,
+                    message.sender === 'assistant' &&
+                      index === messages.length - 1 &&
+                      isTyping
+                  )
+                "
                 @click="handleCopyClick"
               ></div>
               <span class="animate-pulse text-gray-400">▋</span>
@@ -890,7 +958,7 @@ const selectRelatedQuestion = (questionObj) => {
             <span v-else-if="message.sender === 'assistant'">
               <div
                 class="markdown-preview"
-                v-html="renderMarkdown(message.content)"
+                v-html="renderMarkdown(message.content, false)"
                 @click="handleCopyClick"
               ></div>
             </span>
@@ -1083,7 +1151,7 @@ const selectRelatedQuestion = (questionObj) => {
     </div>
 
     <div
-      v-if="isTyping"
+      v-show="isTyping"
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
@@ -1099,7 +1167,7 @@ const selectRelatedQuestion = (questionObj) => {
     </div>
 
     <div
-      v-if="isUploadingDocument"
+      v-show="isUploadingDocument"
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
@@ -1115,7 +1183,7 @@ const selectRelatedQuestion = (questionObj) => {
     </div>
 
     <div
-      v-if="isSearchingDocuments"
+      v-show="isSearchingDocuments"
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
@@ -1777,26 +1845,6 @@ const selectRelatedQuestion = (questionObj) => {
   scroll-behavior: smooth;
 }
 
-/* @keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.animation-delay-200 {
-  animation-delay: 200ms;
-}
-
-.animation-delay-400 {
-  animation-delay: 400ms;
-}
-
-.animate-bounce {
-  animation: bounce 1s infinite;
-} */
 
 /* Update tooltip styles */
 .related-question-button .tooltip {

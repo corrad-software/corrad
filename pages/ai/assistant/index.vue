@@ -85,7 +85,7 @@ const deleteAssistant = async (assistantID) => {
         :key="assistantList.data"
         class="bg-secondary transition-all flex justify-between items-center p-4 rounded gap-4"
       >
-        <div class="flex items-center gap-4">
+        <div class="flex-1 flex items-center gap-4">
           <img
             :src="
               assistant.assistantImg
@@ -95,8 +95,17 @@ const deleteAssistant = async (assistantID) => {
             alt="Bot"
             class="h-12 w-12 rounded-lg object-cover"
           />
-          <div>
-            <h4 class="font-bold">{{ assistant.assistantName }}</h4>
+          <div class="flex-1">
+            <h4 class="flex items-center gap-2 font-bold">
+              {{ assistant.assistantName }}
+              <span
+                class="w-2 h-2 rounded-full animate-pulse"
+                :class="{
+                  'bg-green-500': assistant.assistantStatus === 'ACTIVE',
+                  'bg-red-500': assistant.assistantStatus === 'INACTIVE',
+                }"
+              ></span>
+            </h4>
             <p class="text-sm text-gray-400">
               {{ assistant.assistantDescription }}
             </p>
@@ -123,7 +132,7 @@ const deleteAssistant = async (assistantID) => {
             </p>
           </div>
         </div>
-        <div class="flex-1 flex justify-end gap-3">
+        <div class="flex justify-end gap-3">
           <NuxtLink :to="`/ai/assistant/edit/${assistant.assistantID}`">
             <rs-button>
               <Icon

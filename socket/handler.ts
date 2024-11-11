@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 
 const activeStreams = new Map();
 const activeThreads = new Map();
+const BATCH_SIZE = 25; // Size of the buffer to emit at a time
 
 // At the top of your file, add these options
 const socketOptions = {
@@ -12,6 +13,24 @@ const socketOptions = {
   reconnectionDelayMax: 5000, // Maximum delay between reconnections (5 seconds)
   timeout: 20000, // Connection timeout
   autoConnect: true, // Automatically connect on creation
+};
+
+// At the top of the file, add a reconnection handler
+const handleReconnection = async (socket, threadID) => {
+  try {
+    // Clear any existing streams/state
+    activeStreams.delete(threadID);
+    activeThreads.delete(threadID);
+
+    // Rejoin the room
+    socket.join(threadID);
+    activeThreads.set(threadID, socket.id);
+
+    return true;
+  } catch (error) {
+    console.error("Reconnection failed:", error);
+    return false;
+  }
 };
 
 export const socketHandler = async (io: Server) => {
@@ -78,6 +97,10 @@ export const socketHandler = async (io: Server) => {
         documentContext,
       }) => {
         try {
+          // console.log("====================================");
+          // console.log("threadID", threadID);
+          // console.log("====================================");
+
           // Check thread source type and provider
           const thread = await prisma?.thread.findFirst({
             where: { threadProviderID: threadID },
@@ -290,6 +313,52 @@ export const socketHandler = async (io: Server) => {
     socket.on("reconnect_failed", () => {
       console.error("Failed to reconnect after all attempts");
     });
+
+    // Add error handling for the socket
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+      if (error.message === "Session ID unknown") {
+        // Attempt to reconnect
+        socket.connect();
+      }
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      // Emit event to client to show connection error
+      socket.emit(
+        "connectionError",
+        "Connection lost. Attempting to reconnect..."
+      );
+    });
+
+    // Handle reconnection attempts
+    socket.on("reconnect_attempt", (attemptNumber) => {
+      console.log(`Reconnection attempt #${attemptNumber}`);
+      socket.emit("reconnecting", attemptNumber);
+    });
+
+    // Handle successful reconnection
+    socket.on("reconnect", async (attemptNumber) => {
+      console.log(`Reconnected after ${attemptNumber} attempts`);
+
+      // Get the threadID from socket data or other source
+      const threadID = socket.threadID; // You'll need to store this when joining room
+
+      if (threadID) {
+        const reconnected = await handleReconnection(socket, threadID);
+        if (reconnected) {
+          socket.emit("reconnected", "Connection restored");
+        } else {
+          socket.emit("reconnectionFailed", "Failed to restore connection");
+        }
+      }
+    });
+  });
+
+  // Add global error handler for the io instance
+  io.on("connection_error", (error) => {
+    console.error("Transport error:", error);
   });
 };
 
@@ -407,6 +476,8 @@ async function handleOpenAIAssistant({
     let fullResponse = "";
     let completed = false;
 
+    let buffer = "";
+
     for await (const ev of stream) {
       // Check if this socket is still the active one for the thread
       if (activeThreads.get(threadID) !== socket.id) {
@@ -429,8 +500,13 @@ async function handleOpenAIAssistant({
 
       if (ev.event === "thread.message.delta" && ev.data.delta?.content) {
         for (const content of ev.data.delta.content) {
-          fullResponse += content.text.value;
-          io.to(threadID).emit("messageChunk", content.text.value);
+          buffer += content.text.value;
+
+          // Only emit when buffer reaches certain size
+          if (buffer.length >= BATCH_SIZE) {
+            io.to(threadID).emit("messageChunk", buffer);
+            buffer = "";
+          }
         }
       }
 
@@ -442,6 +518,11 @@ async function handleOpenAIAssistant({
       if (ev.event === "thread.run.failed") {
         throw new Error(ev.data.error || "Run failed");
       }
+    }
+
+    // Send remaining buffer
+    if (buffer.length > 0) {
+      io.to(threadID).emit("messageChunk", buffer);
     }
 
     // Remove the stream from activeStreams
@@ -604,30 +685,48 @@ async function handleOpenAIChat({
       }),
     ]);
 
-    // Get conversation history
+    // More sophisticated history retrieval
     const conversationHistory = await prisma?.chat.findMany({
-      where: { thread: { threadProviderID: threadID } },
-      select: { chatMessage: true, chatRole: true },
-      orderBy: { chatCreatedDate: "asc" },
-      take: -1, // Get all except last one
-      skip: 1, // Skip the last record
+      where: {
+        thread: { threadProviderID: threadID },
+        chatCreatedDate: {
+          gte: DateTime.now().minus({ hours: 24 }).toISO(), // Last 24 hours only
+        },
+      },
+      select: {
+        chatMessage: true,
+        chatRole: true,
+        chatType: true, // Could be used to filter certain message types
+      },
+      orderBy: { chatCreatedDate: "desc" },
+      take: 5,
+      skip: message.content && selectedPrompt ? 2 : 1,
     });
 
-    // Build messages array
+    // Build messages array with limited history
     const messages = [
       {
-        role: "system",
-        content: threadDetails?.guide_chat?.guideChatContext || "",
+        role: "assistant",
+        content: `${threadDetails?.guide_chat?.guideChatContext || ""}
+                 Important context from previous discussions: [summary]
+                 Current conversation:`,
       },
-      ...(conversationHistory?.map((item) => ({
-        role: item.chatRole,
-        content: item.chatMessage,
-      })) || []),
+      ...(conversationHistory
+        ?.reverse()
+        .filter((msg) => msg.chatType === "text") // Example: filter by message type
+        .map((item) => ({
+          role: item.chatRole,
+          content: item.chatMessage,
+        })) || []),
       { role: "user", content: messageToSend },
       ...(selectedPrompt
         ? [{ role: "user", content: selectedPrompt.content }]
         : []),
     ];
+
+    // console.log("====================================");
+    // console.log("messages", messages);
+    // console.log("====================================");
 
     // Get chat completion from OpenAI
     const completion = await openai.chat.completions.create({
@@ -640,6 +739,9 @@ async function handleOpenAIChat({
     let fullResponse = "";
     let streamWasStopped = false;
     let messageID = "";
+
+    let buffer = "";
+
     try {
       for await (const chunk of completion) {
         if (messageID == "") {
@@ -654,9 +756,19 @@ async function handleOpenAIChat({
 
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) {
-          fullResponse += content;
-          io.to(threadID).emit("messageChunk", content);
+          buffer += content;
         }
+
+        // Only emit when buffer reaches certain size
+        if (buffer.length >= BATCH_SIZE) {
+          io.to(threadID).emit("messageChunk", buffer);
+          buffer = "";
+        }
+      }
+
+      // Send remaining buffer
+      if (buffer.length > 0) {
+        io.to(threadID).emit("messageChunk", buffer);
       }
     } finally {
       activeStreams.delete(threadID);
@@ -778,30 +890,48 @@ async function handleClaudeChat({
       }),
     ]);
 
-    // Get conversation history
+    // More sophisticated history retrieval
     const conversationHistory = await prisma?.chat.findMany({
-      where: { thread: { threadProviderID: threadID } },
-      select: { chatMessage: true, chatRole: true },
-      orderBy: { chatCreatedDate: "asc" },
-      take: -1, // Get all except last one
-      skip: 1, // Skip the last record
+      where: {
+        thread: { threadProviderID: threadID },
+        chatCreatedDate: {
+          gte: DateTime.now().minus({ hours: 24 }).toISO(), // Last 24 hours only
+        },
+      },
+      select: {
+        chatMessage: true,
+        chatRole: true,
+        chatType: true, // Could be used to filter certain message types
+      },
+      orderBy: { chatCreatedDate: "desc" },
+      take: 5,
+      skip: message.content && selectedPrompt ? 2 : 1,
     });
 
-    // Build messages array
+    // Build messages array with limited history
     const messages = [
       {
         role: "assistant",
-        content: threadDetails?.guide_chat?.guideChatContext || "",
+        content: `${threadDetails?.guide_chat?.guideChatContext || ""}
+                 Important context from previous discussions: [summary]
+                 Current conversation:`,
       },
-      ...(conversationHistory?.map((item) => ({
-        role: item.chatRole,
-        content: item.chatMessage,
-      })) || []),
+      ...(conversationHistory
+        ?.reverse()
+        .filter((msg) => msg.chatType === "text") // Example: filter by message type
+        .map((item) => ({
+          role: item.chatRole,
+          content: item.chatMessage,
+        })) || []),
       { role: "user", content: messageToSend },
       ...(selectedPrompt
         ? [{ role: "user", content: selectedPrompt.content }]
         : []),
     ];
+
+    // console.log("====================================");
+    // console.log("messages", messages);
+    // console.log("====================================");
 
     // Get response from Claude
     const response = await claude.messages.stream({
@@ -814,6 +944,9 @@ async function handleClaudeChat({
     let fullResponse = "";
     let streamWasStopped = false;
     let messageID = "";
+
+    let buffer = "";
+
     try {
       for await (const chunk of response) {
         if (chunk.type === "message_start") {
@@ -828,12 +961,22 @@ async function handleClaudeChat({
 
         const content = chunk.delta?.text || "";
         if (content) {
-          fullResponse += content;
-          io.to(threadID).emit("messageChunk", content);
+          buffer += content;
+
+          // Only emit when buffer reaches certain size
+          if (buffer.length >= BATCH_SIZE) {
+            io.to(threadID).emit("messageChunk", buffer);
+            buffer = "";
+          }
         }
       }
     } finally {
       activeStreams.delete(threadID);
+    }
+
+    // Send remaining buffer
+    if (buffer.length > 0) {
+      io.to(threadID).emit("messageChunk", buffer);
     }
 
     // Store assistant response even if stream was stopped

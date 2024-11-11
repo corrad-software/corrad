@@ -3,7 +3,7 @@ import { useUserStore } from "~/stores/user";
 import logoLightSrc from "~/assets/img/logo/logo-word-black-ai.svg";
 import logoOnlySrc from "~/assets/img/logo/logo.svg";
 import logoDarkSrc from "~/assets/img/logo/logo-word-white-ai.svg";
-import defaultAvatar from "~/assets/img/avatar/bot.png";
+// import defaultAvatar from "~/assets/img/avatar/bot.png";
 
 defineProps({
   isOpen: {
@@ -289,9 +289,19 @@ onUnmounted(() => {
               @click="navigateTo('/ai/chat/' + thread.threadID)"
             >
               <img
-                :src="thread.assistantImg ? thread.assistantImg : defaultAvatar"
+                v-if="thread.assistantImg"
+                :src="thread.assistantImg"
                 class="w-5 h-5 rounded-full transition-all duration-300"
                 :class="{ 'mr-2': !(isMinimized && isDesktop) }"
+              />
+              <Icon
+                v-else
+                name="ph:user-circle-fill"
+                class="!w-6 !h-6 rounded-full transition-all duration-300"
+                :class="{
+                  'mr-2': !(isMinimized && isDesktop),
+                  'text-white': urlThreadId == thread.threadID,
+                }"
               />
               <p
                 v-if="!(isMinimized && isDesktop)"
