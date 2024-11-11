@@ -251,7 +251,7 @@ const handleCreateRoom = async (formData) => {
 
             <!-- Content -->
             <div
-              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300 group-hover:scale-110"
+              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300"
             >
               <Icon
                 :name="assistant.assistantIcon || 'mdi:robot-excited-outline'"
@@ -335,7 +335,7 @@ const handleCreateRoom = async (formData) => {
 
             <!-- Content -->
             <div
-              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300 group-hover:scale-110"
+              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300"
             >
               <Icon
                 name="mdi:chat-processing-outline"
