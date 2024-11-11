@@ -29,7 +29,7 @@ const props = defineProps({
       'button-lg': size === 'lg',
 
       // Filled Button
-      'button-primary': variant === 'primary',
+      'button-primary hover:!bg-primary/80': variant === 'primary',
       'button-secondary': variant === 'secondary',
       'button-info': variant === 'info',
       'button-success': variant === 'success',
@@ -37,7 +37,7 @@ const props = defineProps({
       'button-danger': variant === 'danger',
 
       // Outline Button
-      'outline-primary': variant === 'primary-outline',
+      'outline-primary hover:!bg-primary/80': variant === 'primary-outline',
       'outline-secondary': variant === 'secondary-outline',
       'outline-info': variant === 'info-outline',
       'outline-success': variant === 'success-outline',
@@ -45,7 +45,7 @@ const props = defineProps({
       'outline-danger': variant === 'danger-outline',
 
       //Text Button
-      'texts-primary': variant === 'primary-text',
+      'texts-primary hover:!text-primary/80': variant === 'primary-text',
       'texts-secondary': variant === 'secondary-text',
       'texts-info': variant === 'info-text',
       'texts-success': variant === 'success-text',

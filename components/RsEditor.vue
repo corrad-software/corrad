@@ -677,7 +677,7 @@ watch(
 }
 
 .tiptap p.is-editor-empty:first-child::before {
-  @apply text-gray-400;
+  @apply text-[rgba(var(--text-muted))];
   content: attr(data-placeholder);
   float: left;
   height: 0;

@@ -9,30 +9,16 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Get AI categories
-    const aiCategories = await prisma.lookup.findMany({
-      where: {
-        lookupRefCode: "8",
-      },
-      select: {
-        lookupID: true,
-        lookupTitle: true,
-      },
-    });
-
-    if (aiCategories.length === 0) {
-      return {
-        statusCode: 400,
-        message: "No AI categories found",
-      };
-    }
-
     const aiAssistants = await prisma.assistant.findMany({
+      where: {
+        assistantStatus: "ACTIVE",
+      },
       select: {
         assistantID: true,
         assistantName: true,
         assistantDescription: true,
         assistantImg: true,
+        assistantIcon: true,
         assistantType: true,
       },
     });
@@ -54,14 +40,6 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // Group assistants by category
-    let categorizedAssistants = aiCategories.map((category) => ({
-      categoryName: category.lookupTitle,
-      assistantList: aiAssistants.filter(
-        (assistant) => assistant.assistantType === category.lookupID
-      ),
-    }));
-
     let remapGuideChats = guideChats.map((chat) => ({
       guideChatID: chat.guideChatID,
       guideChatName: chat.guideChatName,
@@ -74,7 +52,7 @@ export default defineEventHandler(async (event) => {
       statusCode: 200,
       message: "Success",
       data: {
-        assistants: categorizedAssistants,
+        assistants: aiAssistants,
         guideChats: remapGuideChats,
       },
     };

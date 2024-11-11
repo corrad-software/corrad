@@ -90,7 +90,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .ai-theme {
-  --color-primary: 13, 27, 42;
+  --color-primary: 24, 24, 27;
   --color-secondary: 244, 244, 245;
   --color-accent: 243, 244, 246;
   --color-success: 79, 192, 103;
@@ -99,12 +99,13 @@ onUnmounted(() => {
   --color-danger: 229, 83, 69;
   --color-hover: 219, 219, 220;
   --text-color: 9, 9, 11;
-  --border-color: 228, 228, 231;
-  --bg-1: 251, 251, 251;
+  --text-muted: 113, 113, 122;
+  --border-color: 235, 235, 235;
+  --bg-1: 255, 255, 255;
   --bg-2: 255, 255, 255;
   --scroll-color: 170, 170, 170;
   --scroll-hover-color: 155, 155, 155;
-  --fk-border-color: 228, 228, 231;
+  --fk-border-color: 235, 235, 235;
   --fk-placeholder-color: 146, 146, 153;
   --box-shadow: rgba(36, 35, 71, 0.05) 0px 1px 1px,
     rgba(36, 35, 71, 0.05) 0px 0px 1px 1px;
@@ -116,7 +117,7 @@ onUnmounted(() => {
   --animation-input: 0.2s;
   --btn-text-case: uppercase;
   --btn-focus-scale: 0.95;
-  --padding-btn: 0.5rem;
+  --padding-btn: 0.5rem 1rem;
   --border-btn: 1px;
   --tab-border: 1px;
   --tab-radius: 0.5rem;
@@ -133,6 +134,7 @@ onUnmounted(() => {
   --color-danger: 229, 83, 69;
   --color-hover: 30, 30, 30;
   --text-color: 199, 205, 207;
+  --text-muted: 113, 113, 122;
   --border-color: 30, 41, 59;
   --bg-1: 18, 20, 22;
   --bg-2: 33, 33, 33;

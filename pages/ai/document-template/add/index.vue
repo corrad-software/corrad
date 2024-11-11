@@ -17,8 +17,8 @@ definePageMeta({
   requiresAuth: true,
   breadcrumb: [
     {
-      name: "Tools",
-      path: "/ai/tools",
+      name: "Home",
+      path: "/ai",
     },
     {
       name: "Document Templates",

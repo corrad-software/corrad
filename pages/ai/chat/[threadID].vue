@@ -873,13 +873,15 @@ const selectRelatedQuestion = (questionObj) => {
         class="absolute top-2 left-16 right-4 md:left-8 flex items-center justify-between z-10 bg-[rgb(var(--bg-1))] py-2"
       >
         <div class="flex items-center">
-          <rs-button variant="primary" class="!text-secondary cursor-default">
+          <button
+            class="!bg-white hover:!bg-white shadow border border-[rgb(var(--border-color))] !text-primary cursor-default py-2 px-3 rounded-lg flex items-center"
+          >
             <Icon
-              name="mdi:robot-excited-outline"
-              class="!w-6 !h-6 cursor-pointer text-secondary mr-2"
+              :name="verify.data.assistantIcon || 'mdi:chat-processing-outline'"
+              class="!w-5 !h-5 cursor-pointer mr-2"
             />
             {{ verify.data.assistantName }}
-          </rs-button>
+          </button>
         </div>
         <Icon
           @click="showHelpPanel = true"
@@ -905,7 +907,7 @@ const selectRelatedQuestion = (questionObj) => {
             <h3 class="text-lg md:text-xl font-medium text-gray-500 mb-2">
               Chat with {{ verify.data.assistantName }}
             </h3>
-            <p class="text-xs md:text-sm text-gray-400">
+            <p class="text-xs md:text-sm text-[rgba(var(--text-muted))]">
               Start a conversation by typing a message below
             </p>
           </div>
@@ -922,7 +924,7 @@ const selectRelatedQuestion = (questionObj) => {
             class="flex items-center mb-1 mt-2"
             :class="message.sender === 'user' ? 'justify-end' : ''"
           >
-            <span class="text-sm text-gray-400">
+            <span class="text-sm text-[rgba(var(--text-muted))]">
               {{ message.sender === "assistant" ? "Assistant" : "You" }}
             </span>
           </div>
@@ -953,7 +955,9 @@ const selectRelatedQuestion = (questionObj) => {
                 "
                 @click="handleCopyClick"
               ></div>
-              <span class="animate-pulse text-gray-400">▋</span>
+              <span class="animate-pulse text-[rgba(var(--text-muted))]"
+                >▋</span
+              >
             </span>
             <span v-else-if="message.sender === 'assistant'">
               <div
@@ -997,7 +1001,7 @@ const selectRelatedQuestion = (questionObj) => {
           >
             <button
               @click="copyToClipboard(message.content, index)"
-              class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
+              class="text-sm text-[rgba(var(--text-muted))] hover:text-primary flex items-center"
             >
               <Icon name="mdi:content-copy" class="w-4 h-4 mr-1" />
               <span class="hidden md:block"> Copy </span>
@@ -1014,7 +1018,7 @@ const selectRelatedQuestion = (questionObj) => {
             <button
               v-if="message.sender === 'assistant'"
               @click="markdownToEditor(message.content)"
-              class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
+              class="text-sm text-[rgba(var(--text-muted))] hover:text-primary flex items-center"
             >
               <Icon
                 name="material-symbols:markdown-paste-rounded"
@@ -1029,7 +1033,7 @@ const selectRelatedQuestion = (questionObj) => {
                 !isStreaming
               "
               @click="regenerateResponse(index)"
-              class="text-sm text-gray-400 hover:text-gray-300 flex items-center"
+              class="text-sm text-[rgba(var(--text-muted))] hover:text-primary flex items-center"
             >
               <Icon name="mdi:refresh" class="w-4 h-4 mr-1" />
               <span class="hidden md:block"> Regenerate </span>
@@ -1058,18 +1062,20 @@ const selectRelatedQuestion = (questionObj) => {
               v-if="isGeneratingQuestions && relatedQuestions.length === 0"
               class="flex items-center space-x-2"
             >
-              <span class="text-sm text-gray-400"
+              <span class="text-sm text-[rgba(var(--text-muted))]"
                 >Generating related questions</span
               >
               <div class="flex space-x-1">
-                <div class="animate-bounce text-gray-400 mx-1">.</div>
+                <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">
+                  .
+                </div>
                 <div
-                  class="animate-bounce text-gray-400 mx-1 animation-delay-200"
+                  class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
                 >
                   .
                 </div>
                 <div
-                  class="animate-bounce text-gray-400 mx-1 animation-delay-400"
+                  class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
                 >
                   .
                 </div>
@@ -1155,12 +1161,18 @@ const selectRelatedQuestion = (questionObj) => {
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
-        <span class="text-sm text-gray-400">Assistant is typing</span>
-        <div class="animate-bounce text-gray-400 mx-1">.</div>
-        <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
+        <span class="text-sm text-[rgba(var(--text-muted))]"
+          >Assistant is typing</span
+        >
+        <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">.</div>
+        <div
+          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
+        >
           .
         </div>
-        <div class="animate-bounce text-gray-400 mx-1 animation-delay-400">
+        <div
+          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
+        >
           .
         </div>
       </div>
@@ -1171,12 +1183,18 @@ const selectRelatedQuestion = (questionObj) => {
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
-        <span class="text-sm text-gray-400">Uploading document</span>
-        <div class="animate-bounce text-gray-400 mx-1">.</div>
-        <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
+        <span class="text-sm text-[rgba(var(--text-muted))]"
+          >Uploading document</span
+        >
+        <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">.</div>
+        <div
+          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
+        >
           .
         </div>
-        <div class="animate-bounce text-gray-400 mx-1 animation-delay-400">
+        <div
+          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
+        >
           .
         </div>
       </div>
@@ -1187,12 +1205,18 @@ const selectRelatedQuestion = (questionObj) => {
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
-        <span class="text-sm text-gray-400">Analysing document</span>
-        <div class="animate-bounce text-gray-400 mx-1">.</div>
-        <div class="animate-bounce text-gray-400 mx-1 animation-delay-200">
+        <span class="text-sm text-[rgba(var(--text-muted))]"
+          >Analysing document</span
+        >
+        <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">.</div>
+        <div
+          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
+        >
           .
         </div>
-        <div class="animate-bounce text-gray-400 mx-1 animation-delay-400">
+        <div
+          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
+        >
           .
         </div>
       </div>
@@ -1244,24 +1268,28 @@ const selectRelatedQuestion = (questionObj) => {
       :actions="false"
       #default="{ value }"
     >
-      <div class="relative bg-secondary rounded-lg mb-4 md:mb-0">
-        <FormKit
-          v-model="newMessage"
-          type="textarea"
-          placeholder="Start typing..."
-          :classes="{
-            outer: `mb-0 rounded-lg border-l-0 duration-150 ${
-              isProcessing ? 'border-l-4 border-primary animate-pulse' : ''
-            }`,
-            inner: 'border-none',
-            input:
-              'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none pr-[140px] !text-primary',
-          }"
-          @keydown.enter.prevent="handleEnter"
-          auto-height
-          :max-auto-height="250"
-        />
-        <div class="absolute bottom-2 right-2 flex items-center space-x-2">
+      <div class="flex relative mb-4 md:mb-0 gap-4">
+        <div
+          class="border border-[rgba(var(--border-color))] shadow rounded-lg w-full"
+        >
+          <FormKit
+            v-model="newMessage"
+            type="textarea"
+            placeholder="Start typing..."
+            :classes="{
+              outer: `mb-0 rounded-lg border-l-0 duration-150 ${
+                isProcessing ? 'border-l-4 border-primary animate-pulse' : ''
+              }`,
+              inner: 'border-none',
+              input:
+                'w-full bg-transparent pl-4 py-3 focus:outline-none resize-none !text-primary',
+            }"
+            @keydown.enter.prevent="handleEnter"
+            auto-height
+            :max-auto-height="250"
+          />
+        </div>
+        <div class="flex justify-between items-center space-x-2">
           <div class="relative">
             <span
               class="absolute top-[-4px] right-[-4px] text-xs text-white bg-info rounded-full px-1"
@@ -1294,21 +1322,18 @@ const selectRelatedQuestion = (questionObj) => {
             }"
             accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msword, application/vnd.oasis.opendocument.text, application/rtf, application/pdf, text/html, text/plain, application/epub+zip, text/markdown, text/csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, image/*"
           ></FormKit>
-          <!-- <div v-if="isProcessing" class="mr-2">
-            <div class="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
-          </div> -->
           <rs-button
             v-if="isStreaming"
             @click="stopStreaming"
             variant="danger"
-            class="!rounded-full"
+            class="!rounded-full !p-2"
           >
             <Icon name="ph:stop-fill" class="!w-3 !h-3" />
           </rs-button>
           <rs-button
             v-else
             btn-type="submit"
-            class="!rounded-full hover:bg-primary/60 transition-colors"
+            class="!rounded-full hover:bg-primary/60 transition-colors !p-2"
           >
             <Icon name="mdi:send" class="!w-3 !h-3" />
           </rs-button>
@@ -1393,7 +1418,9 @@ const selectRelatedQuestion = (questionObj) => {
             :style="{ width: `${ocrProgress}%` }"
           ></div>
         </div>
-        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <p
+          class="mt-2 text-xs text-gray-500 dark:text-[rgba(var(--text-muted))]"
+        >
           Extracting text from image...
         </p>
       </div>
@@ -1405,9 +1432,9 @@ const selectRelatedQuestion = (questionObj) => {
 
     <!-- Document sidebar -->
     <div
-      class="fixed top-0 right-0 h-full"
+      class="fixed top-0 right-0 h-full z-20"
       :class="[
-        'bg-secondary transition-all duration-300 overflow-hidden',
+        '!bg-secondary transition-all duration-300 overflow-hidden',
         sidebarClasses,
       ]"
     >
@@ -1575,7 +1602,7 @@ const selectRelatedQuestion = (questionObj) => {
     <div class="max-w-7xl mx-auto mt-5 md:mt-12">
       <section>
         <h4
-          class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 text-center"
+          class="text-[rgba(var(--text-muted))] text-sm font-bold uppercase tracking-wider mb-4 text-center"
         >
           CORRAD AI
         </h4>

@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
               select: {
                 assistantName: true,
                 assistantImg: true,
+                assistantIcon: true,
                 assistantID: true,
               },
             },
@@ -92,6 +93,10 @@ export default defineEventHandler(async (event) => {
         assistantImg:
           item.thread.threadSourceType === "ASSISTANT"
             ? item.thread.assistant.assistantImg
+            : null,
+        assistantIcon:
+          item.thread.threadSourceType === "ASSISTANT"
+            ? item.thread.assistant.assistantIcon
             : null,
       };
     });

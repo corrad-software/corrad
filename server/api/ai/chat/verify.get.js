@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
             assistantProviderID: true,
             assistantName: true,
             assistantImg: true,
+            assistantIcon: true,
           },
         },
         guide_chat: {
@@ -79,16 +80,19 @@ export default defineEventHandler(async (event) => {
 
     let assistantID = null;
     let assistantName = null;
+    let assistantIcon = null;
     let assistantImg = null;
 
     if (thread.threadSourceType === "ASSISTANT") {
       assistantID = thread?.assistant?.assistantProviderID;
       assistantName = thread?.assistant?.assistantName;
+      assistantIcon = thread?.assistant?.assistantIcon;
       assistantImg = thread?.assistant?.assistantImg;
     } else if (thread.threadSourceType === "GUIDE_CHAT") {
       assistantID = thread?.guide_chat?.guideChatID;
       assistantName = thread?.guide_chat?.guideChatName;
       assistantImg = null;
+      assistantIcon = null;
     }
 
     return {
@@ -98,6 +102,7 @@ export default defineEventHandler(async (event) => {
         assistantID,
         assistantName,
         assistantImg,
+        assistantIcon,
         collectionName: thread?.collectionName || null,
       },
     };

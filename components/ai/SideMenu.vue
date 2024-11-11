@@ -228,7 +228,7 @@ onUnmounted(() => {
   >
     <button
       @click="emit('toggle-minimize')"
-      class="absolute -right-4 top-6 hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--bg-2))] border border-[rgb(var(--border-color))] cursor-pointer hover:bg-[rgb(var(--color-hover))] shadow-sm transition-all duration-200"
+      class="absolute -right-4 top-6 hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-[rgb(var(--bg-2))] border border-[rgb(var(--border-color))] cursor-pointer hover:bg-[rgb(var(--color-hover))] shadow transition-all duration-200"
     >
       <Icon
         :name="
@@ -267,7 +267,10 @@ onUnmounted(() => {
           :key="projectList"
         />
 
-        <rs-button @click="showModalAddProject = !showModalAddProject">
+        <rs-button
+          class="!p-2"
+          @click="showModalAddProject = !showModalAddProject"
+        >
           <Icon name="material-symbols:add" />
         </rs-button>
       </div>
@@ -276,11 +279,11 @@ onUnmounted(() => {
     <NuxtScrollbar
       class="flex flex-col justify-between max-h-[86dvh] md:max-h-[93dvh] overflow-y-auto mb-4"
     >
-      <ul class="flex flex-col gap-3">
+      <ul class="flex flex-col gap-4">
         <li
           v-for="(thread, index) in threadList.data"
           :key="index"
-          class="bg-secondary rounded-lg hover:bg-primary/10"
+          class="bg-white rounded-lg hover:bg-primary/5 border border-[rgba(var(--border-color))] shadow"
           :class="{ '!bg-primary text-white': urlThreadId == thread.threadID }"
         >
           <div class="flex items-center">
@@ -288,24 +291,28 @@ onUnmounted(() => {
               class="flex-1 flex items-center pr-2 overflow-hidden cursor-pointer p-2 pl-3"
               @click="navigateTo('/ai/chat/' + thread.threadID)"
             >
-              <img
+              <!-- <img
                 v-if="thread.assistantImg"
                 :src="thread.assistantImg"
                 class="w-5 h-5 rounded-full transition-all duration-300"
                 :class="{ 'mr-2': !(isMinimized && isDesktop) }"
-              />
+              /> -->
+
               <Icon
-                v-else
-                name="ph:user-circle-fill"
-                class="!w-6 !h-6 rounded-full transition-all duration-300"
+                :name="thread.assistantIcon || 'mdi:chat-processing-outline'"
+                class="!w-5 !h-5 rounded-full transition-all duration-300"
                 :class="{
                   'mr-2': !(isMinimized && isDesktop),
-                  'text-white': urlThreadId == thread.threadID,
+                  '!text-white': urlThreadId == thread.threadID,
                 }"
               />
               <p
                 v-if="!(isMinimized && isDesktop)"
                 class="w-full line-clamp-1 leading-loose whitespace-nowrap transition-all duration-300 ease-in-out"
+                :class="{
+                  'text-white': urlThreadId == thread.threadID,
+                  'text-primary': urlThreadId != thread.threadID,
+                }"
               >
                 {{ thread.threadTitle }}
               </p>
@@ -313,7 +320,7 @@ onUnmounted(() => {
             <Icon
               v-if="!(isMinimized && isDesktop)"
               @click="deleteThread(thread.threadID)"
-              name="ph:x-circle-duotone"
+              name="ph:x-circle"
               class="!w-5 !h-5 hover:text-red-500 mr-3 cursor-pointer transition-opacity duration-300"
             />
           </div>
@@ -322,97 +329,92 @@ onUnmounted(() => {
     </NuxtScrollbar>
 
     <section class="flex-auto flex flex-col justify-end">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <template v-if="!(isMinimized && isDesktop)">
           <nuxt-link to="/ai/release-notes" class="md:col-span-4">
-            <rs-button
-              variant="secondary"
-              class="w-full !justify-start !text-[rgb(var(--text-color))] transition-all duration-300 overflow-hidden"
+            <button
+              class="px-3 py-2 w-full shadow rounded-lg !bg-white hover:!bg-secondary !justify-start border border-[rgba(var(--border-color))] !text-[rgb(var(--text-color))] transition-all duration-300 overflow-hidden"
             >
               <div class="flex items-center min-w-0">
                 <Icon
-                  name="ph:book-duotone"
-                  class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2 flex-shrink-0 transition-all duration-300"
+                  name="ph:book"
+                  class="!w-5 !h-5 mr-2 flex-shrink-0 transition-all duration-300"
                 />
-                <span
-                  class="transition-opacity duration-300 truncate whitespace-nowrap"
-                  >Release Notes</span
-                >
+                <div class="transition-opacity duration-300 whitespace-nowrap">
+                  Release Notes
+                </div>
               </div>
-            </rs-button>
+            </button>
           </nuxt-link>
           <nuxt-link to="/ai/user-guide" class="md:col-span-4">
-            <rs-button
-              variant="secondary"
-              class="w-full !justify-start !text-[rgb(var(--text-color))] transition-all duration-300 overflow-hidden"
+            <button
+              class="px-3 py-2 w-full shadow rounded-lg !bg-white hover:!bg-secondary !justify-start border border-[rgba(var(--border-color))] !text-[rgb(var(--text-color))] transition-all duration-300 overflow-hidden"
             >
               <div class="flex items-center min-w-0">
                 <Icon
                   name="ph:question-mark"
-                  class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2 flex-shrink-0 transition-all duration-300"
+                  class="!w-5 !h-5 mr-2 flex-shrink-0 transition-all duration-300"
                 />
                 <span
                   class="transition-opacity duration-300 truncate whitespace-nowrap"
                   >User Guide</span
                 >
               </div>
-            </rs-button>
+            </button>
           </nuxt-link>
           <nuxt-link
             class="md:col-span-4"
             :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
           >
-            <rs-button
-              class="w-full !justify-start pr-3 transition-all duration-300 overflow-hidden"
+            <button
+              class="px-3 py-2 w-full shadow rounded-lg !text-white !bg-primary hover:!bg-primary/80 !justify-start border border-[rgba(var(--border-color))] transition-all duration-300 overflow-hidden"
             >
               <div class="flex items-center min-w-0">
                 <Icon
                   name="material-symbols:settings-outline-rounded"
-                  class="!w-5 !h-5 md:!w-6 md:!h-6 mr-2 flex-shrink-0 transition-all duration-300"
+                  class="!w-5 !h-5 mr-2 flex-shrink-0 transition-all duration-300"
                 />
                 <span
                   class="transition-opacity duration-300 truncate whitespace-nowrap"
                   >Settings</span
                 >
               </div>
-            </rs-button>
+            </button>
           </nuxt-link>
         </template>
         <template v-else>
           <nuxt-link to="/ai/release-notes" class="col-span-4">
-            <rs-button
-              variant="secondary"
-              class="w-full !justify-center transition-all duration-300"
+            <button
+              class="px-3 py-2 w-full shadow rounded-lg !text-white !bg-white hover:!bg-secondary !justify-start border border-[rgba(var(--border-color))] transition-all duration-300 overflow-hidden"
             >
               <Icon
-                name="ph:book-duotone"
+                name="ph:book"
                 class="!w-5 !h-5 !text-[rgb(var(--text-color))] transition-all duration-300"
               />
-            </rs-button>
+            </button>
           </nuxt-link>
           <nuxt-link to="/ai/user-guide" class="col-span-4">
-            <rs-button
-              variant="secondary"
-              class="w-full !justify-center transition-all duration-300"
+            <button
+              class="px-3 py-2 w-full shadow rounded-lg !text-white !bg-white hover:!bg-secondary !justify-start border border-[rgba(var(--border-color))] transition-all duration-300 overflow-hidden"
             >
               <Icon
                 name="ph:question-mark"
                 class="!w-5 !h-5 !text-[rgb(var(--text-color))] transition-all duration-300"
               />
-            </rs-button>
+            </button>
           </nuxt-link>
           <nuxt-link
             class="col-span-4"
             :to="hasPermission() ? '/ai/settings' : '/ai/settings/project'"
           >
-            <rs-button
-              class="w-full !justify-center transition-all duration-300"
+            <button
+              class="px-3 py-2 w-full shadow rounded-lg !text-white !bg-primary hover:!bg-primary/80 !justify-start border border-[rgba(var(--border-color))] transition-all duration-300 overflow-hidden"
             >
               <Icon
                 name="material-symbols:settings-outline-rounded"
                 class="!w-5 !h-5 transition-all duration-300"
               />
-            </rs-button>
+            </button>
           </nuxt-link>
         </template>
       </div>

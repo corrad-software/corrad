@@ -82,15 +82,46 @@ const hasPermission = () => {
     return false;
   }
 };
+
+const isLoading = ref(false);
+
+const handleCreateRoom = async (formData) => {
+  try {
+    isLoading.value = true;
+
+    const { data } = await useFetch("/api/ai/chat/create-room", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (data.value?.data?.threadID) {
+      navigateTo(`/ai/chat/${data.value.data.threadID}`);
+    } else {
+      $swal.fire({
+        icon: "error",
+        title: "Error",
+        text: data.value?.error || "Failed to create chat room",
+      });
+    }
+  } catch (error) {
+    $swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error.message || "Failed to create chat room",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <template>
   <div class="max-w-7xl mx-auto mt-5 md:mt-12">
     <section>
       <h4
-        class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 text-center"
+        class="text-[rgba(var(--text-muted))] text-sm font-bold uppercase tracking-wider my-8 text-center"
       >
-        CORRAD AI
+        Welcome to the CORRAD AI
       </h4>
     </section>
 
@@ -104,8 +135,8 @@ const hasPermission = () => {
           :class="[
             'flex-1 md:flex-none px-4 md:px-6 py-2 rounded-full transition-all duration-300 text-sm font-medium',
             activeTab === 'assistants'
-              ? 'bg-primary text-white shadow-md'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-primary text-white shadow'
+              : 'text-[rgba(var(--text-muted))] hover:text-gray-700',
           ]"
         >
           <div class="flex items-center justify-center space-x-2">
@@ -118,8 +149,8 @@ const hasPermission = () => {
           :class="[
             'flex-1 md:flex-none px-4 md:px-6 py-2 rounded-full transition-all duration-300 text-sm font-medium',
             activeTab === 'guideChats'
-              ? 'bg-primary text-white shadow-md'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-primary text-white shadow'
+              : 'text-[rgba(var(--text-muted))] hover:text-gray-700',
           ]"
         >
           <div class="flex items-center justify-center space-x-2">
@@ -132,8 +163,8 @@ const hasPermission = () => {
           :class="[
             'flex-1 md:flex-none px-4 md:px-6 py-2 rounded-full transition-all duration-300 text-sm font-medium',
             activeTab === 'tools'
-              ? 'bg-primary text-white shadow-md'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-primary text-white shadow'
+              : 'text-[rgba(var(--text-muted))] hover:text-gray-700',
           ]"
         >
           <div class="flex items-center justify-center space-x-2">
@@ -151,7 +182,7 @@ const hasPermission = () => {
       <h2 class="text-2xl font-bold text-gray-900">
         {{
           activeTab === "assistants"
-            ? "AI Assistants"
+            ? "Assistant"
             : activeTab === "guideChats"
             ? "Guide Chats"
             : "Tools"
@@ -166,21 +197,8 @@ const hasPermission = () => {
             : navigateTo('/ai/guide-chat')
         "
       >
-        <Icon
-          :name="
-            activeTab === 'assistants'
-              ? 'mdi:robot-excited'
-              : 'material-symbols:chat-rounded'
-          "
-          class="w-5 h-5"
-        />
-        <span>
-          {{
-            activeTab === "assistants"
-              ? "Assistant Settings"
-              : "Guide Chat Settings"
-          }}</span
-        >
+        <Icon name="ph:gear" class="w-5 h-5" />
+        <span>Settings</span>
       </rs-button>
     </div>
 
@@ -188,69 +206,90 @@ const hasPermission = () => {
     <div v-if="activeTab === 'assistants'" class="space-y-8">
       <div
         v-if="aiAssistants.length > 0"
-        v-for="(category, index) in aiAssistants"
-        :key="index"
+        class="grid grid-cols-1 xl:grid-cols-2 gap-4"
       >
-        <h3 class="text-lg font-semibold text-gray-700 mb-4">
-          {{ category.categoryName }}
-        </h3>
-        <div
-          v-if="category.assistantList.length > 0"
-          class="grid grid-cols-1 xl:grid-cols-2 gap-4"
+        <FormKit
+          v-for="assistant in aiAssistants"
+          :key="assistant.assistantID"
+          type="form"
+          :actions="false"
+          @submit="handleCreateRoom"
         >
           <FormKit
-            v-for="(assistant, index2) in category.assistantList"
-            :key="index2"
-            type="form"
-            method="POST"
-            action="/api/ai/chat/create-room"
-            :actions="false"
-          >
-            <FormKit
-              type="hidden"
-              name="assistantID"
-              :value="assistant.assistantID"
-            />
-            <FormKit type="hidden" name="type" value="ASSISTANT" />
-            <button
-              type="submit"
-              class="bg-secondary hover:bg-[rgba(var(--color-hover))] flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow-sm"
-            >
-              <img
-                :src="assistant.assistantImg || `/img/default-thumbnail.jpg`"
-                alt="Bot"
-                class="h-12 w-12 rounded-xl object-cover"
-              />
-              <div>
-                <h4 class="text-left font-bold">
-                  {{ assistant.assistantName }}
-                </h4>
-                <p
-                  class="text-left text-sm text-gray-400 line-clamp-2 min-h-[40px]"
-                >
-                  {{ assistant.assistantDescription }}
-                </p>
-              </div>
-            </button>
-          </FormKit>
-        </div>
-        <div v-else class="text-center py-8 bg-gray-50 rounded-xl">
-          <Icon
-            name="mdi:robot-excited-outline"
-            class="w-12 h-12 text-gray-400 mx-auto mb-2"
+            type="hidden"
+            name="assistantID"
+            :value="assistant.assistantID"
           />
-          <p class="text-gray-400">No assistants found in this category</p>
-        </div>
+          <FormKit type="hidden" name="type" value="ASSISTANT" />
+          <button
+            type="submit"
+            class="bg-white border border-[rgba(var(--border-color))] hover:bg-secondary shadow flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow relative overflow-hidden group"
+            :disabled="isLoading"
+          >
+            <!-- Modern Loading Overlay -->
+            <div
+              v-if="isLoading"
+              class="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10"
+            >
+              <div class="flex flex-col items-center">
+                <div class="loading-dots flex space-x-2">
+                  <div
+                    class="w-3 h-3 rounded-full bg-primary animate-bounce"
+                  ></div>
+                  <div
+                    class="w-3 h-3 rounded-full bg-primary animate-bounce [animation-delay:0.2s]"
+                  ></div>
+                  <div
+                    class="w-3 h-3 rounded-full bg-primary animate-bounce [animation-delay:0.4s]"
+                  ></div>
+                </div>
+                <span class="text-sm text-[rgba(var(--text-muted))] mt-2"
+                  >Creating chat room...</span
+                >
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div
+              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300 group-hover:scale-110"
+            >
+              <Icon
+                :name="assistant.assistantIcon || 'mdi:robot-excited-outline'"
+                class="w-6 h-6 text-primary"
+              />
+            </div>
+            <div class="flex flex-col flex-1">
+              <h4
+                class="text-left font-bold group-hover:text-primary transition-colors line-clamp-1"
+              >
+                {{ assistant.assistantName }}
+              </h4>
+              <p
+                class="text-left text-sm text-[rgba(var(--text-muted))] line-clamp-1"
+              >
+                {{ assistant.assistantDescription }}
+              </p>
+            </div>
+            <!-- Modern Arrow Icon -->
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+              <Icon
+                name="material-symbols:arrow-right-alt-rounded"
+                class="w-6 h-6 text-primary"
+              />
+            </div>
+          </button>
+        </FormKit>
       </div>
+
       <div
         v-if="aiAssistants.length === 0"
         class="text-center py-12 bg-gray-50 rounded-xl"
       >
         <Icon
           name="mdi:robot-excited-outline"
-          class="w-16 h-16 text-gray-400 mx-auto mb-3"
+          class="w-16 h-16 text-[rgba(var(--text-muted))] mx-auto mb-3"
         />
-        <p class="text-gray-400">No assistants available</p>
+        <p class="text-[rgba(var(--text-muted))]">No assistants available</p>
       </div>
     </div>
 
@@ -261,30 +300,69 @@ const hasPermission = () => {
           v-for="chat in guideChats"
           :key="chat.guideChatID"
           type="form"
-          method="POST"
-          action="/api/ai/chat/create-room"
           :actions="false"
+          @submit="handleCreateRoom"
         >
           <FormKit type="hidden" name="guideChatID" :value="chat.guideChatID" />
           <FormKit type="hidden" name="type" value="GUIDE_CHAT" />
           <button
             type="submit"
-            class="bg-secondary hover:bg-[rgba(var(--color-hover))] flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow-sm"
+            class="bg-white border border-[rgba(var(--border-color))] hover:bg-secondary shadow flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow relative overflow-hidden group"
+            :disabled="isLoading"
           >
-            <div class="bg-primary/10 p-3 rounded-xl">
+            <!-- Modern Loading Overlay -->
+            <div
+              v-if="isLoading"
+              class="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10"
+            >
+              <div class="flex flex-col items-center">
+                <div class="loading-dots flex space-x-2">
+                  <div
+                    class="w-3 h-3 rounded-full bg-primary animate-bounce"
+                  ></div>
+                  <div
+                    class="w-3 h-3 rounded-full bg-primary animate-bounce [animation-delay:0.2s]"
+                  ></div>
+                  <div
+                    class="w-3 h-3 rounded-full bg-primary animate-bounce [animation-delay:0.4s]"
+                  ></div>
+                </div>
+                <span class="text-sm text-[rgba(var(--text-muted))] mt-2"
+                  >Creating chat room...</span
+                >
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div
+              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300 group-hover:scale-110"
+            >
               <Icon
-                name="material-symbols:chat-rounded"
+                name="mdi:chat-processing-outline"
                 class="w-6 h-6 text-primary"
               />
             </div>
-            <div class="text-left">
-              <h4 class="font-bold">{{ chat.guideChatName }}</h4>
-              <p class="text-sm text-gray-400 line-clamp-2 min-h-[40px]">
+            <div class="flex flex-col flex-1">
+              <h4
+                class="text-left font-bold group-hover:text-primary transition-colors line-clamp-1"
+              >
+                {{ chat.guideChatName }}
+              </h4>
+              <p
+                class="text-left text-sm text-[rgba(var(--text-muted))] line-clamp-1"
+              >
                 {{ chat.guideChatDescription }}
               </p>
-              <rs-badge variant="info" class="mt-2">
+              <rs-badge variant="info" class="mt-2 w-fit">
                 {{ chat.guideChatModel }}
               </rs-badge>
+            </div>
+            <!-- Modern Arrow Icon -->
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+              <Icon
+                name="material-symbols:arrow-right-alt-rounded"
+                class="w-6 h-6 text-primary"
+              />
             </div>
           </button>
         </FormKit>
@@ -295,10 +373,10 @@ const hasPermission = () => {
         class="text-center py-12 bg-gray-50 rounded-xl"
       >
         <Icon
-          name="material-symbols:chat-outline"
-          class="w-16 h-16 text-gray-400 mx-auto mb-3"
+          name="mdi:chat-processing-outline"
+          class="w-16 h-16 text-[rgba(var(--text-muted))] mx-auto mb-3"
         />
-        <p class="text-gray-400">No guide chats found</p>
+        <p class="text-[rgba(var(--text-muted))]">No guide chats found</p>
       </div>
     </div>
 
@@ -312,13 +390,17 @@ const hasPermission = () => {
             v-for="tool in category.tools"
             :key="tool.name"
             :to="tool.link"
-            class="bg-secondary hover:bg-[rgba(var(--color-hover))] flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow-sm"
+            class="bg-white border border-[rgba(var(--border-color))] hover:bg-secondary shadow flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow"
           >
-            <Icon :name="tool.icon" class="w-8 h-8 text-primary" />
+            <div
+              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))]"
+            >
+              <Icon :name="tool.icon" class="w-6 h-6 text-primary" />
+            </div>
             <div>
               <h4 class="text-left font-bold">{{ tool.name }}</h4>
               <p
-                class="text-left text-sm text-gray-400 line-clamp-2 min-h-[20px]"
+                class="text-left text-sm text-[rgba(var(--text-muted))] line-clamp-2 min-h-[20px]"
               >
                 {{ tool.description }}
               </p>
@@ -331,9 +413,32 @@ const hasPermission = () => {
         v-if="toolCategories.length === 0"
         class="text-center py-12 bg-gray-50 rounded-xl"
       >
-        <Icon name="ph:hammer" class="w-16 h-16 text-gray-400 mx-auto mb-3" />
-        <p class="text-gray-400">No tools available</p>
+        <Icon
+          name="ph:hammer"
+          class="w-16 h-16 text-[rgba(var(--text-muted))] mx-auto mb-3"
+        />
+        <p class="text-[rgba(var(--text-muted))]">No tools available</p>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.loading-dots div {
+  animation-duration: 0.6s;
+}
+
+/* Optional: Add a subtle pulse animation to the button when loading */
+button:disabled {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+</style>

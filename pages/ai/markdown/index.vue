@@ -13,8 +13,8 @@ definePageMeta({
   requiresAuth: true,
   breadcrumb: [
     {
-      name: "Tools",
-      path: "/ai/tools",
+      name: "Home",
+      path: "/ai",
     },
     {
       name: "Markdown",
@@ -567,7 +567,7 @@ onBeforeUnmount(() => {
           v-html="compiledMarkdown"
           @click="handleCopyClick"
         ></div>
-        <div v-else class="text-gray-400 italic">Preview disabled</div>
+        <div v-else class="text-[rgba(var(--text-muted))] italic">Preview disabled</div>
       </div>
     </div>
     <div v-else class="fixed inset-0 bg-white z-50 overflow-auto p-8">

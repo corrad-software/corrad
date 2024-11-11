@@ -6,8 +6,8 @@ definePageMeta({
   requiresAuth: true,
   breadcrumb: [
     {
-      name: "Tools",
-      path: "/ai/tools",
+      name: "Home",
+      path: "/ai",
     },
     {
       name: "Saved Prompts",
@@ -89,16 +89,16 @@ onMounted(() => {
       </nuxt-link>
     </div>
 
-    <div class="grid grid-cols-1 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div
         v-if="prompts.length > 0"
         v-for="prompt in prompts"
         :key="prompt.promptID"
-        class="bg-secondary transition-all flex justify-between items-center p-4 rounded gap-4"
+        class="bg-white border border-[rgba(var(--border-color))] shadow rounded-xl transition-all flex justify-between items-center p-4 gap-4"
       >
         <div>
           <h4 class="font-bold">{{ prompt.promptTitle }}</h4>
-          <p class="text-sm text-gray-400">
+          <p class="text-sm text-[rgba(var(--text-muted))]">
             {{ prompt.promptDescription }}
           </p>
           <p class="text-sm">Tags: {{ prompt.promptTags }}</p>
@@ -126,7 +126,7 @@ onMounted(() => {
       </div>
       <div v-else>
         <div class="bg-secondary p-4 rounded">
-          <p class="text-center text-gray-400">No prompts found</p>
+          <p class="text-center text-[rgba(var(--text-muted))]">No prompts found</p>
         </div>
       </div>
     </div>

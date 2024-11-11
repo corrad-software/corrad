@@ -6,6 +6,10 @@ definePageMeta({
   requiresAuth: true,
   breadcrumb: [
     {
+      name: "Home",
+      path: "/ai",
+    },
+    {
       name: "Assistant",
       type: "current",
     },
@@ -78,12 +82,12 @@ const deleteAssistant = async (assistantID) => {
       </nuxt-link>
     </div>
 
-    <div class="grid grid-cols-1 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div
         v-if="assistantList.statusCode === 200 && assistantList.data.length > 0"
         v-for="(assistant, index) in assistantList.data"
         :key="assistantList.data"
-        class="bg-secondary transition-all flex justify-between items-center p-4 rounded gap-4"
+        class="bg-white border border-[rgba(var(--border-color))] shadow rounded-xl transition-all flex justify-between items-center p-4 gap-4"
       >
         <div class="flex-1 flex items-center gap-4">
           <img
@@ -106,7 +110,7 @@ const deleteAssistant = async (assistantID) => {
                 }"
               ></span>
             </h4>
-            <p class="text-sm text-gray-400">
+            <p class="text-sm text-[rgba(var(--text-muted))]">
               {{ assistant.assistantDescription }}
             </p>
             <p class="flex items-center">
@@ -155,7 +159,9 @@ const deleteAssistant = async (assistantID) => {
       </div>
       <div v-else>
         <div class="bg-secondary p-4 rounded">
-          <p class="text-center text-gray-400">No assistant found</p>
+          <p class="text-center text-[rgba(var(--text-muted))]">
+            No assistant found
+          </p>
         </div>
       </div>
     </div>
