@@ -556,15 +556,14 @@ async function handleOpenAIAssistant({
 
     io.to(threadID).emit("messageEnd");
 
-    const messageCount = await prisma?.chat.count({
-      where: {
-        thread: {
-          threadProviderID: threadID,
-        },
+    const isThreadTitleNull = await prisma?.thread.findFirst({
+      where: { threadProviderID: threadID, threadTitle: null },
+      select: {
+        threadTitle: true,
       },
     });
 
-    if (messageCount === 1) {
+    if (isThreadTitleNull) {
       await generateThreadTitle(
         openai,
         message.content,
@@ -728,18 +727,16 @@ async function handleOpenAIChat({
           role: item.chatRole,
           content: item.chatMessage,
         })) || []),
-      ...(uploadedImageWithContext
-        ? [
-            {
-              role: "user",
-              content: `Image Context: ${uploadedImageWithContext}`,
-            },
-          ]
-        : []),
-      { role: "user", content: messageToSend },
-      ...(selectedPrompt
-        ? [{ role: "user", content: selectedPrompt.content }]
-        : []),
+      {
+        role: "user",
+        content: [
+          uploadedImageWithContext
+            ? `Image Context: ${uploadedImageWithContext}\n\n`
+            : "",
+          messageToSend,
+          selectedPrompt ? `\n\n${selectedPrompt.content}` : "",
+        ].join(""),
+      },
     ];
 
     // console.log("====================================");
@@ -793,17 +790,15 @@ async function handleOpenAIChat({
     }
 
     // Store assistant response even if stream was stopped
-    if (fullResponse) {
-      await prisma?.chat.create({
-        data: {
-          ...baseChatData,
-          chatMessage: fullResponse,
-          chatRole: "assistant",
-          chatType: "text",
-          chatProviderMessageID: messageID,
-        },
-      });
-    }
+    await prisma?.chat.create({
+      data: {
+        ...baseChatData,
+        chatMessage: fullResponse,
+        chatRole: "assistant",
+        chatType: "text",
+        chatProviderMessageID: messageID,
+      },
+    });
 
     // Only emit appropriate events based on stream status
     if (streamWasStopped) {
@@ -811,6 +806,24 @@ async function handleOpenAIChat({
     } else {
       io.to(threadID).emit("messageEnd");
     }
+
+    const isThreadTitleNull = await prisma?.thread.findFirst({
+      where: { threadProviderID: threadID, threadTitle: null },
+      select: {
+        threadTitle: true,
+      },
+    });
+
+    if (isThreadTitleNull) {
+      await generateThreadTitle(
+        openai,
+        messageToSend,
+        fullResponse,
+        io,
+        threadID
+      );
+    }
+
     io.to(threadID).emit("messageClear");
 
     if (fullResponse && threadDetails?.guide_chat?.guideChatGenerateQuestion) {
@@ -942,18 +955,16 @@ async function handleClaudeChat({
           role: item.chatRole,
           content: item.chatMessage,
         })) || []),
-      ...(uploadedImageWithContext
-        ? [
-            {
-              role: "user",
-              content: `Image Context: ${uploadedImageWithContext}`,
-            },
-          ]
-        : []),
-      { role: "user", content: messageToSend },
-      ...(selectedPrompt
-        ? [{ role: "user", content: selectedPrompt.content }]
-        : []),
+      {
+        role: "user",
+        content: [
+          uploadedImageWithContext
+            ? `Image Context: ${uploadedImageWithContext}\n\n`
+            : "",
+          messageToSend,
+          selectedPrompt ? `\n\n${selectedPrompt.content}` : "",
+        ].join(""),
+      },
     ];
 
     // console.log("====================================");
@@ -1007,17 +1018,15 @@ async function handleClaudeChat({
     }
 
     // Store assistant response even if stream was stopped
-    if (fullResponse) {
-      await prisma?.chat.create({
-        data: {
-          ...baseChatData,
-          chatMessage: fullResponse,
-          chatRole: "assistant",
-          chatType: "text",
-          chatProviderMessageID: messageID,
-        },
-      });
-    }
+    await prisma?.chat.create({
+      data: {
+        ...baseChatData,
+        chatMessage: fullResponse,
+        chatRole: "assistant",
+        chatType: "text",
+        chatProviderMessageID: messageID,
+      },
+    });
 
     // Only emit appropriate events based on stream status
     if (streamWasStopped) {
@@ -1026,8 +1035,24 @@ async function handleClaudeChat({
       io.to(threadID).emit("messageEnd");
     }
 
-    io.to(threadID).emit("messageClear");
+    const isThreadTitleNull = await prisma?.thread.findFirst({
+      where: { threadProviderID: threadID, threadTitle: null },
+      select: {
+        threadTitle: true,
+      },
+    });
 
+    if (isThreadTitleNull) {
+      await generateThreadTitle(
+        claude,
+        messageToSend,
+        fullResponse,
+        io,
+        threadID
+      );
+    }
+
+    io.to(threadID).emit("messageClear");
     // Check if this is the first message in the thread
 
     if (fullResponse && threadDetails?.guide_chat?.guideChatGenerateQuestion) {

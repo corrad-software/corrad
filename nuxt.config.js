@@ -12,6 +12,9 @@ export default defineNuxtConfig({
       url: process.env.APACHE_TIKA_URL,
     },
     appUrl: process.env.APP_URL,
+    public: {
+      server: process.env.SERVER,
+    },
   },
   plugins: ["~/plugins/socket.client"],
   nitro: {

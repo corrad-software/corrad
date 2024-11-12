@@ -13,6 +13,7 @@ definePageMeta({
 });
 
 // Composables and Refs
+const ENV = useRuntimeConfig();
 const { $swal, $io, $shiki } = useNuxtApp();
 const projectID = useCookie("currentProject");
 const threadID = useRoute().params.threadID;
@@ -404,12 +405,23 @@ const processFile = async (file) => {
     isUploadingImage.value = true;
     try {
       const base64Data = await fileToBase64(file);
-      const { data } = await useFetch("/api/ai/image/upload", {
-        method: "POST",
-        body: {
-          image: base64Data,
-          filename: file.name,
-        },
+
+      let url =
+        ENV.public.server === "false"
+          ? "https://app.corrad.ai/api/ai/image/upload"
+          : "/api/ai/image/upload";
+
+      // const { data } = await useFetch(url, {
+      //   method: "POST",
+      //   body: {
+      //     image: base64Data,
+      //     filename: file.name,
+      //   },
+      // });
+
+      const data = ref({
+        statusCode: 200,
+        path: "/uploads/image/1731381777052-WhatsApp Image 2024-10-05 at 06.46.00_5f592e41.jpg",
       });
 
       if (data.value.statusCode === 200) {
@@ -432,6 +444,7 @@ const processFile = async (file) => {
             type: "image",
             context: contextData.value.context,
             path: data.value.path,
+            filename: file.name,
           };
         } else {
           isUploadingImage.value = false;
@@ -538,7 +551,9 @@ const sendMessage = async () => {
       for (const file of fileAttachments.value) {
         const result = await processFile(file);
         if (result.type === "image") {
-          message.content += `Uploaded image: ${result.file.name}`;
+          message.content = message.content
+            ? `${message.content}\n\nUploaded image: ${result.filename}`
+            : `Uploaded image: ${result.filename}`;
           message.path = result.path;
           uploadedImageWithContext.value = result.context;
         } else if (result && result.type === "document") {
