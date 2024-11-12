@@ -411,17 +411,12 @@ const processFile = async (file) => {
           ? "https://app.corrad.ai/api/ai/image/upload"
           : "/api/ai/image/upload";
 
-      // const { data } = await useFetch(url, {
-      //   method: "POST",
-      //   body: {
-      //     image: base64Data,
-      //     filename: file.name,
-      //   },
-      // });
-
-      const data = ref({
-        statusCode: 200,
-        path: "/uploads/image/1731381777052-WhatsApp Image 2024-10-05 at 06.46.00_5f592e41.jpg",
+      const { data } = await useFetch(url, {
+        method: "POST",
+        body: {
+          image: base64Data,
+          filename: file.name,
+        },
       });
 
       if (data.value.statusCode === 200) {
