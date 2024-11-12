@@ -2,8 +2,6 @@
 // Imports
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import CryptoJS from "crypto-js";
-import Tesseract from "tesseract.js";
 
 // Page Meta
 definePageMeta({
@@ -60,6 +58,9 @@ const isProcessing = ref(false);
 const isUploadingDocument = ref(false);
 const isSearchingDocuments = ref(false);
 const showHelpPanel = ref(false);
+const isUploadingImage = ref(false);
+const isGettingImageContext = ref(false);
+const uploadedImageWithContext = ref("");
 
 // Add new refs for related questions
 const relatedQuestions = ref([]);
@@ -396,35 +397,56 @@ const handleScrollEnd = () => {
 };
 
 const processFile = async (file) => {
-  const timestamp = Date.now();
-  const fileId = CryptoJS.SHA256(timestamp + file.name + Date.now())
-    .toString()
-    .substr(0, 16);
   const fileExtension = file.name.split(".").pop().toLowerCase();
-  const newFileName = `${timestamp}-${fileId}.${fileExtension}`;
-
-  // Check if the file is an image
   const isImage = ["jpg", "jpeg", "png", "gif"].includes(fileExtension);
 
   if (isImage) {
-    // Perform OCR on the image
-    isOCRProcessing.value = true;
-    ocrProgress.value = 0;
+    isUploadingImage.value = true;
+    try {
+      const base64Data = await fileToBase64(file);
+      const { data } = await useFetch("/api/ai/image/upload", {
+        method: "POST",
+        body: {
+          image: base64Data,
+          filename: file.name,
+        },
+      });
 
-    const {
-      data: { text },
-    } = await Tesseract.recognize(file, "eng", {
-      logger: (m) => {
-        if (m.status === "recognizing text") {
-          ocrProgress.value = parseInt(m.progress * 100);
+      if (data.value.statusCode === 200) {
+        isUploadingImage.value = false;
+        isGettingImageContext.value = true;
+        const { data: contextData } = await useFetch(
+          "/api/ai/image/get-context",
+          {
+            method: "POST",
+            body: {
+              imagePath: data.value.path,
+            },
+          }
+        );
+
+        if (contextData.value.statusCode === 200) {
+          isGettingImageContext.value = false;
+          return {
+            type: "image",
+            context: contextData.value.context,
+            path: data.value.path,
+          };
+        } else {
+          throw new Error(
+            contextData.value.message || "Failed to get image context"
+          );
         }
-      },
-    });
-
-    isOCRProcessing.value = false;
-    ocrProgress.value = 0;
-
-    return { type: "image", text };
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      $swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to upload image",
+      });
+      return null;
+    }
   } else {
     // Handle non-image files (document upload and embedding)
     const formData = new FormData();
@@ -469,8 +491,24 @@ const processFile = async (file) => {
       return null;
     } finally {
       isUploadingDocument.value = false;
+      isUploadingImage.value = false;
+      isGettingImageContext.value = false;
     }
   }
+};
+
+// Add the fileToBase64 helper function
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Remove the data:image/xxx;base64, prefix
+      const base64String = reader.result.split(",")[1];
+      resolve(base64String);
+    };
+    reader.onerror = (error) => reject(error);
+  });
 };
 
 const sendMessage = async () => {
@@ -488,13 +526,16 @@ const sendMessage = async () => {
       content: newMessage.value.trim(),
       type: "text",
       files: [],
+      path: null,
     };
 
     if (fileAttachments.value.length > 0) {
       for (const file of fileAttachments.value) {
         const result = await processFile(file);
         if (result.type === "image") {
-          message.content += `\n\nImage content (OCR result): ${result.text}\n\nPlease note that this text was extracted from an image using OCR technology. The accuracy may vary depending on the image quality and complexity. Consider this context when interpreting the content.`;
+          message.content += `Uploaded image: ${result.file.name}`;
+          message.path = result.path;
+          uploadedImageWithContext.value = result.context;
         } else if (result && result.type === "document") {
           message.files.push(result.file);
           message.content = message.content
@@ -505,6 +546,10 @@ const sendMessage = async () => {
 
       if (message.files.length > 0) {
         message.type = "file";
+      }
+
+      if (message.path) {
+        message.type = "image";
       }
     }
 
@@ -534,6 +579,7 @@ const sendMessage = async () => {
           }
         : null,
       documentContext, // Pass document context separately
+      uploadedImageWithContext: uploadedImageWithContext.value,
     });
 
     // Add user's message to the conversation
@@ -1127,15 +1173,6 @@ const selectRelatedQuestion = (questionObj) => {
                       }"
                     ></span>
                   </div>
-                  <!-- Tooltip with reasoning -->
-                  <!-- <div
-                    class="opacity-0 group-hover:opacity-100 absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs p-2 rounded transition-opacity duration-200 max-w-xs"
-                  >
-                    <div class="font-semibold mb-1">
-                      {{ question.category }}
-                    </div>
-                    <div class="text-gray-300">{{ question.reasoning }}</div>
-                  </div> -->
                 </button>
               </div>
             </div>
@@ -1157,68 +1194,51 @@ const selectRelatedQuestion = (questionObj) => {
     </div>
 
     <div
-      v-show="isTyping"
+      v-show="
+        isUploadingDocument ||
+        isSearchingDocuments ||
+        isUploadingImage ||
+        isGettingImageContext ||
+        isTyping
+      "
       class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
     >
       <div class="flex items-center">
-        <span class="text-sm text-[rgba(var(--text-muted))]"
-          >Assistant is typing</span
+        <span class="text-sm text-[rgba(var(--text-muted))]">
+          <template v-if="isUploadingDocument">Uploading document</template>
+          <template v-else-if="isSearchingDocuments"
+            >Analysing document</template
+          >
+          <template v-else-if="isUploadingImage">Uploading image</template>
+          <template v-else-if="isGettingImageContext"
+            >Getting image context</template
+          >
+          <template v-else-if="isTyping">Assistant is typing</template>
+        </span>
+        <template
+          v-if="
+            isUploadingDocument ||
+            isSearchingDocuments ||
+            isUploadingImage ||
+            isGettingImageContext ||
+            isTyping
+          "
         >
-        <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">.</div>
-        <div
-          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
-        >
-          .
-        </div>
-        <div
-          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
-        >
-          .
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-show="isUploadingDocument"
-      class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
-    >
-      <div class="flex items-center">
-        <span class="text-sm text-[rgba(var(--text-muted))]"
-          >Uploading document</span
-        >
-        <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">.</div>
-        <div
-          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
-        >
-          .
-        </div>
-        <div
-          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
-        >
-          .
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-show="isSearchingDocuments"
-      class="flex-1 min-h-[30px] flex items-end overflow-y-auto px-4 py-2"
-    >
-      <div class="flex items-center">
-        <span class="text-sm text-[rgba(var(--text-muted))]"
-          >Analysing document</span
-        >
-        <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">.</div>
-        <div
-          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
-        >
-          .
-        </div>
-        <div
-          class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
-        >
-          .
-        </div>
+          <div class="animate-bounce text-[rgba(var(--text-muted))] mx-1">
+            .
+          </div>
+          <div
+            class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-200"
+          >
+            .
+          </div>
+          <div
+            class="animate-bounce text-[rgba(var(--text-muted))] mx-1 animation-delay-400"
+          >
+            .
+          </div>
+        </template>
+        <template v-else>...</template>
       </div>
     </div>
 

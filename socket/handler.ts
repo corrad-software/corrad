@@ -95,6 +95,7 @@ export const socketHandler = async (io: Server) => {
         message,
         selectedPrompt,
         documentContext,
+        uploadedImageWithContext,
       }) => {
         try {
           // console.log("====================================");
@@ -126,6 +127,7 @@ export const socketHandler = async (io: Server) => {
               message,
               selectedPrompt,
               documentContext,
+              uploadedImageWithContext,
             });
           } else if (thread.threadSourceType === "GUIDE_CHAT") {
             const provider = thread.lookup_thread_providerIDTolookup;
@@ -144,6 +146,7 @@ export const socketHandler = async (io: Server) => {
                 message,
                 selectedPrompt,
                 documentContext,
+                uploadedImageWithContext,
               });
             } else if (provider.lookupValue === "claude") {
               await handleClaudeChat({
@@ -155,11 +158,10 @@ export const socketHandler = async (io: Server) => {
                 message,
                 selectedPrompt,
                 documentContext,
+                uploadedImageWithContext,
               });
             }
           }
-
-          io.to(threadID).emit("messageClear");
         } catch (error) {
           console.error("Error in message handling:", error);
           io.to(threadID).emit(
@@ -244,6 +246,7 @@ export const socketHandler = async (io: Server) => {
               message,
               selectedPrompt: null,
               documentContext: null,
+              uploadedImageWithContext: null,
             });
           } else if (thread.threadSourceType === "GUIDE_CHAT") {
             const provider = thread.lookup_thread_providerIDTolookup;
@@ -262,6 +265,7 @@ export const socketHandler = async (io: Server) => {
                 message,
                 selectedPrompt: null,
                 documentContext: null,
+                uploadedImageWithContext: null,
               });
             } else if (provider.lookupValue === "claude") {
               await handleClaudeChat({
@@ -273,11 +277,10 @@ export const socketHandler = async (io: Server) => {
                 message,
                 selectedPrompt: null,
                 documentContext: null,
+                uploadedImageWithContext: null,
               });
             }
           }
-
-          io.to(threadID).emit("messageClear");
         } catch (error) {
           console.error("Error regenerating response:", error);
           io.to(threadID).emit(
@@ -373,6 +376,7 @@ async function handleOpenAIAssistant({
   message,
   selectedPrompt,
   documentContext,
+  uploadedImageWithContext,
 }) {
   // Initialize AI providers
   const openAIResponse = await initAI("openai");
@@ -394,6 +398,13 @@ async function handleOpenAIAssistant({
   io.to(threadID).emit("messageStart");
 
   try {
+    if (uploadedImageWithContext) {
+      await openai?.beta.threads.messages.create(threadID, {
+        role: "user",
+        content: `Image Context: ${uploadedImageWithContext}`,
+      });
+    }
+
     // Process user's input
     if (message.content) {
       const userQuery = message.content;
@@ -588,9 +599,7 @@ async function handleOpenAIAssistant({
       select: { assistant: { select: { assistantGenerateQuestion: true } } },
     });
 
-    // console.log("Message created:", createMessageResponse);
-
-    // io.to(threadID).emit("messageClear");
+    io.to(threadID).emit("messageClear");
 
     if (
       lastMessage?.content[0]?.text?.value &&
@@ -618,6 +627,7 @@ async function handleOpenAIChat({
   message,
   selectedPrompt,
   documentContext,
+  uploadedImageWithContext,
 }) {
   const openAIResponse = await initAI("openai");
   if (openAIResponse.statusCode !== 200) {
@@ -718,6 +728,14 @@ async function handleOpenAIChat({
           role: item.chatRole,
           content: item.chatMessage,
         })) || []),
+      ...(uploadedImageWithContext
+        ? [
+            {
+              role: "user",
+              content: `Image Context: ${uploadedImageWithContext}`,
+            },
+          ]
+        : []),
       { role: "user", content: messageToSend },
       ...(selectedPrompt
         ? [{ role: "user", content: selectedPrompt.content }]
@@ -792,8 +810,8 @@ async function handleOpenAIChat({
       io.to(threadID).emit("streamStopped");
     } else {
       io.to(threadID).emit("messageEnd");
-      // io.to(threadID).emit("messageClear");
     }
+    io.to(threadID).emit("messageClear");
 
     if (fullResponse && threadDetails?.guide_chat?.guideChatGenerateQuestion) {
       await generateRelatedQuestions(
@@ -819,6 +837,7 @@ async function handleClaudeChat({
   message,
   selectedPrompt,
   documentContext,
+  uploadedImageWithContext,
 }) {
   const claudeResponse = await initAI("claude");
   if (claudeResponse.statusCode !== 200) {
@@ -923,6 +942,14 @@ async function handleClaudeChat({
           role: item.chatRole,
           content: item.chatMessage,
         })) || []),
+      ...(uploadedImageWithContext
+        ? [
+            {
+              role: "user",
+              content: `Image Context: ${uploadedImageWithContext}`,
+            },
+          ]
+        : []),
       { role: "user", content: messageToSend },
       ...(selectedPrompt
         ? [{ role: "user", content: selectedPrompt.content }]
@@ -997,8 +1024,9 @@ async function handleClaudeChat({
       io.to(threadID).emit("streamStopped");
     } else {
       io.to(threadID).emit("messageEnd");
-      // io.to(threadID).emit("messageClear");
     }
+
+    io.to(threadID).emit("messageClear");
 
     // Check if this is the first message in the thread
 

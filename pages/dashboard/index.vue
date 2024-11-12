@@ -12,5 +12,5 @@ if (process.client) window.location.href = "/ai";
 </script>
 
 <template>
-  <div>Welcome to Corrad AI</div>
+  <div></div>
 </template>

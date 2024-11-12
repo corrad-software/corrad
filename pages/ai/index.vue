@@ -251,11 +251,21 @@ const handleCreateRoom = async (formData) => {
 
             <!-- Content -->
             <div
-              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300"
+              class="p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300"
+              :style="
+                assistant.assistantIconColour
+                  ? `background-color: ${assistant.assistantIconColour}20; border-color: ${assistant.assistantIconColour}50`
+                  : ''
+              "
             >
               <Icon
                 :name="assistant.assistantIcon || 'mdi:robot-excited-outline'"
-                class="w-6 h-6 text-primary"
+                class="w-6 h-6"
+                :style="
+                  assistant.assistantIconColour
+                    ? `color: ${assistant.assistantIconColour}`
+                    : ''
+                "
               />
             </div>
             <div class="flex flex-col flex-1">
@@ -335,11 +345,11 @@ const handleCreateRoom = async (formData) => {
 
             <!-- Content -->
             <div
-              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))] transition-transform duration-300"
+              class="bg-amber-100 p-3 rounded-full border border-amber-300 transition-transform duration-300"
             >
               <Icon
                 name="mdi:chat-processing-outline"
-                class="w-6 h-6 text-primary"
+                class="w-6 h-6 text-amber-500"
               />
             </div>
             <div class="flex flex-col flex-1">
@@ -392,10 +402,8 @@ const handleCreateRoom = async (formData) => {
             :to="tool.link"
             class="bg-white border border-[rgba(var(--border-color))] hover:bg-secondary shadow flex items-center p-4 rounded-xl gap-4 cursor-pointer w-full transition-all duration-300 hover:shadow"
           >
-            <div
-              class="bg-secondary p-3 rounded-full border border-[rgba(var(--border-color))]"
-            >
-              <Icon :name="tool.icon" class="w-6 h-6 text-primary" />
+            <div class="bg-slate-100 p-3 rounded-full border border-slate-400">
+              <Icon :name="tool.icon" class="w-6 h-6 text-slate-500" />
             </div>
             <div>
               <h4 class="text-left font-bold">{{ tool.name }}</h4>

@@ -12,6 +12,7 @@ model assistant {
   assistantProviderID       String?   @db.VarChar(255)
   assistantImg              String?   @db.VarChar(255)
   assistantIcon             String?   @db.VarChar(255)
+  assistantIconColour       String?   @db.VarChar(255)
   assistantName             String?   @db.VarChar(255)
   assistantDescription      String?   @db.VarChar(255)
   assistantType             Int?

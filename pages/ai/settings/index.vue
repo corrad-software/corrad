@@ -13,38 +13,38 @@ const form = reactive({
   openaiProjectId: "",
 });
 
-const { data: configuration } = await useFetch("/api/ai/settings/config/get", {
-  method: "GET",
-});
+// const { data: configuration } = await useFetch("/api/ai/settings/config/get", {
+//   method: "GET",
+// });
 
-if (configuration.value.statusCode == 200) {
-  form.openaiApiKey = configuration.value.data.APIKey;
-  form.openaiProjectId = configuration.value.data.projectID;
-}
+// if (configuration.value.statusCode == 200) {
+//   form.openaiApiKey = configuration.value.data.APIKey;
+//   form.openaiProjectId = configuration.value.data.projectID;
+// }
 
-const submit = async () => {
-  const { data } = await useFetch("/api/ai/settings/config/edit", {
-    method: "POST",
-    body: {
-      APIKey: form.openaiApiKey,
-      projectID: form.openaiProjectId,
-    },
-  });
+// const submit = async () => {
+//   const { data } = await useFetch("/api/ai/settings/config/edit", {
+//     method: "POST",
+//     body: {
+//       APIKey: form.openaiApiKey,
+//       projectID: form.openaiProjectId,
+//     },
+//   });
 
-  if (data.value.statusCode == 200) {
-    $swal.fire({
-      title: "Success",
-      text: "Configuration updated successfully",
-      icon: "success",
-    });
-  } else {
-    $swal.fire({
-      title: "Error",
-      text: "Failed to update configuration",
-      icon: "error",
-    });
-  }
-};
+//   if (data.value.statusCode == 200) {
+//     $swal.fire({
+//       title: "Success",
+//       text: "Configuration updated successfully",
+//       icon: "success",
+//     });
+//   } else {
+//     $swal.fire({
+//       title: "Error",
+//       text: "Failed to update configuration",
+//       icon: "error",
+//     });
+//   }
+// };
 </script>
 
 <template>
@@ -54,7 +54,7 @@ const submit = async () => {
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <NuxtLink to="/ai/settings/project">
         <div
-          class="bg-secondary hover:bg-primary hover:text-white transition-all flex items-center p-4 rounded gap-4"
+          class="bg-white border border-[rgba(var(--border-color))] hover:bg-secondary shadow rounded-xl transition-all flex justify-between items-center p-4 gap-4"
         >
           <div class="flex items-center gap-2">
             <Icon name="material-symbols-light:lab-profile" class="!w-8 !h-8" />
@@ -64,7 +64,7 @@ const submit = async () => {
       </NuxtLink>
     </div>
 
-    <FormKit type="form" :actions="false" @submit="submit">
+    <!-- <FormKit type="form" :actions="false" @submit="submit">
       <FormKit
         v-model="form.openaiApiKey"
         type="text"
@@ -90,6 +90,6 @@ const submit = async () => {
           Save
         </rs-button>
       </div>
-    </FormKit>
+    </FormKit> -->
   </div>
 </template>

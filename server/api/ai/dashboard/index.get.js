@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
         assistantDescription: true,
         assistantImg: true,
         assistantIcon: true,
+        assistantIconColour: true,
         assistantType: true,
       },
     });

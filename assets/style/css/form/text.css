@@ -14,7 +14,8 @@
     rounded-lg 
     overflow-hidden
     focus-within:border-primary
-    mb-0;
+    mb-0
+    shadow;
 }
 
 .formkit-input-text {
