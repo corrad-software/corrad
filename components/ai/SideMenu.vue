@@ -132,11 +132,11 @@ const deleteThread = async (threadID) => {
         });
 
         if (deleteThread.value.statusCode == 200) {
-          $swal.fire({
-            title: "Success",
-            text: "Thread deleted successfully",
-            icon: "success",
-          });
+          // $swal.fire({
+          //   title: "Success",
+          //   text: "Thread deleted successfully",
+          //   icon: "success",
+          // });
 
           refreshChatList();
         } else {

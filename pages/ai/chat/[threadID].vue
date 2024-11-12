@@ -415,6 +415,7 @@ const processFile = async (file) => {
       if (data.value.statusCode === 200) {
         isUploadingImage.value = false;
         isGettingImageContext.value = true;
+
         const { data: contextData } = await useFetch(
           "/api/ai/image/get-context",
           {
@@ -433,6 +434,8 @@ const processFile = async (file) => {
             path: data.value.path,
           };
         } else {
+          isUploadingImage.value = false;
+          isGettingImageContext.value = false;
           throw new Error(
             contextData.value.message || "Failed to get image context"
           );
@@ -440,6 +443,8 @@ const processFile = async (file) => {
       }
     } catch (error) {
       console.error("Error uploading image:", error);
+      isUploadingImage.value = false;
+      isGettingImageContext.value = false;
       $swal.fire({
         icon: "error",
         title: "Error",

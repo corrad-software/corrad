@@ -564,5 +564,16 @@ export default defineNuxtConfig({
         },
       },
     },
+    "/api/ai/image/**": {
+      security: {
+        requestSizeLimiter: {
+          maxRequestSizeInBytes: 1000000000,
+          maxUploadFileRequestInBytes: 1000000000,
+        },
+        corsHandler: {
+          origin: "*",
+        },
+      },
+    },
   },
 });

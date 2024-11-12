@@ -16,6 +16,8 @@ export default defineEventHandler(async (event) => {
 
     // Create upload directory if it doesn't exist
     const uploadDir = path.join(process.cwd(), "public", "uploads", "image");
+    console.log("UPLOAD DIR", uploadDir);
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
