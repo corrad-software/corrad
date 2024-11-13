@@ -288,24 +288,30 @@ onUnmounted(() => {
         >
           <div class="flex items-center">
             <div
-              class="flex-1 flex items-center pr-2 overflow-hidden cursor-pointer p-2 pl-3"
+              class="flex-1 flex items-center pr-2 overflow-hidden cursor-pointer p-2 pl-3 gap-2"
               @click="navigateTo('/ai/chat/' + thread.threadID)"
             >
-              <!-- <img
-                v-if="thread.assistantImg"
-                :src="thread.assistantImg"
-                class="w-5 h-5 rounded-full transition-all duration-300"
-                :class="{ 'mr-2': !(isMinimized && isDesktop) }"
-              /> -->
-
-              <Icon
-                :name="thread.assistantIcon || 'mdi:chat-processing-outline'"
-                class="!w-5 !h-5 rounded-full transition-all duration-300"
-                :class="{
-                  'mr-2': !(isMinimized && isDesktop),
-                  '!text-white': urlThreadId == thread.threadID,
-                }"
-              />
+              <div
+                class="flex items-center justify-center p-1 rounded-full border border-[rgba(var(--border-color))]"
+                :style="
+                  thread.assistantIconColour
+                    ? `background-color: ${thread.assistantIconColour}20; border-color: ${thread.assistantIconColour}50`
+                    : 'background-color: rgba(var(--border-color)); border-color: rgba(var(--text-muted))'
+                "
+              >
+                <Icon
+                  :name="thread.assistantIcon || 'mdi:chat-processing-outline'"
+                  class="!w-4 !h-4 transition-all duration-300"
+                  :class="{
+                    '!text-white': urlThreadId == thread.threadID,
+                  }"
+                  :style="
+                    thread.assistantIconColour
+                      ? `color: ${thread.assistantIconColour}`
+                      : 'color: rgba(var(--text-muted))'
+                  "
+                />
+              </div>
               <p
                 v-if="!(isMinimized && isDesktop)"
                 class="w-full line-clamp-1 leading-loose whitespace-nowrap transition-all duration-300 ease-in-out"

@@ -255,7 +255,7 @@ const handleCreateRoom = async (formData) => {
               :style="
                 assistant.assistantIconColour
                   ? `background-color: ${assistant.assistantIconColour}20; border-color: ${assistant.assistantIconColour}50`
-                  : ''
+                  : 'background-color: rgba(var(--border-color)); border-color: rgba(var(--text-muted))'
               "
             >
               <Icon
@@ -264,7 +264,7 @@ const handleCreateRoom = async (formData) => {
                 :style="
                   assistant.assistantIconColour
                     ? `color: ${assistant.assistantIconColour}`
-                    : ''
+                    : 'color: rgba(var(--text-muted))'
                 "
               />
             </div>

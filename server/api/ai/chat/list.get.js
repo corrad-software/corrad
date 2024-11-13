@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
                 assistantName: true,
                 assistantImg: true,
                 assistantIcon: true,
+                assistantIconColour: true,
                 assistantID: true,
               },
             },
@@ -98,6 +99,13 @@ export default defineEventHandler(async (event) => {
           item.thread.threadSourceType === "ASSISTANT"
             ? item.thread.assistant.assistantIcon
             : null,
+        assistantIconColour:
+          item.thread.threadSourceType === "ASSISTANT"
+            ? item.thread.assistant.assistantIconColour === "" ||
+              item.thread.assistant.assistantIconColour === undefined
+              ? null
+              : item.thread.assistant.assistantIconColour
+            : "#F59E0B",
       };
     });
 
