@@ -284,7 +284,9 @@ onUnmounted(() => {
           v-for="(thread, index) in threadList.data"
           :key="index"
           class="bg-white rounded-lg hover:bg-primary/5 border border-[rgba(var(--border-color))] shadow"
-          :class="{ '!bg-primary text-white': urlThreadId == thread.threadID }"
+          :class="{
+            '!bg-primary text-white': urlThreadId == thread.threadID,
+          }"
         >
           <div class="flex items-center">
             <div
@@ -293,6 +295,9 @@ onUnmounted(() => {
             >
               <div
                 class="flex items-center justify-center p-1 rounded-full border border-[rgba(var(--border-color))]"
+                :class="{
+                  '!border-white !bg-white/10': urlThreadId == thread.threadID,
+                }"
                 :style="
                   thread.assistantIconColour
                     ? `background-color: ${thread.assistantIconColour}20; border-color: ${thread.assistantIconColour}50`
