@@ -124,16 +124,16 @@ watch(
       themeVal === "oneDark"
         ? oneDark
         : themeVal === "amy"
-        ? amy
-        : themeVal === "ayuLight"
-        ? ayuLight
-        : themeVal === "barf"
-        ? barf
-        : themeVal === "cobalt"
-        ? cobalt
-        : themeVal === "dracula"
-        ? dracula
-        : clouds;
+          ? amy
+          : themeVal === "ayuLight"
+            ? ayuLight
+            : themeVal === "barf"
+              ? barf
+              : themeVal === "cobalt"
+                ? cobalt
+                : themeVal === "dracula"
+                  ? dracula
+                  : clouds;
 
     if (props.mode == "vue") {
       extensions.value = [
@@ -253,6 +253,17 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("keydown", handleKeyDown);
 });
+
+// Add this watch effect after the value ref declaration
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue !== value.value) {
+      value.value = newValue;
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

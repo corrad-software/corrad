@@ -18,7 +18,7 @@ import {
   RsTabItem,
   RsTable,
   RsWizard,
-} from "@/components";
+} from "./index.js";
 
 // Import pinia store
 import { useThemeStore } from "~/stores/theme";
@@ -31,8 +31,11 @@ definePageMeta({
   requiresAuth: true,
 });
 
+const CODE_STORAGE_KEY = "playground-code";
+
 const code = ref(
-  `<template>
+  localStorage.getItem(CODE_STORAGE_KEY) ||
+    `<template>
   <rs-card>
     <template #header>SFC Playground Demo</template>
     <template #body>
@@ -267,6 +270,39 @@ const handleFormatCode = () => {
 onMounted(async () => {
   await compileCode(code.value);
 });
+
+const defaultCode = `<template>
+  <rs-card>
+    <template #header>SFC Playground Demo</template>
+    <template #body>
+      <div class="space-y-4">
+        <rs-alert variant="info">{{ msg }}</rs-alert>
+        <rs-button @click="count++">Clicked {{ count }} times</rs-button>
+        <rs-badge>{{ count > 5 ? 'High' : 'Low' }}</rs-badge>
+      </div>
+    </template>
+  </rs-card>
+</template>
+
+<script setup>
+const msg = 'Hello from SFC Playground';
+const count = ref(0);
+<\/script>`;
+
+const resetCode = () => {
+  code.value = defaultCode;
+  localStorage.setItem(CODE_STORAGE_KEY, defaultCode);
+  compileCode(code.value);
+};
+
+// Add a watch effect to save code changes to localStorage
+watch(
+  code,
+  (newCode) => {
+    localStorage.setItem(CODE_STORAGE_KEY, newCode);
+  },
+  { deep: true }
+);
 </script>
 <template>
   <div class="flex flex-col h-screen bg-gray-900">
@@ -287,6 +323,10 @@ onMounted(async () => {
         />
       </div>
       <div class="flex flex-wrap items-center space-x-2">
+        <rs-button @click="resetCode" class="mr-2">
+          <Icon name="material-symbols:refresh" class="mr-2" />
+          Reset Code
+        </rs-button>
         <h1 class="text-lg font-semibold">Code Playground</h1>
       </div>
     </header>

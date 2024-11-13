@@ -68,25 +68,3 @@ model userrole {
   @@index([userRoleRoleID], map: "FK_userrole_role")
   @@index([userRoleUserID], map: "FK_userrole_user")
 }
-
-model survey_list {
-  data_id               Int     @id
-  survey_id             String  @default("0") @db.VarChar(255)
-  vehicle_number        String  @default("0") @db.VarChar(255)
-  vehicle_timein        String? @db.VarChar(255)
-  vehicle_timeout       String? @db.VarChar(255)
-  project_id            Int?
-  project_name          String? @db.VarChar(255)
-  project_eecode        String? @db.VarChar(255)
-  project_parker_type   String? @db.VarChar(255)
-  project_surveyor_name String? @db.VarChar(255)
-  ref_id                Int?
-  ref_type              String? @db.VarChar(255)
-  vehicle_status        String? @db.VarChar(255)
-  data_status           String? @db.VarChar(255)
-  created_by            String? @db.VarChar(255)
-  created_at            String? @db.VarChar(255)
-  updated_by            String? @db.VarChar(255)
-  updated_at            String? @db.VarChar(255)
-  test                  String? @db.VarChar(255)
-}

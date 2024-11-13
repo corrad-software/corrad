@@ -391,6 +391,7 @@ function groupRoleByUser() {
       ok-title="Save"
       :ok-callback="saveRole"
       v-model="showModal"
+      :overlay-close="false"
     >
       <FormKit
         type="text"
@@ -442,6 +443,7 @@ function groupRoleByUser() {
       :cancel-callback="closeModalUser"
       :ok-callback="saveUser"
       v-model="showModalUser"
+      :overlay-close="false"
     >
       <FormKit
         type="text"
@@ -487,6 +489,7 @@ function groupRoleByUser() {
       cancel-title="No"
       :ok-callback="deleteRole"
       v-model="showModalDelete"
+      :overlay-close="false"
     >
       <p>
         Are you sure want to delete this role ({{ showModalDeleteForm.name }})?

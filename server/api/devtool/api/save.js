@@ -8,8 +8,8 @@ export default defineEventHandler(async (event) => {
     const codeDefault = `
     export default defineEventHandler(async (event) => {
       
-      // const query = await getQuery(event); || Get Params from URL
-      // const body = await readBody(event);  || Get Body Data
+      // const query = await getQuery(event); // Get Params from URL
+      // const body = await readBody(event); // Get Body Data
 
       return {
         statusCode: 200,

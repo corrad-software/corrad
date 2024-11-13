@@ -22,6 +22,14 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: "page", mode: "out-in" },
   },
+  vite:{
+    server:{
+      watch: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
   head: {
     title: "corrad",
     meta: [

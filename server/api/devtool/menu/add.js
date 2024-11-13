@@ -29,23 +29,14 @@ export default defineEventHandler(async (event) => {
     // Create the folder if doesn't exist
     fs.mkdirSync(path.dirname(newFilePath), { recursive: true });
 
-    // Create new file
-    fs.writeFileSync(
-      newFilePath,
-      `<script setup>
-        definePageMeta({
-          title: "${
-            body.formData.title ? body.formData.title : body.formData.name
-          }",
-        });
-      </script>
-      <template>
-        <div>
-          <LayoutsBreadcrumb />
-        </div>
-      </template>
-      `
-    );
+    // Create template content
+    const templateContent = buildNuxtTemplate({
+      title: body.formData.title || body.formData.name,
+      name: body.formData.name,
+    });
+
+    // Write file with template
+    fs.writeFileSync(newFilePath, templateContent);
 
     return {
       statusCode: 200,

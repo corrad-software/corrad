@@ -9,9 +9,9 @@
 const data = [
   {
     id: "dxtM4vP",
-    title: "Form 1",
+    title: "Basic Form",
     description: "Basic form for contact details",
-    filename: "form1",
+    filename: "form",
     img: "/img/template/form1.jpg",
     tag: ["form", "formkit", "text", "radio", "phone", "date", "textarea"],
   },

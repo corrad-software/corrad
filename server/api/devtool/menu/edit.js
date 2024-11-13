@@ -17,23 +17,18 @@ export default defineEventHandler(async (event) => {
   const newFilePath = path.join(process.cwd(), "pages", newPath, "index.vue");
 
   try {
+    // Create template content
+    const templateContent = buildNuxtTemplate({
+      title: body.formData.title || body.formData.name,
+      name: body.formData.name,
+    });
+
     if (oldPath !== newPath) {
       // Create the new folder if it doesn't exist
       fs.mkdirSync(path.dirname(newFilePath), { recursive: true });
 
-      // Read the content of the old file
-      let content = fs.readFileSync(oldFilePath, "utf8");
-
-      // Update the metadata in the content
-      content = content.replace(
-        /definePageMeta\({[\s\S]*?}\);/,
-        `definePageMeta({
-  title: "${body.formData.title || body.formData.name}",
-});`
-      );
-
-      // Write the updated content to the new file
-      fs.writeFileSync(newFilePath, content);
+      // Write the new file
+      fs.writeFileSync(newFilePath, templateContent);
 
       // Delete the old file
       fs.unlinkSync(oldFilePath);
@@ -48,30 +43,18 @@ export default defineEventHandler(async (event) => {
           break;
         }
       }
-
-      return {
-        statusCode: 200,
-        message:
-          "Menu successfully copied to new location with updated metadata, and old menu deleted",
-      };
     } else {
-      // If paths are the same, just update the existing file's metadata
-      let content = fs.readFileSync(oldFilePath, "utf8");
-
-      content = content.replace(
-        /definePageMeta\({[\s\S]*?}\);/,
-        `definePageMeta({
-  title: "${body.formData.title || body.formData.name}",
-});`
-      );
-
-      fs.writeFileSync(oldFilePath, content);
-
-      return {
-        statusCode: 200,
-        message: "Menu metadata successfully updated at the same location",
-      };
+      // Update existing file
+      fs.writeFileSync(oldFilePath, templateContent);
     }
+
+    return {
+      statusCode: 200,
+      message:
+        oldPath !== newPath
+          ? "Menu successfully moved and updated"
+          : "Menu successfully updated",
+    };
   } catch (error) {
     console.error(error);
     return {

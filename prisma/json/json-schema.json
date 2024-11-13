@@ -231,118 +231,6 @@
           "$ref": "#/definitions/user"
         }
       }
-    },
-    "survey_list": {
-      "type": "object",
-      "properties": {
-        "data_id": {
-          "type": "integer"
-        },
-        "survey_id": {
-          "type": "string",
-          "default": "0"
-        },
-        "vehicle_number": {
-          "type": "string",
-          "default": "0"
-        },
-        "vehicle_timein": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "vehicle_timeout": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "project_id": {
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "project_name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "project_eecode": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "project_parker_type": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "project_surveyor_name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "ref_id": {
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "ref_type": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "vehicle_status": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "data_status": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "created_by": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "created_at": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "updated_by": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "updated_at": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "test": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
     }
   },
   "type": "object",
@@ -361,9 +249,6 @@
     },
     "userrole": {
       "$ref": "#/definitions/userrole"
-    },
-    "survey_list": {
-      "$ref": "#/definitions/survey_list"
     }
   }
 }

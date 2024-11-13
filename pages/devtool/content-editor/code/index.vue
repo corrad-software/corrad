@@ -167,7 +167,7 @@ const saveCode = async () => {
   <div>
     <LayoutsBreadcrumb />
 
-    <rs-alert v-if="hasError" class="mb-4" variant="primary">{{
+    <rs-alert v-if="hasError" class="mb-4" variant="danger">{{
       error
     }}</rs-alert>
     <rs-card class="mb-0">
@@ -183,7 +183,7 @@ const saveCode = async () => {
           </rs-button>
         </div>
         <Transition>
-          <rs-alert v-if="linterError">
+          <rs-alert v-if="linterError" variant="danger">
             <div class="flex gap-2">
               <Icon name="material-symbols:error-outline-rounded" size="20px" />
               <div>

@@ -23,35 +23,34 @@ const showModalEditForm = ref({
 const openModalAdd = () => {
   showModalAddForm.value = {
     apiURL: "",
+    method: "all",
   };
 
   showModalAdd.value = true;
 };
 
-const openModalEdit = (url) => {
+const openModalEdit = (url, method = "all") => {
   const apiURL = url.replace("/api/", "");
 
   showModalEditForm.value = {
     apiURL: apiURL,
     oldApiURL: apiURL,
+    method: method,
   };
 
   showModalEdit.value = true;
 };
 
-// Get api list from api folder
-const getApiList = async () => {
-  const { data } = await useFetch("/api/devtool/api/list", {
-    initialCache: false,
-  });
-  return data;
-};
-
-const apiList = await getApiList();
+const { data: apiList, refresh } = await useFetch("/api/devtool/api/list");
 
 const searchApi = () => {
+  if (!apiList.value || !apiList.value.data) return [];
+
   return apiList.value.data.filter((api) => {
-    return api.name.toLowerCase().includes(searchText.value.toLowerCase());
+    return (
+      api.name.toLowerCase().includes(searchText.value.toLowerCase()) ||
+      api.url.toLowerCase().includes(searchText.value.toLowerCase())
+    );
   });
 };
 
@@ -84,10 +83,9 @@ const saveAddAPI = async () => {
       confirmButtonText: "Ok",
       timer: 1000,
     });
-
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    // Close modal and refresh list
+    showModalAdd.value = false;
+    refresh();
   }
 };
 
@@ -110,9 +108,9 @@ const saveEditAPI = async () => {
       confirmButtonText: "Ok",
       timer: 1000,
     });
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    // Close modal and refresh list
+    showModalEdit.value = false;
+    refresh();
   }
 };
 
@@ -146,9 +144,8 @@ const deleteAPI = async (apiURL) => {
             confirmButtonText: "Ok",
             timer: 1000,
           });
-          setTimeout(() => {
-            nuxtApp.$router.go();
-          }, 1000);
+          // Refresh list after deletion
+          refresh();
         }
       }
     });
@@ -229,34 +226,102 @@ const deleteAPI = async (apiURL) => {
       </div>
     </rs-card>
 
-    <rs-modal
-      title="Add API"
-      v-model="showModalAdd"
-      ok-title="Save"
-      :ok-callback="saveAddAPI"
-    >
-      <FormKit type="text" label="Url" v-model="showModalAddForm.apiURL">
-        <template #prefix>
-          <div class="bg-slate-100 dark:bg-slate-700 h-full rounded-l-md p-3">
-            /api/
+    <rs-modal title="Add API" v-model="showModalAdd" :overlay-close="false">
+      <template #body>
+        <FormKit type="form" :actions="false" @submit="saveAddAPI">
+          <FormKit
+            type="text"
+            label="URL"
+            :validation="[['required'], ['matches', '/^[a-z0-9/-]+$/']]"
+            :validation-messages="{
+              required: 'URL is required',
+              matches:
+                'URL contains invalid characters. Only letters, numbers, dashes, and forward slashes are allowed.',
+            }"
+            v-model="showModalAddForm.apiURL"
+          >
+            <template #prefix>
+              <div
+                class="bg-slate-100 dark:bg-slate-700 h-full rounded-l-md p-3"
+              >
+                /api/
+              </div>
+            </template>
+          </FormKit>
+
+          <!-- <FormKit
+            type="select"
+            label="Request Method"
+            :options="requestMethods"
+            validation="required"
+            placeholder="Select a method"
+            v-model="showModalAddForm.method"
+          /> -->
+
+          <div class="flex justify-end gap-2">
+            <rs-button variant="outline" @click="showModalAdd = false">
+              Cancel
+            </rs-button>
+            <rs-button btnType="submit">
+              <Icon
+                name="material-symbols:save-outline"
+                class="mr-2 !w-4 !h-4"
+              />
+              Save
+            </rs-button>
           </div>
-        </template>
-      </FormKit>
+        </FormKit>
+      </template>
+      <template #footer></template>
     </rs-modal>
 
-    <rs-modal
-      title="Add API"
-      v-model="showModalEdit"
-      ok-title="Save"
-      :ok-callback="saveEditAPI"
-    >
-      <FormKit type="text" label="Url" v-model="showModalEditForm.apiURL">
-        <template #prefix>
-          <div class="bg-slate-100 dark:bg-slate-700 h-full rounded-l-md p-3">
-            /api/
+    <rs-modal title="Edit API" v-model="showModalEdit" :overlay-close="false">
+      <template #body>
+        <FormKit type="form" :actions="false" @submit="saveEditAPI">
+          <FormKit
+            type="text"
+            label="URL"
+            :validation="[['required'], ['matches', '/^[a-z0-9/-]+$/']]"
+            :validation-messages="{
+              required: 'URL is required',
+              matches:
+                'URL contains invalid characters. Only letters, numbers, dashes, and forward slashes are allowed.',
+            }"
+            v-model="showModalEditForm.apiURL"
+          >
+            <template #prefix>
+              <div
+                class="bg-slate-100 dark:bg-slate-700 h-full rounded-l-md p-3"
+              >
+                /api/
+              </div>
+            </template>
+          </FormKit>
+
+          <!-- <FormKit
+            type="select"
+            label="Request Method"
+            :options="requestMethods"
+            validation="required"
+            placeholder="Select a method"
+            v-model="showModalEditForm.method"
+          /> -->
+
+          <div class="flex justify-end gap-2">
+            <rs-button variant="outline" @click="showModalEdit = false">
+              Cancel
+            </rs-button>
+            <rs-button btnType="submit">
+              <Icon
+                name="material-symbols:save-outline"
+                class="mr-2 !w-4 !h-4"
+              />
+              Save
+            </rs-button>
           </div>
-        </template>
-      </FormKit>
+        </FormKit>
+      </template>
+      <template #footer></template>
     </rs-modal>
   </div>
 </template>
