@@ -2,6 +2,8 @@ import { ChromaClient, OpenAIEmbeddingFunction } from "chromadb";
 
 const ENV = useRuntimeConfig();
 
+const MAX_RESULTS = 5;
+
 export default defineEventHandler(async (event) => {
   try {
     const { userID } = event.context.user;
@@ -50,14 +52,18 @@ export default defineEventHandler(async (event) => {
     // Search the collection
     const results = await collection.query({
       queryTexts: [query],
-      nResults: 2,
-      include: ["documents", "metadatas"],
+      nResults: MAX_RESULTS,
+      include: ["documents", "metadatas", "distances"],
     });
 
-    const searchResults = results.documents[0].map((document, index) => ({
-      content: document,
-      metadata: results.metadatas[0][index],
-    }));
+    // Map and sort results by distance (lower distance = higher relevance)
+    const searchResults = results.documents[0]
+      .map((document, index) => ({
+        content: document,
+        metadata: results.metadatas[0][index],
+        score: 1 - results.distances[0][index], // Convert distance to similarity score
+      }))
+      .sort((a, b) => b.score - a.score); // Sort by score in descending order
 
     return {
       statusCode: 200,

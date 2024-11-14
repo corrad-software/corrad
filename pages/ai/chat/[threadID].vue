@@ -1496,20 +1496,23 @@ const selectRelatedQuestion = (questionObj) => {
             :options="availableCollections"
           />
         </div>
-        <div v-if="relevantDocuments.length > 0">
-          <div
-            v-for="doc in relevantDocuments"
-            :key="doc.documentID"
-            class="mb-4 p-2 bg-gray-100 rounded border border-gray-200 bg-primary/10"
+        <h5 class="text-sm font-medium mb-2">Relevant Content</h5>
+        <NuxtScrollbar  style="max-height: 70vh">
+          <div v-if="relevantDocuments.length > 0">
+            <div
+              v-for="doc in relevantDocuments"
+              :key="doc.documentID"
+              class="mb-4 p-2 rounded border shadow bg-white"
           >
-            <h4 class="font-semibold">{{ doc.metadata.filename }}</h4>
+            <!-- <h5 class="font-medium mb-1">{{ doc.metadata.filename }}</h5> -->
             <p class="text-sm text-gray-600">
-              {{ doc.content.substring(0, 50) }}...
+              {{ doc.content.substring(0, 500) }}...
             </p>
             <!-- <button class="text-sm mt-2">View Full Document</button> -->
+            </div>
           </div>
-        </div>
-        <div v-else class="text-gray-500">No document references found.</div>
+          <div v-else class="text-gray-500">No document references found.</div>
+        </NuxtScrollbar>
       </div>
     </div>
     <!-- Add this near the end of your template -->

@@ -94,6 +94,8 @@ export default defineEventHandler(async (event) => {
 
       // Read the response body as text
       extractedText = await response.text();
+      console.log(extractedText);
+      
 
       console.log(
         "Extracted Text (first 100 characters):",
@@ -112,19 +114,34 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Split the extracted text into chunks
-    const chunkSize = 500; // words
-    const chunks = splitTextIntoChunks(extractedText, chunkSize);
-
-    // Function to split text into chunks
+    // Move the function definition before usage and improve it
     function splitTextIntoChunks(text, chunkSize) {
-      const words = text.split(/\s+/);
+      // Remove extra whitespace and split into words
+      const words = text.trim().split(/\s+/);
       const chunks = [];
-      for (let i = 0; i < words.length; i += chunkSize) {
-        chunks.push(words.slice(i, i + chunkSize).join(" "));
+      
+      // Calculate total chunks needed
+      const totalChunks = Math.ceil(words.length / chunkSize);
+      
+      // Create chunks of specified size
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const chunk = words.slice(start, start + chunkSize).join(' ');
+        if (chunk.trim().length > 0) {  // Only add non-empty chunks
+          chunks.push(chunk);
+        }
       }
+      
+      console.log(`Total words: ${words.length}`);
+      console.log(`Created ${chunks.length} chunks of approximately ${chunkSize} words each`);
+      
       return chunks;
     }
+
+    // Where the splitting happens
+    const chunkSize = 1500; // words per chunk
+    const chunks = splitTextIntoChunks(extractedText, chunkSize);
+
 
     // Initialize ChromaDB client
     const client = new ChromaClient({
