@@ -6,9 +6,7 @@ import DOMPurify from "dompurify";
 definePageMeta({
   title: "User Guide",
   description: "User Guide",
-  layout: "ai",
-  middleware: ["auth"],
-  requiresAuth: true,
+  layout: "empty",
 });
 
 // State
@@ -53,39 +51,37 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-[88dvh] md:h-[94dvh] max-w-7xl mx-auto">
+  <div class="flex flex-col max-w-7xl mx-auto py-10 px-4 md:px-10">
     <LayoutsBreadcrumbV2 />
 
-    <NuxtScrollbar style="max-height: 80dvh" class="pr-5">
-      <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center py-8">
-        <div
-          class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"
-        ></div>
-      </div>
-
-      <!-- Error State -->
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center items-center py-8">
       <div
-        v-else-if="error"
-        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-        role="alert"
-      >
-        <strong class="font-bold">Error!</strong>
-        <span class="block sm:inline"> {{ error }}</span>
-      </div>
-
-      <!-- Documentation Content -->
-      <div
-        v-else-if="documentation"
-        class="markdown-preview space-y-6"
-        v-html="renderMarkdown(documentation.documentationContent)"
+        class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"
       ></div>
+    </div>
 
-      <!-- No Content State -->
-      <div v-else class="text-center py-8 text-gray-500">
-        No documentation content available.
-      </div>
-    </NuxtScrollbar>
+    <!-- Error State -->
+    <div
+      v-else-if="error"
+      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+      role="alert"
+    >
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline"> {{ error }}</span>
+    </div>
+
+    <!-- Documentation Content -->
+    <div
+      v-else-if="documentation"
+      class="markdown-preview space-y-6"
+      v-html="renderMarkdown(documentation.documentationContent)"
+    ></div>
+
+    <!-- No Content State -->
+    <div v-else class="text-center py-8 text-gray-500">
+      No documentation content available.
+    </div>
   </div>
 </template>
 
