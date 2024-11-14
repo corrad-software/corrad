@@ -21,6 +21,8 @@ const linterErrorText = ref("");
 const linterErrorColumn = ref(0);
 const linterErrorLine = ref(0);
 
+const isLinterChecking = ref(false);
+
 const page = router.getRoutes().find((page) => {
   return page.name === route.query?.page;
 });
@@ -90,25 +92,30 @@ async function formatCode() {
 }
 
 async function checkLinterVue() {
-  // Call API to get the code
-  const { data } = await useFetch("/api/devtool/content/code/linter", {
-    initialCache: false,
-    method: "POST",
-    body: JSON.stringify({
-      code: fileCode.value,
-    }),
-  });
+  isLinterChecking.value = true;
+  try {
+    // Call API to get the code
+    const { data } = await useFetch("/api/devtool/content/code/linter", {
+      initialCache: false,
+      method: "POST",
+      body: JSON.stringify({
+        code: fileCode.value,
+      }),
+    });
 
-  if (data.value.statusCode === 200) {
-    linterError.value = false;
-    linterErrorText.value = "";
-    linterErrorColumn.value = 0;
-    linterErrorLine.value = 0;
-  } else if (data.value.statusCode === 400) {
-    linterError.value = true;
-    linterErrorText.value = data.value.data.message;
-    linterErrorColumn.value = data.value.data.column;
-    linterErrorLine.value = data.value.data.line;
+    if (data.value.statusCode === 200) {
+      linterError.value = false;
+      linterErrorText.value = "";
+      linterErrorColumn.value = 0;
+      linterErrorLine.value = 0;
+    } else if (data.value.statusCode === 400) {
+      linterError.value = true;
+      linterErrorText.value = data.value.data.message;
+      linterErrorColumn.value = data.value.data.column;
+      linterErrorLine.value = data.value.data.line;
+    }
+  } finally {
+    isLinterChecking.value = false;
   }
 }
 
@@ -167,23 +174,36 @@ const saveCode = async () => {
   <div>
     <LayoutsBreadcrumb />
 
-    <rs-alert v-if="hasError" class="mb-4" variant="danger">{{
+    <rs-alert v-if="hasError" variant="danger" class="mb-4">{{
       error
     }}</rs-alert>
     <rs-card class="mb-0">
       <div class="p-4">
         <div class="flex justify-end gap-2 mb-4">
-          <rs-button class="!p-2" @click="saveCode">
-            <Icon
-              name="material-symbols:save-outline-rounded"
-              size="20px"
-              class="mr-1"
-            />
-            Save Code
+          <rs-button
+            class="!p-2"
+            @click="saveCode"
+            :disabled="isLinterChecking"
+          >
+            <div class="flex items-center">
+              <Icon
+                v-if="!isLinterChecking"
+                name="material-symbols:save-outline-rounded"
+                size="20px"
+                class="mr-1"
+              />
+              <Icon
+                v-else
+                name="eos-icons:loading"
+                size="20px"
+                class="mr-1 animate-spin"
+              />
+              {{ isLinterChecking ? "Checking..." : "Save Code" }}
+            </div>
           </rs-button>
         </div>
         <Transition>
-          <rs-alert v-if="linterError" variant="danger">
+          <rs-alert v-if="linterError" variant="danger" class="mb-4">
             <div class="flex gap-2">
               <Icon name="material-symbols:error-outline-rounded" size="20px" />
               <div>
