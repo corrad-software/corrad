@@ -546,13 +546,6 @@ async function handleOpenAIAssistant({
 
     const messages = await openai.beta.threads.messages.list(threadID);
     const lastMessage = messages.data[0];
-    if (lastMessage.role === "assistant") {
-      const finalContent = lastMessage.content[0].text.value;
-      if (finalContent !== fullResponse) {
-        const remainingContent = finalContent.slice(fullResponse.length);
-        io.to(threadID).emit("messageChunk", remainingContent);
-      }
-    }
 
     io.to(threadID).emit("messageEnd");
 

@@ -135,7 +135,7 @@ const filteredPrompts = computed(() => {
 });
 
 const sidebarClasses = computed(() => {
-  return showDocumentSidebar.value ? "w-1/4" : "w-0";
+  return showDocumentSidebar.value ? "w-full md:w-1/4 z-50" : "w-0";
 });
 
 // Add new refs for animation
@@ -343,6 +343,7 @@ watch(
   async (newVal, oldVal) => {
     if (oldVal !== newVal) {
       await changeCollection(newVal);
+      showDocumentSidebar.value = false;
     }
   }
 );
@@ -1497,18 +1498,18 @@ const selectRelatedQuestion = (questionObj) => {
           />
         </div>
         <h5 class="text-sm font-medium mb-2">Relevant Content</h5>
-        <NuxtScrollbar  style="max-height: 70vh">
+        <NuxtScrollbar style="max-height: 70vh">
           <div v-if="relevantDocuments.length > 0">
             <div
               v-for="doc in relevantDocuments"
               :key="doc.documentID"
               class="mb-4 p-2 rounded border shadow bg-white"
-          >
-            <!-- <h5 class="font-medium mb-1">{{ doc.metadata.filename }}</h5> -->
-            <p class="text-sm text-gray-600">
-              {{ doc.content.substring(0, 500) }}...
-            </p>
-            <!-- <button class="text-sm mt-2">View Full Document</button> -->
+            >
+              <!-- <h5 class="font-medium mb-1">{{ doc.metadata.filename }}</h5> -->
+              <p class="text-sm text-gray-600">
+                {{ doc.content.substring(0, 500) }}...
+              </p>
+              <!-- <button class="text-sm mt-2">View Full Document</button> -->
             </div>
           </div>
           <div v-else class="text-gray-500">No document references found.</div>
