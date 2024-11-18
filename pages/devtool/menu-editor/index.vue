@@ -126,6 +126,16 @@ const openModalEdit = (menu) => {
 };
 
 const saveEditMenu = async () => {
+  // Check title regex to ensure no weird symbol only letters, numbers, spaces, underscores and dashes
+  if (!/^[a-zA-Z0-9\s_-]+$/.test(showModalEditForm.value.title)) {
+    nuxtApp.$swal.fire({
+      title: "Error",
+      text: "Title contains invalid characters. Only letters, numbers, spaces, underscores and dashes are allowed.",
+      icon: "error",
+    });
+    return;
+  }
+
   // Clean the name and title ensure not spacing at the beginning or end
   showModalEditForm.value.title = showModalEditForm.value.title.trim();
   showModalEditForm.value.name = showModalEditForm.value.name.trim();
@@ -170,6 +180,16 @@ const openModalAdd = () => {
 };
 
 const saveAddMenu = async () => {
+  // Check title regex to ensure no weird symbol only letters, numbers, spaces, underscores and dashes
+  if (!/^[a-zA-Z0-9\s_-]+$/.test(showModalAddForm.value.title)) {
+    nuxtApp.$swal.fire({
+      title: "Error",
+      text: "Title contains invalid characters. Only letters, numbers, spaces, underscores and dashes are allowed.",
+      icon: "error",
+    });
+    return;
+  }
+
   // Clean the name and title ensure not spacing at the beginning or end
   showModalAddForm.value.title = showModalAddForm.value.title.trim();
   showModalAddForm.value.name = showModalAddForm.value.name.trim();
@@ -642,11 +662,9 @@ watch(
           <FormKit
             type="text"
             label="Title"
-            :validation="[['required'], ['matches', '/^[a-zA-Z0-9]+$/']]"
+            :validation="[['required']]"
             :validation-messages="{
               required: 'Title is required',
-              matches:
-                'Title contains invalid characters. Only letters and numbers are allowed.',
             }"
             v-model="showModalEditForm.title"
           />
@@ -695,11 +713,9 @@ watch(
           <FormKit
             type="text"
             label="Title"
-            :validation="[['required'], ['matches', '/^[a-zA-Z0-9]+$/']]"
+            :validation="[['required']]"
             :validation-messages="{
               required: 'Title is required',
-              matches:
-                'Title contains invalid characters. Only letters and numbers are allowed.',
             }"
             v-model="showModalAddForm.title"
           />
