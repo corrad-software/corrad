@@ -221,19 +221,6 @@ export const socketHandler = async (io: Server) => {
             throw new Error("Thread not found");
           }
 
-          // Delete the previous assistant message from the database
-          await prisma?.chat.deleteMany({
-            where: {
-              chatProviderMessageID: assistantMessageId,
-              thread: {
-                threadProviderID: threadID,
-              },
-              project: {
-                projectUniqueID: projectID,
-              },
-            },
-          });
-
           // Handle different thread types
           if (thread.threadSourceType === "ASSISTANT") {
             await handleOpenAIAssistant({
@@ -281,6 +268,19 @@ export const socketHandler = async (io: Server) => {
               });
             }
           }
+
+          // Delete the previous assistant message from the database
+          await prisma?.chat.deleteMany({
+            where: {
+              chatProviderMessageID: assistantMessageId,
+              thread: {
+                threadProviderID: threadID,
+              },
+              project: {
+                projectUniqueID: projectID,
+              },
+            },
+          });
         } catch (error) {
           console.error("Error regenerating response:", error);
           io.to(threadID).emit(

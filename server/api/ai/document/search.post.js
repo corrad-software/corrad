@@ -2,8 +2,6 @@ import { ChromaClient, OpenAIEmbeddingFunction } from "chromadb";
 
 const ENV = useRuntimeConfig();
 
-const MAX_RESULTS = 5;
-
 export default defineEventHandler(async (event) => {
   try {
     const { userID } = event.context.user;
@@ -49,6 +47,9 @@ export default defineEventHandler(async (event) => {
     if (!query)
       query = "Give me the summary of the documents from this collections.";
 
+    let MAX_RESULTS = await getConfiguration("Chroma_Max_Result");
+    if (!MAX_RESULTS) MAX_RESULTS = 5;
+
     // Search the collection
     const results = await collection.query({
       queryTexts: [query],
@@ -75,3 +76,23 @@ export default defineEventHandler(async (event) => {
     return { statusCode: 500, message: "Internal Server Error" };
   }
 });
+
+const getConfiguration = async (configurationCode) => {
+  try {
+    const value = await prisma.configuration.findFirst({
+      where: {
+        configurationCode: configurationCode,
+        configurationValue: {
+          not: null,
+        },
+      },
+      select: {
+        configurationValue: true,
+      },
+    });
+
+    return value?.configurationValue;
+  } catch (error) {
+    return null;
+  }
+};
