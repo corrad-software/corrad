@@ -94,7 +94,7 @@ getRoutes.map((menu) => {
     }
   }
 
-  if (menu.name)
+  if (menu.name && !menu.path.startsWith("/devtool") && menu.path !== "/")
     allMenus.push({
       id: i++,
       title:
@@ -550,25 +550,38 @@ watch(
             </rs-table>
           </rs-tab-item>
           <rs-tab-item title="Manage Side Menu">
-            <div class="flex justify-end items-center mb-4">
+            <div class="flex justify-end items-center mb-4 gap-2">
+              <rs-button variant="outline" @click="addNewHeader">
+                <Icon name="material-symbols:docs-add-on" class="mr-2"></Icon>
+                Add Header Section
+              </rs-button>
               <rs-button
-                class="mr-2"
+                variant="outline"
                 @click="showCode ? (showCode = false) : (showCode = true)"
               >
                 <Icon name="ic:baseline-code" class="mr-2"></Icon>
-                {{ showCode ? "Hide" : "Show" }} JSON Code
+                {{ showCode ? "Hide" : "Show" }} JSON
               </rs-button>
               <rs-button @click="overwriteJsonFileLocal(sideMenuList)">
                 <Icon name="mdi:content-save-outline" class="mr-2"></Icon>
-                Save Menu
+                Save Changes
               </rs-button>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Available Menus Section -->
               <div>
+                <div class="mb-4">
+                  <h3 class="text-lg font-semibold mb-2">
+                    Available Menu Items
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Drag items from here to build your navigation menu
+                  </p>
+                </div>
                 <FormKit
                   type="search"
-                  placeholder="Search Menu..."
+                  placeholder="Search available menu items..."
                   outer-class="mb-5"
                   v-model="searchInput"
                 />
@@ -585,56 +598,66 @@ watch(
                   >
                     <template #item="{ element }">
                       <rs-card
-                        class="p-4 mb-4 border-2 border-[rgb(var(--border-color))] !shadow-none"
+                        class="p-4 mb-4 border-2 border-[rgb(var(--border-color))] !shadow-none hover:border-primary/50 transition-colors"
                       >
                         <div class="flex justify-between items-center">
-                          <p>
-                            {{ kebabtoTitle(element.name) }} (
-                            <NuxtLink
-                              class="text-primary hover:underline"
-                              :to="element.path"
-                              target="_blank"
-                            >
+                          <div>
+                            <p class="font-medium">
+                              {{ kebabtoTitle(element.name) }}
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
                               {{ element.path }}
-                            </NuxtLink>
-                            )
-                          </p>
-                          <Icon
-                            v-if="checkExistSideMenuList(element.path) == false"
-                            name="ic:baseline-arrow-circle-right"
-                            class="text-primary cursor-pointer transition-all duration-150 hover:scale-110"
-                            @click="openModal(element)"
-                          ></Icon>
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <Icon
+                              v-if="!checkExistSideMenuList(element.path)"
+                              name="material-symbols:add-circle-outline"
+                              class="text-primary cursor-pointer transition-all duration-150 hover:scale-110"
+                              @click="openModal(element)"
+                              size="24"
+                            >
+                              <span class="sr-only">Add to menu</span>
+                            </Icon>
+                            <Icon
+                              name="material-symbols:drag-indicator"
+                              class="text-gray-400"
+                              size="24"
+                            >
+                              <span class="sr-only">Drag to add</span>
+                            </Icon>
+                          </div>
                         </div>
                       </rs-card>
                     </template>
                   </draggable>
                 </NuxtScrollbar>
               </div>
-              <NuxtScrollbar v-if="!showCode" style="height: 825px">
-                <rs-card
-                  class="p-4 border border-[rgb(var(--border-color))] bg-[rgb(var(--bg-1))] rounded-md"
-                >
-                  <div class="flex justify-end items-center">
-                    <rs-button
-                      class="!p-2 mt-3 justify-center items-center"
-                      @click="addNewHeader"
-                    >
-                      <Icon
-                        class="mr-1"
-                        name="material-symbols:docs-add-on"
-                        size="18"
-                      ></Icon>
-                      Add Header
-                    </rs-button>
-                  </div>
-                  <DraggableSideMenuNested
-                    :menus="sideMenuList"
-                    @changeSideMenu="changeSideMenuList"
-                  />
-                </rs-card>
-              </NuxtScrollbar>
-              <pre v-else v-html="JSON.stringify(sideMenuList, null, 2)"></pre>
+
+              <!-- Menu Structure Section -->
+              <div>
+                <div class="mb-4">
+                  <h3 class="text-lg font-semibold mb-2">Menu Structure</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Organize your navigation menu by dragging items and sections
+                  </p>
+                </div>
+                <NuxtScrollbar v-if="!showCode" style="height: 825px">
+                  <rs-card
+                    class="p-4 border border-[rgb(var(--border-color))] bg-[rgb(var(--bg-1))] rounded-md"
+                  >
+                    <DraggableSideMenuNested
+                      :menus="sideMenuList"
+                      @changeSideMenu="changeSideMenuList"
+                    />
+                  </rs-card>
+                </NuxtScrollbar>
+                <pre
+                  v-else
+                  class="p-4 bg-gray-100 dark:bg-gray-800 rounded-md overflow-auto"
+                  v-html="JSON.stringify(sideMenuList, null, 2)"
+                ></pre>
+              </div>
             </div>
           </rs-tab-item>
         </rs-tab>
@@ -759,3 +782,18 @@ watch(
     </rs-modal>
   </div>
 </template>
+
+<style scoped>
+.draggable-item {
+  cursor: move;
+}
+
+.ghost {
+  opacity: 0.5;
+  background: #c8ebfb;
+}
+
+.drag-handle {
+  cursor: move;
+}
+</style>

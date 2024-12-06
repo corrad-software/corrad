@@ -43,6 +43,7 @@ export default defineEventHandler(async (event) => {
         "textarea",
         "submit",
         "button",
+        "form",
       ];
 
       // Find all FormKit components
