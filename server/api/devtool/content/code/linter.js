@@ -202,14 +202,15 @@ export default defineEventHandler(async (event) => {
         definedVariables.add(varMatch[1]);
       }
 
-      // Extract defineProps if any
-      const propsMatch = scriptContent.match(/defineProps\(\s*{([^}]+)}\s*\)/);
-      if (propsMatch) {
-        const propsContent = propsMatch[1];
-        const propNames = propsContent.match(/(\w+)\s*:/g);
-        propNames?.forEach((prop) => {
-          definedVariables.add(prop.replace(":", "").trim());
-        });
+      // Add template/slot scope variables
+      const templateScopeRegex =
+        /<template\s+#?[\w-]+\s*=\s*["']{0,1}\{\s*([^}]+)\s*\}["']{0,1}/g;
+      let templateMatch;
+      while (
+        (templateMatch = templateScopeRegex.exec(templateContent)) !== null
+      ) {
+        const scopeVars = templateMatch[1].split(",").map((v) => v.trim());
+        scopeVars.forEach((v) => definedVariables.add(v));
       }
 
       // Check template for undefined variables
@@ -231,12 +232,17 @@ export default defineEventHandler(async (event) => {
         const variables = expression.split(/[\s.()[\]]+/);
 
         for (const variable of variables) {
-          // Skip numbers, operators, and empty strings
+          // Skip numbers, operators, empty strings, and template scope variables
           if (
             !variable ||
             variable.match(/^[\d+\-*/&|!%<>=?:]+$/) ||
             variable === "true" ||
-            variable === "false"
+            variable === "false" ||
+            // Skip checking variables that are likely from template/slot scope
+            variable === "text" ||
+            variable === "value" ||
+            // Skip checking if the variable is a property access
+            expression.includes(`.${variable}`)
           ) {
             continue;
           }
