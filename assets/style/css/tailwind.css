@@ -27,6 +27,7 @@
 @import "./form/file";
 @import "./form/range";
 @import "./form/dropzone";
+@import "./form/asterisk";
 
 /*  Utilities Import Tailwind CSS */
 @import "tailwindcss/utilities";

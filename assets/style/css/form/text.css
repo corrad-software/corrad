@@ -28,10 +28,7 @@
     focus:outline-none
     disabled:bg-[rgb(var(--bg-1))]
     disabled:border-[rgb(var(--bg-1))]
-    disabled:placeholder-[rgb(var(--bg-1))]
-    read-only:bg-[rgb(var(--bg-1))]
-    read-only:border-[rgb(var(--bg-1))]
-    read-only:placeholder-[rgb(var(--bg-1))];
+    disabled:placeholder-[rgb(var(--bg-1))];
 }
 
 .formkit-prefix-text {

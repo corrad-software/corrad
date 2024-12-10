@@ -3,10 +3,6 @@
   @apply w-fit rounded-lg flex justify-center items-center h-fit;
 }
 
-.button[class*="button-"]:hover {
-  background-image: linear-gradient(rgb(0 0 0/10%) 0 0);
-}
-
 .button[class*="button-"]:disabled {
   opacity: 0.3;
   cursor: not-allowed;
