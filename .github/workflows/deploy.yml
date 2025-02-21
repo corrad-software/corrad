@@ -42,6 +42,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Fix permissions
+            sudo chown -R ec2-user:ec2-user /home/ec2-user/lzs-ai
+            sudo chmod -R 755 /home/ec2-user/lzs-ai
+            
             cd /home/ec2-user/lzs-ai
             sudo git pull origin lzs-corradai
             sudo pm2 stop app || true
@@ -66,6 +70,10 @@ jobs:
           script: |
             cd /home/ec2-user/lzs-ai
             
+            # Fix permissions again after file copy
+            sudo chown -R ec2-user:ec2-user /home/ec2-user/lzs-ai
+            sudo chmod -R 755 /home/ec2-user/lzs-ai
+            
             # Create .env file
             sudo tee .env > /dev/null << EOL
             NUXT_ENV=production
@@ -78,6 +86,9 @@ jobs:
             APP_URL="${{ secrets.APP_URL }}"
             SERVER=true
             EOL
+            
+            sudo chown ec2-user:ec2-user .env
+            sudo chmod 644 .env
             
             sudo yarn install --frozen-lockfile --production
             sudo pm2 start "yarn preview" --name app
