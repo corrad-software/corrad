@@ -107,7 +107,8 @@ jobs:
             # Install dependencies and start the application
             yarn install --frozen-lockfile --production
             
-            # Generate Prisma client
+            # Generate Prisma client with proper environment
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
             npx prisma generate
             
             pm2 start "yarn preview" --name app
