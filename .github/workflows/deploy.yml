@@ -42,14 +42,28 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Install required software
+            curl -sL https://rpm.nodesource.com/setup_18.x | sudo bash -
+            sudo yum install -y nodejs
+            sudo npm install -g yarn pm2
+            
+            # Create and setup project directory
+            sudo mkdir -p /home/ec2-user/lzs-ai
+            cd /home/ec2-user/lzs-ai
+            
+            # Initialize git if not already initialized
+            if [ ! -d .git ]; then
+              sudo git init
+              sudo git remote add origin https://github.com/yourusername/lzs-corradai.git || true
+            fi
+            
             # Fix permissions
             sudo chown -R ec2-user:ec2-user /home/ec2-user/lzs-ai
             sudo chmod -R 755 /home/ec2-user/lzs-ai
             
-            cd /home/ec2-user/lzs-ai
-            sudo git pull origin lzs-corradai
-            sudo pm2 stop app || true
-            sudo pm2 delete app || true
+            # Stop existing PM2 processes if any
+            pm2 stop app || true
+            pm2 delete app || true
 
       - name: Copy built files to EC2
         uses: appleboy/scp-action@master
@@ -90,6 +104,7 @@ jobs:
             sudo chown ec2-user:ec2-user .env
             sudo chmod 644 .env
             
-            sudo yarn install --frozen-lockfile --production
-            sudo pm2 start "yarn preview" --name app
-            sudo pm2 save 
+            # Install dependencies and start the application
+            yarn install --frozen-lockfile --production
+            pm2 start "yarn preview" --name app
+            pm2 save 
