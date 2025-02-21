@@ -106,5 +106,9 @@ jobs:
             
             # Install dependencies and start the application
             yarn install --frozen-lockfile --production
+            
+            # Generate Prisma client
+            npx prisma generate
+            
             pm2 start "yarn preview" --name app
             pm2 save 
