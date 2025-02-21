@@ -71,7 +71,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: ".output/,package.json,yarn.lock"
+          source: ".output/,package.json,yarn.lock,prisma/"
           target: "/home/ec2-user/lzs-ai"
           strip_components: 0
 
