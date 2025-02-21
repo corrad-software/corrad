@@ -1,0 +1,84 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - lzs-corradai
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build application
+        run: yarn build
+        env:
+          NUXT_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NUXT_ACCESS_TOKEN_SECRET: ${{ secrets.NUXT_ACCESS_TOKEN_SECRET }}
+          NUXT_REFRESH_TOKEN_SECRET: ${{ secrets.NUXT_REFRESH_TOKEN_SECRET }}
+          PORT: 3000
+          CHROMADB_URL: ${{ secrets.CHROMADB_URL }}
+          APACHE_TIKA_URL: ${{ secrets.APACHE_TIKA_URL }}
+          APP_URL: ${{ secrets.APP_URL }}
+          SERVER: true
+
+      - name: Initial EC2 Setup
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/lzs-ai
+            sudo git pull origin lzs-corradai
+            sudo pm2 stop app || true
+            sudo pm2 delete app || true
+
+      - name: Copy built files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: ".output/,package.json,yarn.lock"
+          target: "/home/ec2-user/lzs-ai"
+          strip_components: 0
+
+      - name: Final EC2 Setup and Start
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/lzs-ai
+            
+            # Create .env file
+            sudo tee .env > /dev/null << EOL
+            NUXT_ENV=production
+            DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            NUXT_ACCESS_TOKEN_SECRET="${{ secrets.NUXT_ACCESS_TOKEN_SECRET }}"
+            NUXT_REFRESH_TOKEN_SECRET="${{ secrets.NUXT_REFRESH_TOKEN_SECRET }}"
+            PORT=3000
+            CHROMADB_URL="${{ secrets.CHROMADB_URL }}"
+            APACHE_TIKA_URL="${{ secrets.APACHE_TIKA_URL }}"
+            APP_URL="${{ secrets.APP_URL }}"
+            SERVER=true
+            EOL
+            
+            sudo yarn install --frozen-lockfile --production
+            sudo pm2 start "yarn preview" --name app
+            sudo pm2 save 
