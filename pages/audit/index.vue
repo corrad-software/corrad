@@ -139,7 +139,7 @@ const fetchAuditStats = async () => {
 
     if (result.statusCode === 200) {
       stats.value = result.data;
-      console.log("Fetched stats:", result.data);
+      // console.log("Fetched stats:", result.data);
       refreshChart();
     } else {
       console.error("Error fetching audit statistics:", result.message);
@@ -226,7 +226,7 @@ onMounted(() => {
 
   // Initialize chart refresh with a longer delay to ensure data is loaded
   setTimeout(() => {
-    console.log("Activity data:", stats.value.activityByDay);
+    // console.log("Activity data:", stats.value.activityByDay);
     changeKey.value++;
   }, 1000);
 });
@@ -247,7 +247,7 @@ const refreshChart = () => {
 watch(
   () => stats.value,
   (newStats) => {
-    console.log("Stats updated:", newStats);
+    // console.log("Stats updated:", newStats);
 
     const newActivityData = newStats?.activityByDay || [];
 
@@ -371,7 +371,7 @@ const chartOptionsActivity = computed(() => {
         ?.map((day) => day.date) || [];
   }
 
-  console.log("Chart categories:", categories);
+  // console.log("Chart categories:", categories);
 
   return {
     chart: {

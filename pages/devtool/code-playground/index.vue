@@ -32,9 +32,7 @@ definePageMeta({
 
 const CODE_STORAGE_KEY = "playground-code";
 
-const code = ref(
-  localStorage.getItem(CODE_STORAGE_KEY) ||
-    `<template>
+const defaultCode = `<template>
   <rs-card>
     <template #header>SFC Playground Demo</template>
     <template #body>
@@ -50,7 +48,10 @@ const code = ref(
 <script setup>
 const msg = 'Hello from SFC Playground';
 const count = ref(0);
-<\/script>`
+<\/script>`;
+
+const code = ref(
+  localStorage.getItem(CODE_STORAGE_KEY) || defaultCode
 );
 
 const compiledCode = ref(null);
@@ -143,28 +144,111 @@ const compileCode = async (newCode) => {
           const setupContext = reactive({});
 
           try {
-            // Extract top-level declarations
-            const declarations =
-              scriptSetup.match(/const\s+(\w+)\s*=\s*([^;]+)/g) || [];
-            declarations.forEach((decl) => {
-              const [, varName, varValue] = decl.match(
-                /const\s+(\w+)\s*=\s*(.+)/
-              );
-              if (
-                varValue.trim().startsWith("'") ||
-                varValue.trim().startsWith('"')
-              ) {
-                // It's a string literal, use it directly
-                setupContext[varName] = varValue.trim().slice(1, -1);
-              } else if (varValue.trim().startsWith("ref(")) {
-                // It's already a ref, use ref
-                setupContext[varName] = ref(null);
-              } else {
-                // For other cases, wrap in ref
-                setupContext[varName] = ref(null);
+            // First, create all the refs so they exist in the context
+            const refRegex = /const\s+(\w+)\s*=\s*ref\(([^)]*)\)/g;
+            const refMatches = [...scriptSetup.matchAll(refRegex)];
+            
+            refMatches.forEach(match => {
+              const [, varName, refValue] = match;
+              let initialValue = null;
+              
+              try {
+                // Try to evaluate the ref value
+                if (refValue.trim() === '') {
+                  initialValue = null;
+                } else if (refValue.trim() === 'true') {
+                  initialValue = true;
+                } else if (refValue.trim() === 'false') {
+                  initialValue = false;
+                } else if (refValue.trim() === 'null') {
+                  initialValue = null;
+                } else if (refValue.trim() === 'undefined') {
+                  initialValue = undefined;
+                } else if (refValue.trim().startsWith("'") || refValue.trim().startsWith('"')) {
+                  // String value
+                  initialValue = refValue.trim().slice(1, -1);
+                } else if (!isNaN(Number(refValue.trim()))) {
+                  // Numeric value
+                  initialValue = Number(refValue.trim());
+                } else if (refValue.trim().startsWith('[')) {
+                  // Array
+                  initialValue = [];
+                } else if (refValue.trim().startsWith('{')) {
+                  // Object
+                  initialValue = {};
+                }
+              } catch (e) {
+                console.error('Error evaluating ref value:', e);
+              }
+              
+              // Create the ref with the evaluated value
+              setupContext[varName] = ref(initialValue);
+            });
+            
+            // Extract other variable declarations (non-refs)
+            const varRegex = /const\s+(\w+)\s*=\s*(?!ref\()([^;]+)/g;
+            const varMatches = [...scriptSetup.matchAll(varRegex)];
+            
+            varMatches.forEach(match => {
+              const [, varName, varValue] = match;
+              
+              // Skip if it's already defined as a ref
+              if (setupContext[varName]) return;
+              
+              // Skip function declarations for now
+              if (varValue.trim().startsWith('() =>') || varValue.trim().startsWith('function')) return;
+              
+              try {
+                if (varValue.trim().startsWith("'") || varValue.trim().startsWith('"')) {
+                  // String value
+                  setupContext[varName] = varValue.trim().slice(1, -1);
+                } else if (!isNaN(Number(varValue.trim()))) {
+                  // Numeric value
+                  setupContext[varName] = Number(varValue.trim());
+                } else {
+                  // Default to null for other values
+                  setupContext[varName] = null;
+                }
+              } catch (e) {
+                console.error('Error evaluating variable value:', e);
+                setupContext[varName] = null;
               }
             });
-
+            
+            // Modify the script to make functions work with refs
+            // Replace all instances of ref.value with direct ref access
+            let modifiedScript = scriptSetup;
+            
+            // Find all function declarations
+            const functionRegex = /const\s+(\w+)\s*=\s*(?:function\s*\([^)]*\)|(?:\([^)]*\))\s*=>)\s*{([\s\S]*?)}/g;
+            let match;
+            let functionNames = [];
+            
+            while ((match = functionRegex.exec(scriptSetup)) !== null) {
+              const funcName = match[1];
+              let funcBody = match[2];
+              functionNames.push(funcName);
+              
+              // For each ref, replace ref.value with direct access in the function body
+              refMatches.forEach(refMatch => {
+                const refName = refMatch[1];
+                const refRegExp = new RegExp(`${refName}\\.value`, 'g');
+                funcBody = funcBody.replace(refRegExp, `__refs.${refName}.value`);
+              });
+              
+              // Create a modified function that uses the __refs object
+              const modifiedFunc = `const ${funcName} = function() {
+                const __refs = {
+                  ${refMatches.map(m => `${m[1]}: ctx.${m[1]}`).join(',\n')}
+                };
+                ${funcBody}
+              }`;
+              
+              // Replace the original function with the modified one
+              modifiedScript = modifiedScript.replace(match[0], modifiedFunc);
+            }
+            
+            // Now run the modified script in the context
             const setupFunction = new Function(
               "ctx",
               "ref",
@@ -187,10 +271,18 @@ const compileCode = async (newCode) => {
               "FormKitSchemaCondition",
               "FormKitSchemaValidation",
               `
-              with (ctx) {
-                ${scriptSetup}
+              try {
+                with (ctx) {
+                  ${modifiedScript}
+                }
+                return ctx;
+              } catch (error) {
+                console.error("Error executing script setup:", error);
+                return { 
+                  __error: error.message,
+                  ...ctx 
+                };
               }
-              return ctx;
               `
             );
 
@@ -216,6 +308,11 @@ const compileCode = async (newCode) => {
               FormKitSchemaCondition,
               FormKitSchemaValidation
             );
+
+            // Check if there was an error in the script execution
+            if (result.__error) {
+              throw new Error(result.__error);
+            }
 
             // Merge the result back into setupContext
             Object.assign(setupContext, result);
@@ -270,24 +367,6 @@ onMounted(async () => {
   await compileCode(code.value);
 });
 
-const defaultCode = `<template>
-  <rs-card>
-    <template #header>SFC Playground Demo</template>
-    <template #body>
-      <div class="space-y-4">
-        <rs-alert variant="info">{{ msg }}</rs-alert>
-        <rs-button @click="count++">Clicked {{ count }} times</rs-button>
-        <rs-badge>{{ count > 5 ? 'High' : 'Low' }}</rs-badge>
-      </div>
-    </template>
-  </rs-card>
-</template>
-
-<script setup>
-const msg = 'Hello from SFC Playground';
-const count = ref(0);
-<\/script>`;
-
 const resetCode = () => {
   code.value = defaultCode;
   localStorage.setItem(CODE_STORAGE_KEY, defaultCode);
@@ -340,6 +419,15 @@ watch(
       <div
         class="w-full sm:w-1/2 flex flex-col border-b sm:border-b-0 sm:border-r border-gray-900"
       >
+        <!-- <div class="bg-gray-800 p-2 text-white text-sm">
+          <div class="flex items-center">
+            <Icon name="ph:info-fill" class="mr-2 text-blue-400" />
+            <span>
+              <strong>Tip:</strong> For modifying refs, use inline functions in the template (e.g., <code>@click="myRef.value += 1"</code>) 
+              instead of separate function declarations.
+            </span>
+          </div>
+        </div> -->
         <div class="flex-grow overflow-hidden">
           <rs-code-mirror
             v-model="code"
