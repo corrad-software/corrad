@@ -1,0 +1,125 @@
+---
+description: API Implementation Style Guide
+globs: server/*
+alwaysApply: false
+---
+# API Implementation Style Guide for Cursor
+
+## 1. File Structure and Organization
+
+1. **Directory Structure**:
+   - Use a hierarchical structure: `server/api/[module]/[submodule]/[endpoint].[method].js`
+   - Group related endpoints under the same module (e.g., `auth`, `devtool`)
+   - Use descriptive names for modules and endpoints
+
+2. **File Naming**:
+   - Name files according to their HTTP method: `index.get.js`, `users.get.js`, `login.post.js`
+   - Use lowercase for all filenames
+   - Use `.js` extension for JavaScript files (not TypeScript)
+
+3. **Middleware**:
+   - Place middleware in `server/middleware/` directory
+   - Prefix filenames with numbers to control execution order (e.g., `0_auth.js`, `1_audit.js`)
+
+4. **Utilities**:
+   - Place utility functions in `server/utils/` directory
+   - Use descriptive names for utility files based on their purpose
+
+## 2. Code Style
+
+1. **JavaScript vs TypeScript**:
+   - Use pure JavaScript (not TypeScript) for API files
+   - Avoid TypeScript syntax like type assertions (`as string`) and type annotations (`: any`)
+
+2. **Function Structure**:
+   - Export a single default function using `defineEventHandler`
+   - Wrap the main logic in a try-catch block
+   - Return structured responses with `statusCode` and either `data` or `message`
+
+3. **Error Handling**:
+   - Use try-catch blocks for error handling
+   - Log errors with `console.error`
+   - Return standardized error responses with appropriate status codes
+
+4. **Response Format**:
+   ```javascript
+   return {
+     statusCode: 200, // or appropriate status code
+     data: {}, // for successful responses
+     // OR
+     message: "Error message" // for error responses
+   };
+   ```
+
+## 3. Authentication and Authorization
+
+1. **User Authentication**:
+   - Access user information from `event.context.user`
+   - Check user authentication status before processing requests
+   - Verify user roles for authorization
+
+2. **Role-Based Access Control**:
+   - Check user roles using `roles.includes()` method
+   - Implement consistent permission checks at the beginning of handlers
+   - Return 403 Forbidden for unauthorized access
+
+## 4. Query Parameters and Filtering
+
+1. **Parameter Handling**:
+   - Get query parameters using `getQuery(event)`
+   - Parse numeric parameters with `parseInt()` or convert to appropriate types
+   - Provide default values for optional parameters
+   - Handle date parameters by converting strings to Date objects
+
+2. **Filtering and Pagination**:
+   - Build filter conditions based on query parameters
+   - Implement consistent pagination with `page` and `limit` parameters
+   - Return pagination metadata with results
+
+## 5. Database Operations
+
+1. **Prisma Usage**:
+   - Use Prisma Client for database operations
+   - Build query conditions dynamically based on filters
+   - Use appropriate Prisma methods (`findMany`, `findFirst`, `count`, etc.)
+   - For complex queries, use `$queryRaw` with template literals
+
+2. **Data Transformation**:
+   - Convert BigInt values to numbers before returning
+   - Sanitize sensitive data before logging or returning
+
+## 6. Middleware Implementation
+
+1. **Auth Middleware**:
+   - Verify JWT tokens
+   - Set user context for downstream handlers
+   - Handle token refresh
+
+2. **Audit Middleware**:
+   - Log user actions
+   - Skip auditing for certain paths
+   - Sanitize sensitive data in payloads
+
+## 7. Helper Functions
+
+1. **Function Organization**:
+   - Define helper functions at the module level
+   - Use descriptive function names
+   - Keep functions focused on a single responsibility
+
+2. **Utility Functions**:
+   - Place reusable functions in the utils directory
+   - Export functions individually or as a group
+
+## 8. Comments and Documentation
+
+1. **Code Comments**:
+   - Use comments to explain the purpose of code sections
+   - Add comments for complex logic or business rules
+   - Group related code with section comments
+
+2. **Function Documentation**:
+   - Document function parameters and return values
+   - Explain the purpose of utility functions
+
+By following these guidelines, you'll maintain a consistent coding style across your API implementation, making it easier to understand, maintain, and extend your codebase.

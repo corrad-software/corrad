@@ -1,0 +1,203 @@
+---
+description: FormKit/Form Usage Style Guide
+globs: pages/*
+alwaysApply: false
+---
+# FormKit Usage Style Guide for Cursor
+
+## 1. FormKit as the Primary Input System
+
+1. **Exclusive Use of FormKit**:
+   - Use FormKit for ALL form inputs, including text fields, dropdowns, checkboxes, and radio buttons
+   - Do not create custom input components or use other input libraries when FormKit can handle the task
+   - Example:
+   ```vue
+   <FormKit type="text" label="Username" v-model="form.username" />
+   ```
+
+2. **Standard Input Types**:
+   - Use FormKit's built-in input types:
+     - `text` for text inputs
+     - `email` for email inputs
+     - `password` for password inputs
+     - `checkbox` for checkboxes
+     - `radio` for radio buttons
+     - `select` for dropdowns
+     - `textarea` for multi-line text
+     - `date` for date pickers
+     - `mask` for masked inputs (phone numbers, etc.)
+
+## 2. FormKit Configuration and Styling
+
+1. **Consistent Styling**:
+   - Use consistent class attributes for FormKit components:
+     - `label-class` for label styling
+     - `outer-class` for outer container styling
+     - `input-class` for input element styling
+   - Example:
+   ```vue
+   <FormKit label="Email" type="email" outer-class="text-left" />
+   ```
+
+2. **Custom Slots**:
+   - Use FormKit's slot system for custom elements within inputs:
+     - `#prefix` for content before the input
+     - `#suffix` for content after the input
+     - `#label` for custom label content
+   - Example:
+   ```vue
+   <FormKit type="password" label="Password">
+     <template #suffix>
+       <div class="bg-gray-100 hover:bg-slate-200 dark:bg-slate-700 hover:dark:bg-slate-900 h-full rounded-r-md p-3 flex justify-center items-center cursor-pointer"
+            @click="togglePasswordVisibility = !togglePasswordVisibility">
+         <Icon name="ion:eye-outline" size="19" />
+       </div>
+     </template>
+   </FormKit>
+   ```
+
+## 3. FormKit Validation
+
+1. **Validation Rules**:
+   - Use FormKit's validation system for all form validation
+   - Apply validation rules directly on FormKit components
+   - Example:
+   ```vue
+   <FormKit
+     type="text"
+     label="Path"
+     :validation="[['required'], ['matches', '/^[a-z0-9/-]+$/']]"
+     :validation-messages="{
+       required: 'Path is required',
+       matches: 'Path contains invalid characters...'
+     }"
+     v-model="form.path"
+   />
+   ```
+
+2. **Validation Visibility**:
+   - Control when validation messages appear using `validation-visibility`
+   - Common options: `blur`, `dirty`, `submit`
+   - Example:
+   ```vue
+   <FormKit
+     type="email"
+     name="email"
+     label="Email"
+     validation="email"
+     validation-visibility="dirty"
+   />
+   ```
+
+## 4. FormKit for Complex Inputs
+
+1. **Custom FormKit Components**:
+   - Use the custom FormKit components in `components/formkit/` for specialized inputs:
+     - `OneTimePassword.vue` for OTP inputs
+     - `TextMask.vue` for masked text inputs
+     - `DateTimePicker.vue` for date and time selection
+     - `FileDropzone.vue` for file uploads
+
+2. **Masked Inputs**:
+   - Use the `mask` type for formatted inputs like phone numbers
+   - Example:
+   ```vue
+   <FormKit
+     type="mask"
+     v-model="form.phone"
+     name="phone"
+     label="Phone"
+     mask="###########"
+   />
+   ```
+
+## 5. FormKit with Dropdowns
+
+1. **Standard Dropdowns**:
+   - Use FormKit's `select` type for simple dropdowns
+   - Provide options as an array or object
+   - Example:
+   ```vue
+   <FormKit
+     type="select"
+     label="Status"
+     v-model="form.status"
+     :options="statusOptions"
+   />
+   ```
+
+2. **Advanced Dropdowns**:
+   - For more complex dropdowns (multi-select, searchable), use v-select with FormKit styling
+   - Example:
+   ```vue
+   <div class="flex justify-between items-center mb-2">
+     <label class="formkit-label">Role</label>
+   </div>
+   <v-select
+     class="formkit-vselect"
+     :options="roleOptions"
+     v-model="form.roles"
+     multiple
+   ></v-select>
+   ```
+
+## 6. FormKit Forms
+
+1. **Form Submission**:
+   - Use FormKit's form type to handle form submission
+   - Listen for the `@submit` event to process form data
+   - Example:
+   ```vue
+   <FormKit type="form" :actions="false" @submit="saveForm">
+     <!-- Form inputs -->
+     <div class="flex justify-end gap-2">
+       <rs-button variant="outline" @click="cancelForm">Cancel</rs-button>
+       <rs-button btnType="submit">Save</rs-button>
+     </div>
+   </FormKit>
+   ```
+
+2. **Form Actions**:
+   - Use `:actions="false"` to disable default form actions
+   - Implement custom action buttons with RsButton components
+   - Place action buttons at the bottom of the form
+
+## 7. FormKit in Modals
+
+1. **Modal Forms**:
+   - Place FormKit forms inside RsModal components for form dialogs
+   - Use the modal's slot system for form organization
+   - Example:
+   ```vue
+   <rs-modal title="Edit User" v-model="showModal">
+     <template #body>
+       <FormKit type="form" :actions="false" @submit="saveUser">
+         <!-- Form inputs -->
+       </FormKit>
+     </template>
+   </rs-modal>
+   ```
+
+2. **Modal Actions**:
+   - Place form action buttons at the bottom of the form
+   - Use consistent button styling and positioning
+
+## 8. FormKit State Management
+
+1. **Data Binding**:
+   - Use v-model for two-way binding with FormKit inputs
+   - Organize form data in reactive objects
+   - Example:
+   ```vue
+   <FormKit
+     type="text"
+     v-model="formData.username"
+     label="Username"
+   />
+   ```
+
+2. **Form Reset**:
+   - Implement clear form reset functionality
+   - Reset form data to initial values when canceling or after submission
+
+By following these guidelines for FormKit usage, you'll maintain a consistent approach to form inputs across your application, leveraging FormKit's powerful features while adhering to your established patterns.

@@ -17,8 +17,15 @@ model audit {
   auditIP          String?   @db.VarChar(255)
   auditURL         String?   @db.VarChar(255)
   auditURLMethod   String?   @db.VarChar(255)
-  auditURLPayload  String?   @db.VarChar(255)
-  auditCreatedDate DateTime? @db.DateTime(0)
+  auditURLPayload  String?   @db.Text
+  auditCreatedDate DateTime? @default(now()) @db.DateTime(0)
+  auditAction      String?   @db.VarChar(255)
+  auditDetails     String?   @db.Text
+  auditUserID      Int?
+  auditUsername    String?   @db.VarChar(255)
+  user             user?     @relation(fields: [auditUserID], references: [userID])
+
+  @@index([auditUserID], map: "FK_audit_user")
 }
 
 model user {
@@ -32,6 +39,7 @@ model user {
   userStatus       String?    @db.VarChar(255)
   userCreatedDate  DateTime?  @db.DateTime(0)
   userModifiedDate DateTime?  @db.DateTime(0)
+  audit            audit[]
   userrole         userrole[]
 }
 

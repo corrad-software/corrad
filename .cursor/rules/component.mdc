@@ -1,0 +1,130 @@
+---
+description: UI Component Style Guide
+globs: pages/*
+alwaysApply: false
+---
+## General Principles
+- Use existing Rose UI components (prefixed with `rs-`) instead of creating new ones
+- Customize components through props rather than creating variants
+- Follow the established naming conventions and component structure
+
+## Component Usage
+
+### 1. Alert (`<rs-alert>`)
+```vue
+<rs-alert variant="success" dismissible>Alert message</rs-alert>
+```
+- **Props**: `variant` (primary/secondary/info/success/warning/danger), `dismissible`, `show`, `autoDismiss`, `timer`
+
+### 2. Badge (`<rs-badge>`)
+```vue
+<rs-badge variant="primary" icon="ic:baseline-check">Badge text</rs-badge>
+```
+- **Props**: `variant` (primary/secondary/info/success/warning/danger), `icon`, `iconSize`
+
+### 3. Button (`<rs-button>`)
+```vue
+<rs-button variant="primary" size="md">Button text</rs-button>
+```
+- **Props**: `variant` (primary/secondary/info/success/warning/danger + -outline/-text suffixes), `size` (sm/md/lg)
+
+### 4. Card (`<rs-card>`)
+```vue
+<rs-card>
+  <template #header>Card Header</template>
+  Card content
+  <template #footer>Card Footer</template>
+</rs-card>
+```
+- **Slots**: `header`, `default`, `body`, `footer`
+
+### 5. Collapse (`<rs-collapse>`)
+```vue
+<rs-collapse accordion type="default">
+  <rs-collapse-item title="Item 1">Content 1</rs-collapse-item>
+  <rs-collapse-item title="Item 2">Content 2</rs-collapse-item>
+</rs-collapse>
+```
+- **Props**: `accordion`, `type` (default/border)
+- **Child Component**: `rs-collapse-item` with `title` prop
+
+### 6. Dropdown (`<rs-dropdown>`)
+```vue
+<rs-dropdown title="Dropdown" variant="primary" position="bottom">
+  <rs-dropdown-item>Option 1</rs-dropdown-item>
+  <rs-dropdown-item>Option 2</rs-dropdown-item>
+</rs-dropdown>
+```
+- **Props**: `title`, `variant`, `position` (top/bottom/left/right), `textAlign`, `size`, `itemSize`
+- **Child Component**: `rs-dropdown-item` with `divider` prop
+
+### 7. Fieldset (`<rs-fieldset>`)
+```vue
+<rs-fieldset label="Group Label">
+  <FormKit type="text" label="Input 1" />
+  <FormKit type="text" label="Input 2" />
+</rs-fieldset>
+```
+- **Props**: `label`, `border`, `borderColour`, `borderWidth`, `borderRadius`
+
+### 8. Modal (`<rs-modal>`)
+```vue
+<rs-modal v-model="showModal" title="Modal Title" size="md">
+  Modal content
+  <template #footer>Custom footer</template>
+</rs-modal>
+```
+- **Props**: `title`, `size` (sm/md/lg), `position` (top/center/bottom), `hideOverlay`, `okOnly`, `cancelOnly`, `okTitle`, `cancelTitle`, `okCallback`, `cancelCallback`, `hideFooter`, `overlayClose`, `height`
+- **Slots**: `header`, `body` (default), `footer`
+
+### 9. Progress Bar (`<rs-progress-bar>`)
+```vue
+<rs-progress-bar label="Progress" value="75" max="100" variant="primary" size="md" showValue />
+```
+- **Props**: `label`, `value`, `max`, `variant`, `size` (sm/md/lg), `showValue`
+
+### 10. Tab (`<rs-tab>`)
+```vue
+<rs-tab variant="primary" type="default" vertical fill>
+  <rs-tab-item title="Tab 1">Content 1</rs-tab-item>
+  <rs-tab-item title="Tab 2">Content 2</rs-tab-item>
+</rs-tab>
+```
+- **Props**: `variant`, `type` (default/card/border), `vertical`, `fill`, `justify` (left/center/right)
+- **Child Component**: `rs-tab-item` with `title` prop
+
+### 11. Table (`<rs-table>`)
+```vue
+<rs-table 
+  :field="['ID', 'Name', 'Email']" 
+  :data="tableData"
+  :options="{ variant: 'default', striped: true, hover: true }"
+  :optionsAdvanced="{ sortable: true, filterable: true }"
+/>
+```
+- **Props**: 
+  - `field`: Column headers
+  - `data`: Table data
+  - `options`: { variant, striped, bordered, borderless, hover }
+  - `optionsAdvanced`: { sortable, filterable, responsive, outsideBorder }
+  - `pageSize`, `grid`
+
+### 12. Wizard (`<rs-wizard>`)
+```vue
+<rs-wizard :steps="['Step 1', 'Step 2']" type="top">
+  <template #step1>
+    <FormKit type="text" label="Step 1 Field" validation="required" />
+  </template>
+  <template #step2>
+    <FormKit type="text" label="Step 2 Field" validation="required" />
+  </template>
+</rs-wizard>
+```
+- **Props**: `type` (top/left), `steps`, `currentStep`, `form`, `formSubmit`, `formAction`, `formStepRequired`, `formStepBack`, `formNavigate`, `formErrorCounter`
+- **Slots**: Named slots for each step (lowercase, no spaces)
+
+### 13. Code Mirror (`<rs-code-mirror>`)
+```vue
+<rs-code-mirror v-model="code" mode="vue" height="70vh" theme="oneDark" />
+```
+- **Props**: `modelValue`, `mode` (vue/javascript), `height`, `theme`, `disabled`, `options` 

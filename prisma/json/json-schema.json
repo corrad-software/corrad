@@ -37,6 +37,34 @@
             "null"
           ],
           "format": "date-time"
+        },
+        "auditAction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auditDetails": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auditUsername": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "user": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/user"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -101,6 +129,12 @@
             "null"
           ],
           "format": "date-time"
+        },
+        "audit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/audit"
+          }
         },
         "userrole": {
           "type": "array",

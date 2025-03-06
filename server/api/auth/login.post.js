@@ -67,6 +67,13 @@ export default defineEventHandler(async (event) => {
       `refreshToken=${refreshToken}; HttpOnly; Secure; SameSite=Lax; Path=/`,
     ]);
 
+    // Add user info to context for audit trail
+    if (!event.context.user) {
+      event.context.user = {};
+    }
+    event.context.user.userID = user.userID;
+    event.context.user.username = user.userUsername;
+
     return {
       statusCode: 200,
       message: "Login success",

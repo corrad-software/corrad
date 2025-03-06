@@ -76,6 +76,12 @@ export default [
         "path": "/devtool/code-playground",
         "icon": "mdi:code-braces",
         "child": []
+      },
+      {
+        "title": "Audit Trail",
+        "path": "/audit",
+        "icon": "mdi:account-search",
+        "child": []
       }
     ],
     "meta": {
