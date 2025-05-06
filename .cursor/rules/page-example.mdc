@@ -1,0 +1,18 @@
+---
+description: 
+globs: pages/*.vue
+alwaysApply: false
+---
+# Example: How to Implement a Page
+
+Pages in this project are Vue single-file components located in the [pages/](mdc:pages) directory. For example, the login page is implemented in [pages/login/index.vue](mdc:pages/login/index.vue):
+
+- Use `<script setup>` for logic and state
+- Use `definePageMeta` to set page metadata, layout, and middleware
+- Use Pinia stores for state management (e.g., user authentication)
+- Use FormKit for form fields and validation
+- Use composables and Nuxt utilities for API calls (e.g., `useFetch`)
+- Use NuxtLink for navigation
+- Organize the UI with Tailwind CSS classes
+
+See the login page for a full example of these practices.

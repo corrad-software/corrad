@@ -1,0 +1,17 @@
+---
+description: 
+globs: server/*.js
+alwaysApply: false
+---
+# Example: How to Implement an API Endpoint
+
+API endpoints are implemented as JavaScript files in the [server/api/](mdc:server/api) directory. For example, the login endpoint is implemented in [server/api/auth/login.post.js](mdc:server/api/auth/login.post.js):
+
+- Export a default handler using `defineEventHandler`
+- Use `readBody(event)` to access POST data
+- Use Prisma for database queries
+- Use external libraries for hashing and JWT (e.g., `crypto-js`, `jsonwebtoken`)
+- Return JSON responses with status codes and messages
+- Set cookies or headers as needed for authentication
+
+See the login endpoint for a full example of these practices.

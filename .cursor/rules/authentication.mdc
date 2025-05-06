@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Authentication System Guide
+
+Authentication is handled via JWT tokens in [server/api/auth/login.post.js](mdc:server/api/auth/login.post.js):
+
+- Users log in with a username and password (hashed with SHA-256)
+- On success, access and refresh JWT tokens are generated and set as HTTP-only cookies
+- User roles are loaded from the database and included in the token payload
+- The system supports role-based access control and secure session management
+
+See the login endpoint for implementation details.

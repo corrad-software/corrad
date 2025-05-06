@@ -1,0 +1,16 @@
+---
+description: Current Backend database context
+globs: 
+alwaysApply: false
+---
+# Database Schema Guide
+
+The database schema is defined in [prisma/schema.prisma](mdc:prisma/schema.prisma) and uses MySQL with Prisma ORM. The main models are:
+
+- `user`: Stores user credentials and profile information
+- `role`: Defines user roles
+- `userrole`: Maps users to roles (many-to-many)
+- `audit`: Logs user actions for audit trails
+- `lookup`: Stores lookup values for system-wide use
+
+Refer to the schema file for field-level details and relationships.

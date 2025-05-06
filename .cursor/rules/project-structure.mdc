@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure Guide
+
+This project is a Nuxt.js 3 application with a focus on user management, security, and auditability. The main directories and files are:
+
+- [nuxt.config.js](mdc:nuxt.config.js): Nuxt configuration and module setup
+- [package.json](mdc:package.json): Project dependencies and scripts
+- [prisma/schema.prisma](mdc:prisma/schema.prisma): Database schema (MySQL, managed by Prisma)
+- [server/api/](mdc:server/api): Server-side API endpoints (authentication, dev tools, etc.)
+- [pages/](mdc:pages): Frontend pages (login, dashboard, audit, etc.)
+- [components/](mdc:components): Vue components for UI
+- [composables/](mdc:composables): Reusable logic and utilities
+- [stores/](mdc:stores): Pinia stores for state management
+- [middleware/](mdc:middleware): Route protection and middleware logic
+- [assets/](mdc:assets): Static assets (images, styles)
+- [public/](mdc:public): Publicly served files
+
+The entry point for the app is [app.vue](mdc:app.vue).

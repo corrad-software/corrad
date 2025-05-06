@@ -5,6 +5,10 @@ export default defineNuxtConfig({
       secretAccess: process.env.NUXT_ACCESS_TOKEN_SECRET,
       secretRefresh: process.env.NUXT_REFRESH_TOKEN_SECRET,
     },
+    logging: {
+      level: process.env.LOG_LEVEL || 'info',
+      lokiUrl: process.env.LOKI_URL || 'http://localhost:3100',
+    },
   },
   modules: [
     "@nuxtjs/tailwindcss",

@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Security Features Guide
+
+Security is a core part of this project, with key practices including:
+
+- JWT-based authentication with access and refresh tokens (see [server/api/auth/login.post.js](mdc:server/api/auth/login.post.js))
+- HTTP-only, Secure, SameSite cookies for token storage
+- Passwords hashed with SHA-256
+- Role-based access control
+- Audit logging of user actions ([prisma/schema.prisma](mdc:prisma/schema.prisma))
+- Nuxt Security module enabled in [nuxt.config.js](mdc:nuxt.config.js)
+
+Review the Nuxt config and authentication endpoints for implementation details.

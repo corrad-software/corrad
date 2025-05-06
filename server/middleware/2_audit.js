@@ -1,19 +1,7 @@
 import { logger } from '../utils/logger';
-import { getGeoIP } from '../utils/geoip';
-
-// Store metrics in memory for performance tracking
-const metrics = {
-  requestCount: 0,
-  errorCount: 0,
-  responseTimeTotal: 0,
-  startTime: Date.now(),
-};
 
 export default defineEventHandler(async (event) => {
   try {
-    // Start timer for response time tracking
-    const startTime = process.hrtime();
-    
     // Skip audit for certain paths
     const url = event.node.req.url || "";
 
@@ -35,11 +23,6 @@ export default defineEventHandler(async (event) => {
     // Get request details
     const method = event.node.req.method || "";
     const ip = getClientIP(event);
-    const userAgent = event.node.req.headers["user-agent"] || "Unknown";
-    const referer = event.node.req.headers["referer"] || null;
-
-    // Increment request counter
-    metrics.requestCount++;
 
     // For POST/PUT/PATCH requests, get the payload
     let payload = null;
@@ -98,66 +81,28 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date(),
     };
 
-    // Add afterResponse handler to log the completed request with response status
-    event.node.res.on('finish', async () => {
-      try {
-        // Calculate response time
-        const hrTime = process.hrtime(startTime);
-        const responseTimeMs = (hrTime[0] * 1000 + hrTime[1] / 1000000).toFixed(2);
-        
-        // Update metrics
-        metrics.responseTimeTotal += parseFloat(responseTimeMs);
-        
-        if (event.node.res.statusCode >= 400) {
-          metrics.errorCount++;
-        }
-
-        // Get geolocation data only if this is a significant request
-        // (to avoid excessive API calls to geolocation service)
-        let geoData = { city: 'Unknown', region: 'Unknown', country: 'Unknown' };
-        
-        // Only get geo data for significant actions like logins or for errors
-        const isSignificantAction = action.includes('Login') || 
-                                   action.includes('Logout') || 
-                                   event.node.res.statusCode >= 400;
-        
-        if (isSignificantAction) {
-          geoData = await getGeoIP(ip);
-        }
-        
-        // Log the completed request
-        logger.info(`${action}: ${method} ${url} - ${event.node.res.statusCode}`, 
-          { 
-            userID: userID?.toString() || 'anonymous',
-            username: user.username || 'anonymous',
-            ip,
-            method,
-            url,
-            component: 'audit-middleware',
-            status: event.node.res.statusCode.toString(),
-            responseTime: responseTimeMs,
-            country: geoData.country,
-            city: geoData.city
-          },
-          {
-            action,
-            payloadLength: payload ? payload.length : 0,
-            hasPayload: !!payload,
-            userAgent,
-            referer
-          }
-        );
-      } catch (error) {
-        console.error('Error in response finish handler:', error);
+    // Log the request to Loki
+    logger.info(`${action}: ${method} ${url}`, 
+      { 
+        userID: userID?.toString() || 'anonymous',
+        username: user.username || 'anonymous',
+        ip,
+        method,
+        url,
+        component: 'audit-middleware'
+      },
+      {
+        action,
+        payloadLength: payload ? payload.length : 0,
+        hasPayload: !!payload
       }
-    });
+    );
   } catch (error) {
     console.error("Error in audit middleware:", error);
     logger.error(`Error in audit middleware`, 
       { component: 'audit-middleware' },
       { error: error.message, stack: error.stack }
     );
-    metrics.errorCount++;
   }
 });
 

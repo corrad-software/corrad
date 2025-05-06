@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Frontend Pages Guide
+
+The main frontend pages are located in the [pages/](mdc:pages) directory. Key sections include:
+
+- Authentication: [pages/login/](mdc:pages/login), [pages/register/](mdc:pages/register), [pages/forgot-password/](mdc:pages/forgot-password), [pages/reset-password/](mdc:pages/reset-password), [pages/logout/](mdc:pages/logout)
+- Dashboard: [pages/dashboard/](mdc:pages/dashboard)
+- Audit: [pages/audit/](mdc:pages/audit)
+- Developer Tools: [pages/devtool/](mdc:pages/devtool)
+- Home: [pages/index.vue](mdc:pages/index.vue)
+
+Each section may have subpages for specific features or workflows.

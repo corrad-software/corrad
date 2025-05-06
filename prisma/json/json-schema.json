@@ -68,6 +68,83 @@
         }
       }
     },
+    "loginHistory": {
+      "type": "object",
+      "properties": {
+        "loginHistoryID": {
+          "type": "integer"
+        },
+        "loginHistoryIP": {
+          "type": "string"
+        },
+        "loginHistoryUserAgent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistorySessionId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistoryTimestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "loginHistorySuccess": {
+          "type": "boolean",
+          "default": true
+        },
+        "loginHistoryLogoutAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "loginHistoryDevice": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistoryOS": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistoryBrowser": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistoryCountry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistoryRegion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loginHistoryCity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "user": {
+          "$ref": "#/definitions/user"
+        }
+      }
+    },
     "user": {
       "type": "object",
       "properties": {
@@ -140,6 +217,12 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/userrole"
+          }
+        },
+        "loginHistory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/loginHistory"
           }
         }
       }
@@ -271,6 +354,9 @@
   "properties": {
     "audit": {
       "$ref": "#/definitions/audit"
+    },
+    "loginHistory": {
+      "$ref": "#/definitions/loginHistory"
     },
     "user": {
       "$ref": "#/definitions/user"
