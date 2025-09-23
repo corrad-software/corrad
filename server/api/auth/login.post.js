@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { logger } from "../../utils/logger";
 import { getGeoIP } from "../../utils/geoip";
 import { incrementMetric, recordCountryActivity } from "../../utils/metrics";
+import { recordLoginFailure } from "../../utils/alerting";
 
 const ENV = useRuntimeConfig();
 
@@ -33,6 +34,9 @@ export default defineEventHandler(async (event) => {
 
       // Increment failed login metric
       incrementMetric('failedLoginCount');
+      
+      // Record login failure for alerting
+      recordLoginFailure(username, ip);
 
       logger.warn(`Login attempt with non-existent username: ${username}`, 
         { component: "auth-login", username, ip }
@@ -50,6 +54,9 @@ export default defineEventHandler(async (event) => {
 
       // Increment failed login metric
       incrementMetric('failedLoginCount');
+      
+      // Record login failure for alerting
+      recordLoginFailure(username, ip);
 
       logger.warn(`Invalid password for user: ${username}`, 
         { component: "auth-login", username, userID: user.userID.toString(), ip }

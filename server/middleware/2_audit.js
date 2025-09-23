@@ -1,3 +1,23 @@
+/**
+ * Secondary Audit Middleware (Database Only)
+ * 
+ * This middleware is responsible for maintaining database audit records only.
+ * It does NOT log to Loki to avoid duplicate logs, as the 1_audit.js middleware
+ * already handles that. This middleware exists to ensure proper database auditing
+ * is maintained, which provides a permanent record of user activities accessible
+ * through the UI's Database Audit Logs section.
+ * 
+ * The 1_audit.js middleware handles:
+ * - Logging to Loki (real-time system logs)
+ * - Performance metrics
+ * - Response time tracking
+ * - Geo-location tracking
+ * - Security alerting
+ * 
+ * This 2_audit.js middleware handles:
+ * - Database record creation (permanent audit trail)
+ */
+
 import { logger } from '../utils/logger';
 
 export default defineEventHandler(async (event) => {
@@ -59,7 +79,7 @@ export default defineEventHandler(async (event) => {
       return;
     }
 
-    // Create audit record
+    // Create audit record in the database
     await prisma.audit.create({
       data: {
         auditUserID: userID,
@@ -81,22 +101,8 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date(),
     };
 
-    // Log the request to Loki
-    logger.info(`${action}: ${method} ${url}`, 
-      { 
-        userID: userID?.toString() || 'anonymous',
-        username: user.username || 'anonymous',
-        ip,
-        method,
-        url,
-        component: 'audit-middleware'
-      },
-      {
-        action,
-        payloadLength: payload ? payload.length : 0,
-        hasPayload: !!payload
-      }
-    );
+    // We're not logging to Loki here anymore as that's handled by 1_audit.js
+    // This prevents duplicate logs in Loki while still maintaining DB audit records
   } catch (error) {
     console.error("Error in audit middleware:", error);
     logger.error(`Error in audit middleware`, 

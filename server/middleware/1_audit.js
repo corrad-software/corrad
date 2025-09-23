@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger';
 import { getGeoIP } from '../utils/geoip';
+import { recordSystemError, recordRequest } from '../utils/alerting';
 
 // Store metrics in memory for performance tracking
 const metrics = {
@@ -31,6 +32,7 @@ export default defineEventHandler(async (event) => {
     // Get user information from context (set by auth middleware)
     const user = event.context.user || {};
     const userID = user.userID ? parseInt(user.userID) : null;
+    const username = user.username || null;
 
     // Get request details
     const method = event.node.req.method || "";
@@ -40,6 +42,9 @@ export default defineEventHandler(async (event) => {
 
     // Increment request counter
     metrics.requestCount++;
+    
+    // Record request for error rate tracking
+    recordRequest();
 
     // For POST/PUT/PATCH requests, get the payload
     let payload = null;
@@ -80,7 +85,7 @@ export default defineEventHandler(async (event) => {
     await prisma.audit.create({
       data: {
         auditUserID: userID,
-        auditUsername: user.username || null,
+        auditUsername: username,
         auditAction: action,
         auditDetails: `${method} request to ${url}`,
         auditIP: ip,
@@ -108,8 +113,25 @@ export default defineEventHandler(async (event) => {
         // Update metrics
         metrics.responseTimeTotal += parseFloat(responseTimeMs);
         
-        if (event.node.res.statusCode >= 400) {
+        // Record error for alerting if this is a server error (5xx)
+        if (event.node.res.statusCode >= 500) {
           metrics.errorCount++;
+          recordSystemError('server_error', { 
+            url, 
+            method, 
+            statusCode: event.node.res.statusCode,
+            responseTimeMs
+          });
+        } 
+        // Record client errors (4xx) separately
+        else if (event.node.res.statusCode >= 400) {
+          metrics.errorCount++;
+          recordSystemError('client_error', { 
+            url, 
+            method, 
+            statusCode: event.node.res.statusCode,
+            responseTimeMs
+          });
         }
 
         // Get geolocation data only if this is a significant request
@@ -129,7 +151,7 @@ export default defineEventHandler(async (event) => {
         logger.info(`${action}: ${method} ${url} - ${event.node.res.statusCode}`, 
           { 
             userID: userID?.toString() || 'anonymous',
-            username: user.username || 'anonymous',
+            username: username || 'anonymous',
             ip,
             method,
             url,
@@ -158,6 +180,10 @@ export default defineEventHandler(async (event) => {
       { error: error.message, stack: error.stack }
     );
     metrics.errorCount++;
+    recordSystemError('middleware_error', { 
+      component: 'audit-middleware',
+      error: error.message 
+    });
   }
 });
 

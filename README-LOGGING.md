@@ -55,7 +55,7 @@ This will start:
 ## Advanced Logging Features
 
 ### Geographical Tracking
-The system now logs geographical information for user logins and important events. This data is available in Grafana dashboards and includes:
+The system logs geographical information for user logins and important events. This data is available in Grafana dashboards and includes:
 
 - Country
 - Region
@@ -80,6 +80,20 @@ Enhanced security logging includes:
 - Suspicious activity by location
 - Authentication events
 
+### Log Batching & Rate Limiting
+The logging system includes advanced features for optimized performance:
+- Log batching to reduce network calls for non-critical logs
+- Automatic rate limiting to prevent log flooding in high-traffic situations
+- Priority handling of error logs (sent immediately, never rate-limited)
+- Environment-specific labeling for easier filtering
+
+### Security Alerting
+The system has built-in security alerting for:
+- Brute force detection (multiple failed logins from same IP)
+- Account targeting (multiple attempts on same username)
+- High error rate detection
+- Abnormal traffic patterns
+
 ## API Endpoints
 
 ### Metrics Endpoint
@@ -90,17 +104,25 @@ The system exposes a metrics endpoint at `/api/metrics` that provides real-time 
 - System performance
 - Geographical distribution of users
 
+### Logs API
+The system provides a logs API at `/api/logs/filter` that allows authorized users to:
+- Query logs with complex filtering
+- Search by text, component, level, and time range
+- Filter by specific error types or security events
+
 ## Implementing More Logging
 
 Logging is implemented in the following files:
 
-- `server/utils/logger.js` - Logger utility
+- `server/utils/logger.js` - Logger utility with batching and rate limiting
 - `server/utils/geoip.js` - Geolocation services
 - `server/utils/metrics.js` - Shared metrics tracking
+- `server/utils/alerting.js` - Security alerting system
 - `server/middleware/1_audit.js` - Request auditing with logging
 - `server/api/auth/login.post.js` - Login endpoint logging
 - `server/api/auth/logout.get.js` - Logout endpoint logging
 - `server/api/metrics/index.get.js` - Metrics endpoint
+- `server/api/logs/filter.post.js` - Log querying API endpoint
 
 To add logging to other files, import the logger:
 
@@ -119,6 +141,20 @@ Where:
 - `labels` is an object of key-value pairs used for querying in Grafana (e.g., `{ component: 'my-component', userID: '123' }`)
 - `data` is additional data to include in the log (e.g., `{ error: error.message, stack: error.stack }`)
 
+## Security Alerting Integration
+
+To integrate with the security alerting system:
+
+```javascript
+import { recordLoginFailure, recordSystemError } from '../utils/alerting';
+
+// Record failed login attempts
+recordLoginFailure(username, ip);
+
+// Record system errors for alerting
+recordSystemError('error_type', { details: 'error details' });
+```
+
 ## Recommended Grafana Dashboards
 
 ### User Activity Dashboard
@@ -135,3 +171,4 @@ Where:
 - Failed login attempts by IP
 - Authentication events
 - Suspicious activity alerts
+- Security alert timeline

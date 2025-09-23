@@ -1,3 +1,20 @@
+/**
+ * WARNING: MIDDLEWARE CONFLICT
+ * 
+ * This 0_auth.js middleware conflicts with 1_auth.js middleware!
+ * 
+ * Both files handle authentication but with different implementations:
+ * - This 0_auth.js sets event.context.user with {userID, email, roles}
+ * - The 1_auth.js sets event.context.user with {userID, username, roles, authenticated, sessionId}
+ * 
+ * The audit middleware expects the username field, which is only set by 1_auth.js.
+ * This causes users to appear as "anonymous" in logs.
+ * 
+ * RECOMMENDED ACTION:
+ * Either disable/delete this middleware or merge its functionality with 1_auth.js
+ * to ensure consistent user context throughout the application.
+ */
+
 import jwt from "jsonwebtoken";
 
 const ENV = useRuntimeConfig();
@@ -40,6 +57,7 @@ export default defineEventHandler(async (event) => {
     event.context.user = {
       userID: getUser.userID || null,
       email: payloadUser.email || null,
+      username: payloadUser.username || null,
       roles: payloadUser.roles || [],
     };
 
@@ -49,6 +67,7 @@ export default defineEventHandler(async (event) => {
     event.context.user = {
       userID: null,
       email: null,
+      username: null,
       roles: [],
     };
     return;
